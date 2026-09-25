@@ -33,10 +33,10 @@ import {
 import { SubscriptionCancellationNote } from '@/components/payments/SubscriptionCancellationNote'
 import {
   useCancelSaasSubscription,
-  useCreateOrgCheckoutSession,
   useOpenBillingPortal,
   useReactivateSaasSubscription,
 } from '@/hooks/useSaasBilling'
+import { ORG_ENQUIRY_MAILTO } from '@/lib/salesContact'
 import { callFunction } from '@/lib/callFunction'
 
 // ─── types ────────────────────────────────────────────────────────────────────
@@ -171,14 +171,12 @@ export default function OrgBillingPage() {
   // translated copy, a success toast, and invalidation of the key OrgProvider
   // actually caches this org's subscription under.
   const invalidateKeys = (id: string) => [['org-subscription', id]]
-  const checkout = useCreateOrgCheckoutSession()
   const cancel = useCancelSaasSubscription({ scope: 'org', invalidateKeys })
   const reactivate = useReactivateSaasSubscription({ scope: 'org', invalidateKeys })
   const billingPortal = useOpenBillingPortal({ scope: 'org' })
   // One flag per action instead of one shared `actionLoading`: a failed cancel
   // used to leave every other button disabled for the length of its own request.
-  const actionPending =
-    checkout.isPending || cancel.isPending || reactivate.isPending || billingPortal.isPending
+  const actionPending = cancel.isPending || reactivate.isPending || billingPortal.isPending
 
   function handleCancel() {
     // `AlertDialogAction` is a plain Button here (components/ui/alert-dialog.tsx),
@@ -351,9 +349,18 @@ export default function OrgBillingPage() {
 
               {isAdmin && (
                 <div className="flex flex-wrap gap-2 pt-2">
+                  {/* SALES-LED (Franco, 2026-09-25). The organisation tier has no
+                      live self-serve price (`linyup_organization_monthly` is
+                      archived; scripts/stripe-sync.ts treats the tier as quoted),
+                      so a "Subscribe" here always failed at Stripe. Same door as
+                      the Organisation card on a studio's plan picker. */}
                   {!hasActiveSubscription && !isCancelling && (
-                    <Button onClick={() => checkout.mutate(orgId)} disabled={actionPending}>
-                      {checkout.isPending ? '…' : t('upgradeButton')}
+                    <Button
+                      onClick={() => {
+                        window.location.href = ORG_ENQUIRY_MAILTO
+                      }}
+                    >
+                      {t('talkToUs')}
                     </Button>
                   )}
                   {isCancelling && (

@@ -2860,7 +2860,14 @@
     "trialEnds": "Période d'essai se termine le {date}",
     "trialStatusBadge": "Essai",
     "updatePayment": "Mettre à jour le moyen de paiement",
-    "updatingPayment": "Ouverture…"
+    "updatingPayment": "Ouverture…",
+    "managedByOrgTitle": "La facturation est gérée par votre organisation",
+    "managedByOrgBody": "Votre formule est gérée par <strong>{org}</strong>. Pour la facturation ou un changement de formule, contactez l'administration de votre organisation.",
+    "planHeading": "Plan {plan}",
+    "status_active": "Actif",
+    "status_trial": "Essai",
+    "status_past_due": "En retard",
+    "status_cancelled": "Annulé"
   },
   "SaasBilling": {
     "cancelSuccess": "Abonnement annulé. Vous conservez l'accès jusqu'à la fin de la période de facturation en cours.",
@@ -3536,7 +3543,8 @@
     "compedBadge": "Non facturé",
     "compedFree": "Gratuit",
     "compedNote": "Linyup ne facture rien à cette organisation. Il n'y a ni abonnement ni facture à régler.",
-    "perMonthSuffix": "/mois"
+    "perMonthSuffix": "/mois",
+    "talkToUs": "Contactez-nous"
   },
   "OrgSettings": {
     "title": "Paramètres",
@@ -4949,7 +4957,7 @@
     "refundDifferentAmount": "Rembourser un autre montant",
     "refundAmountLabel": "Montant du remboursement",
     "refundAmountMax": "Au maximum {amount}",
-    "refundReversesSubscription": "Cela reprend aussi ce que le paiement avait accordé : l’abonnement qu’il a mis en place et les cours non utilisés. Ce qu’un paiement plus récent a payé reste intact.",
+    "refundReversesSubscription": "Cela reprend aussi ce que le paiement avait accordé : l’abonnement qu’il a mis en place et les cours non utilisés. Un abonnement facturé via Stripe est résilié immédiatement et ne sera pas renouvelé.",
     "refundReversesCourse": "Cela retire aussi le cours de l’espace de {name}.",
     "refundConsumedTitle": "Une partie de ce pack a déjà été utilisée",
     "refundConsumedWhat": "{name} a utilisé {used} des {granted} cours de ce pack.",
@@ -5039,7 +5047,9 @@
     "selectCourseBlock": "Quel cours",
     "planLinkExact": "La formule que ce paiement a réglée. Ouvre sa carte.",
     "planLinkByType": "Associé par type de formule : ce paiement indique sa formule, pas l'abonnement réglé. Ouvre la carte.",
-    "planLinkFallback": "Formule"
+    "planLinkFallback": "Formule",
+    "refundSubscriptionCancelled": "Remboursé. L’abonnement est résilié et ne sera plus facturé.",
+    "refundSubscriptionCancelFailed": "L’argent a été remboursé, mais l’abonnement n’a pas pu être résilié et pourrait être facturé à nouveau. Résiliez-le dans le profil de {name}."
   },
   "PaymentErrors": {
     "setupIncomplete": "La configuration du compte de paiement n'est pas terminée, l'action n'a donc pas pu aboutir. Terminer la configuration dans Paramètres → Paiements.",
@@ -5855,7 +5865,9 @@
     "coursesJoinWaitlist": "Me prévenir si une place se libère",
     "chooseCategorySubtitle": "Que souhaitez-vous réserver ?",
     "choosePlaceSubtitle": "Choisissez où vous souhaitez venir.",
-    "coursesCurriculum": "Au programme"
+    "coursesCurriculum": "Au programme",
+    "errorDropInSignedUpOnly": "Ce cours est réservé aux personnes inscrites auprès du studio. Connectez-vous avec l'e-mail de votre inscription pour le payer.",
+    "dropInSubtitleSignIn": "Inscrit(e) chez nous ? Connectez-vous et payez {price} pour ce cours"
   },
   "PublicTrialBooking": {
     "titleBookTrialClass": "Réserver un cours d'essai",

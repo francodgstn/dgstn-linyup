@@ -385,6 +385,15 @@ purchase or a manual grant is never stripped by a refund of an older charge. Par
 refunds are refused on anything that granted something (membership, course, pack) and
 allowed where nothing was granted (products, drop-ins, appointments, gift cards).
 
+**A full refund of a membership billed by a Stripe subscription cancels that
+subscription at once** (decided 2026-09-25), through `cancelConnectSubscriptionNow`,
+the same helper the staff "cancel membership" action uses. The reversal above never
+reached it: a Stripe-billed plan is not a one-off grant, so it reported
+`skipped_not_owner`, stayed active and billed again the next month while the dialog
+said the membership had been taken back. The outcome is stamped on the payment
+(`subscription_cancel_on_refund`) and a failed cancel is a warning toast, never a
+failed refund: the money has already moved.
+
 The pack rule is the one that surprises people, so: a pack's per-class price is a
 **discount against the drop-in price**, and that discount is exactly what the member
 committed to in exchange. Once a class has been taken the commitment has been partly

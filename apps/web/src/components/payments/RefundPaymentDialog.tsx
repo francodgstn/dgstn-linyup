@@ -150,6 +150,12 @@ export function RefundPaymentDialog({
       // but the studio has to finish the job by hand, so it must not be silent.
       if (res.reversal?.state === 'failed') {
         toast.warning(t('refundReversalFailed', { name: who }))
+      } else if (res.subscriptionCancelled === 'failed') {
+        // The money went back but the membership may still renew: the studio
+        // has to cancel it by hand, so this must not read as a clean success.
+        toast.warning(t('refundSubscriptionCancelFailed', { name: who }))
+      } else if (res.subscriptionCancelled === 'cancelled') {
+        toast.success(t('refundSubscriptionCancelled'))
       } else {
         toast.success(t('refundSuccess'))
       }

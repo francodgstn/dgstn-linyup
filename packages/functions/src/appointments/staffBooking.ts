@@ -41,7 +41,7 @@ import {
   platformFeeMetadata,
   requireChargeableAccount,
 } from '../connect/access'
-import { closeTeamCheckoutSession } from '../connect/checkout'
+import { closeTeamCheckoutSession, STRIPE_MAX_CHECKOUT_EXPIRY_MINUTES } from '../connect/checkout'
 import type { CheckoutSessionCloseOutcome } from '../utils/connect/client'
 import { createOneOffCheckoutSession } from '../utils/connect/client'
 import { resolveBaseUrl, getHostingUrl } from '../utils/env'
@@ -61,14 +61,21 @@ const MAX_NOTE_LEN = 500
 // Stripe's minimum charge — only enforced on the 'payment_link' rail (the
 // offline modes don't touch Stripe at all).
 const MIN_LINK_AMOUNT_MINOR = 50
-// The Stripe Checkout Session itself stays open for a week (a manager sending a
-// link by phone/SMS can't count on the client paying within the public flow's
-// 30-minute hold window). checkout.session.expired (already handled by the
-// Connect webhook — see webhook.ts's handleCheckoutExpired) releases
-// the hold when it lapses; the session doc deliberately carries NO
-// hold_expires_at so the daily sweep (dailyTasks/expirePendingBookings.ts)
-// leaves it alone in the meantime — same rationale as the pending_offline mode.
-const PAYMENT_LINK_EXPIRY_SECONDS = 7 * 24 * 60 * 60
+// The Stripe Checkout Session stays open as long as Stripe allows, which is
+// just under 24 hours (a manager sending a link by phone/SMS can't count on the
+// client paying within the public flow's 30-minute hold window).
+// checkout.session.expired (already handled by the Connect webhook, see
+// webhook.ts's handleCheckoutExpired) releases the hold when it lapses; the
+// session doc deliberately carries NO hold_expires_at so the daily sweep
+// (dailyTasks/expirePendingBookings.ts) leaves it alone in the meantime, same
+// rationale as the pending_offline mode.
+//
+// It was a WEEK until 2026-09-25, which Stripe refuses outright ("expires_at
+// must be less than 24 hours from Checkout Session creation"): every
+// "Send payment link" failed with "Failed to create the payment link", and the
+// email promised a week the link could never have. The margin keeps the value
+// strictly below Stripe's limit, which counts from ITS clock, not ours.
+export const PAYMENT_LINK_EXPIRY_SECONDS = (STRIPE_MAX_CHECKOUT_EXPIRY_MINUTES - 10) * 60
 
 type StaffBookingPaymentMode = 'paid_offline' | 'pending_offline' | 'payment_link'
 
@@ -200,7 +207,7 @@ function buildPaymentLinkEmail(params: {
     `<p>Hi ${params.firstname},</p>`,
     `<p>${params.teamName} has booked you in for <strong>${params.activityName}</strong> on ${dateStr}. Please complete your payment to confirm the booking:</p>`,
     `<p style="margin:16px 0;text-align:center;">${ctaButton(params.paymentUrl, 'Pay now')}</p>`,
-    `<p>This link expires in 7 days.</p>`,
+    `<p>This link expires in 24 hours.</p>`,
   ].join('\n')
   return buildEmailTemplate({ title: `Complete your payment — ${params.activityName}`, body })
 }
@@ -543,9 +550,9 @@ export const createStaffAppointment = onCall(async (request) => {
     }
     // STORE THE SESSION ID, so the link can be CLOSED and not merely waited out.
     //
-    // This rail's whole deadline lives at Stripe (7 days, deliberately no
+    // This rail's whole deadline lives at Stripe (just under a day, deliberately no
     // `hold_expires_at`, unreachable by the daily sweep), so a client who turns
-    // up and pays CASH instead leaves a link that stays payable for a week.
+    // up and pays CASH instead leaves a link that stays payable until it lapses.
     // `markAppointmentPaid` expires it through `closeTeamCheckoutSession` before
     // it records the money, and this is the only reference it has to expire with.
     //
@@ -638,9 +645,9 @@ export const createStaffAppointment = onCall(async (request) => {
 //   • 'link' — a Stripe Checkout link was emailed and the client paid CASH
 //     instead. Until UX-59 this callable refused the mode by name and the
 //     payments dashboard did not even offer the button, so the ONLY thing that
-//     could ever close such a booking was Stripe's own 7-day expiry — which
+//     could ever close such a booking was the link's own expiry at Stripe, which
 //     cancels the session and deletes the booking. The studio's appointment
-//     quietly disappeared a week later and the cash was never recorded anywhere.
+//     quietly disappeared when it lapsed and the cash was never recorded anywhere.
 //
 // ── THE LINK RAIL'S ONE EXTRA OBLIGATION: KILL THE LINK ─────────────────────
 //

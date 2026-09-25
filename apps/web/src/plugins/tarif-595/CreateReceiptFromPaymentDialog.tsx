@@ -71,6 +71,38 @@ function tsToIsoDate(ts: unknown): string | null {
   return v?.toDate ? isoDate(v.toDate()) : null
 }
 
+/**
+ * The last day ONE payment of this recurrence pays for, when paid on `paidOn`:
+ * a monthly payment on 25 September covers 25 September to 24 October. Null for
+ * a recurrence that is not a billing period (a one-time charge), whose history
+ * row already carries its own end.
+ *
+ * Month arithmetic clamps to the month's last day (31 January + 1 month is the
+ * end of February, not 3 March), which is how a subscription bills.
+ */
+function paidPeriodEnd(paidOn: string, recurrence: string | undefined): string | null {
+  const [y, m, d] = paidOn.split('-').map(Number)
+  const addDays = (days: number) => isoDate(new Date(Date.UTC(y, m - 1, d + days - 1)))
+  const addMonths = (months: number) => {
+    const lastDay = new Date(Date.UTC(y, m - 1 + months + 1, 0)).getUTCDate()
+    return isoDate(new Date(Date.UTC(y, m - 1 + months, Math.min(d, lastDay) - 1)))
+  }
+  switch (recurrence) {
+    case 'weekly':
+      return addDays(7)
+    case 'biweekly':
+      return addDays(14)
+    case 'monthly':
+      return addMonths(1)
+    case 'quarterly':
+      return addMonths(3)
+    case 'annual':
+      return addMonths(12)
+    default:
+      return null
+  }
+}
+
 /** One thing this payment could have been for — a plan period or a course. */
 interface SourceChoice {
   key: string
@@ -187,12 +219,24 @@ export function CreateReceiptFromPaymentDialog({
       const all: SourceChoice[] = history.map((h) => {
         const start = tsToIsoDate(h.start_date)
         const end = tsToIsoDate(h.end_date)
+        // THE PERIOD THIS PAYMENT PAID FOR, when the payment falls inside the
+        // row: one billing period from the day it was paid, clipped to the row.
+        // The row's own span was the default before, which for an open row ends
+        // TODAY: a monthly payment receipted the day it was paid attested a
+        // single day, and a renewal on a long-running plan attested every month
+        // since it began for one month's money.
+        const paidEnd = paidPeriodEnd(paidOn, h.recurrence)
+        const covers = !!start && start <= paidOn && (!end || end >= paidOn)
+        const [from, to] =
+          covers && paidEnd
+            ? [paidOn, end && end < paidEnd ? end : paidEnd]
+            : [start ?? paidOn, end ?? isoDate(new Date())]
         return {
           key: `subscription:${h.id}`,
           label: `${h.subscription_type_name ?? row.lineItem?.label ?? ''} · ${start ?? '—'} – ${end ?? t('issue.ongoing')}`,
           source: { kind: 'subscription', historyId: h.id },
-          from: start ?? paidOn,
-          to: end ?? isoDate(new Date()),
+          from,
+          to,
         }
       })
       const typeId = row.lineItem?.subscriptionTypeId ?? row.planTypeId ?? null
@@ -283,7 +327,7 @@ export function CreateReceiptFromPaymentDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <HeartPulse className="h-4 w-4 text-muted-foreground" />

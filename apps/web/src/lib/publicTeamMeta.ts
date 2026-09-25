@@ -13,6 +13,8 @@
 // Rules-wise these are public documents (`/{path=**}/public_profile/{id}` grants
 // an unauthenticated read), so no credentials are involved.
 
+import { emulatorFirestoreHost } from './publicMetaRest'
+
 const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
 const USE_EMULATORS = process.env.NEXT_PUBLIC_USE_EMULATORS === 'true'
 
@@ -35,7 +37,7 @@ function eq(field: string, value: string) {
 
 async function runQuery(filters: object[], limit = 1): Promise<RestRow[]> {
   const base = USE_EMULATORS
-    ? `http://${process.env.FIRESTORE_EMULATOR_HOST || 'localhost:8080'}/v1`
+    ? `http://${emulatorFirestoreHost()}/v1`
     : 'https://firestore.googleapis.com/v1'
   const key = process.env.NEXT_PUBLIC_FIREBASE_API_KEY
   const url =

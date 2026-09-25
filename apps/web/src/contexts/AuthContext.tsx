@@ -42,7 +42,22 @@ function hasExplicitLocaleChoice(): boolean {
  *  happens to be signed in — a studio owner opening their own booking page in
  *  French must see what a French member sees. */
 function honoursItsOwnLocale(pathname: string): boolean {
-  return pathname.startsWith('/public/') || pathname.startsWith('/embed/') || pathname.startsWith('/auth/')
+  return (
+    pathname.startsWith('/public/') ||
+    pathname.startsWith('/embed/') ||
+    pathname.startsWith('/auth/') ||
+    isSignInEntry(pathname)
+  )
+}
+
+/** The pages a person signs in ON, which send them on the moment auth resolves.
+ *  Adopting the stored language here re-navigated to the SAME page in the other
+ *  locale (`/login` → `/de/login`), which won the race against the page's own
+ *  redirect and left a signed-in owner on an emptied login form: every German,
+ *  French or Italian owner signing in from an unprefixed link had to do it
+ *  twice. Skipped here, the adoption runs on the page they land on instead. */
+function isSignInEntry(pathname: string): boolean {
+  return pathname === '/login' || pathname === '/signup' || pathname.startsWith('/signup/')
 }
 
 interface AuthContextValue {

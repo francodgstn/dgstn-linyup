@@ -257,6 +257,9 @@ export function useRefundMemberPayment() {
            *  means the money went back and the entitlement did not — the caller
            *  must surface it, because nothing else will. */
           reversal: MemberPaymentEffectsReversal | null
+          /** A full refund of a Stripe-billed membership payment cancels the
+           *  subscription it came from; null when the payment had none. */
+          subscriptionCancelled?: 'cancelled' | 'already_ended' | 'failed' | null
         }
       >('refundMemberPayment')
       return (await fn(vars)).data

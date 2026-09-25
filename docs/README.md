@@ -131,6 +131,7 @@ carried by `status:`, not by which folder a file sits in.
 - [**Mobile scan 2026-09**](./mobile-roadmap-2026-09.md) — true as of a date
 - [**Offerings review 2026-09**](./offerings-model-review-2026-09.md) — true as of a date
 - [**Ops analysis 2026-08**](./launch/analysis-2026-08-25.md) — true as of a date
+- [**Payments e2e review 2026-09**](./launch/payments-e2e-2026-09.md) — true as of a date
 - [**Prod canary 2026-08**](./launch/canary-2026-08-fixes.md) — true as of a date
 - [**Scalability 2026-09**](./scalability-2026-09.md) — true as of a date
 - [**Security audit 2026-07**](./security-audit-2026-07.md) — true as of a date

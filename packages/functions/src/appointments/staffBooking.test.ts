@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { HttpsError } from 'firebase-functions/v2/https'
-import { resolveStaffBookingPlan } from './staffBooking'
+import { PAYMENT_LINK_EXPIRY_SECONDS, resolveStaffBookingPlan } from './staffBooking'
+import { STRIPE_MAX_CHECKOUT_EXPIRY_MINUTES } from '../connect/checkout'
 
 // Unit tests for the staff "phone booking" settlement-rail decision — pure,
 // no Firestore. See createStaffAppointment's module doc comment for the four
@@ -75,5 +76,18 @@ describe('resolveStaffBookingPlan', () => {
         }),
       (err: unknown) => err instanceof HttpsError && err.code === 'invalid-argument',
     )
+  })
+})
+
+describe('the staff payment link expiry', () => {
+  // Stripe refuses a Checkout Session whose expires_at is 24 hours or more
+  // away. This was a week, and every "Send payment link" failed with "Failed to
+  // create the payment link" (found by the payments e2e run, 2026-09-25).
+  it('stays strictly inside the 24-hour limit Stripe sets', () => {
+    assert.ok(PAYMENT_LINK_EXPIRY_SECONDS < STRIPE_MAX_CHECKOUT_EXPIRY_MINUTES * 60)
+  })
+
+  it('still gives the client most of a day to pay', () => {
+    assert.ok(PAYMENT_LINK_EXPIRY_SECONDS >= 23 * 60 * 60)
   })
 })

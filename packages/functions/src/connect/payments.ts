@@ -1401,6 +1401,40 @@ export const resumeMemberSubscription = onCall(async (request) => {
 // a manager reassigns a contact's plan and chooses to STOP their current billing (the
 // manual-assign "stop current" path). Idempotent-ish: cancelling an already-cancelled
 // sub throws, which we surface as 'internal'.
+/**
+ * End a member's Stripe subscription NOW, on the studio's connected account, and
+ * mirror the ending onto `member_subscriptions` so the plan drops off the
+ * contact before the webhook confirms it (onMemberSubscriptionWrite recomputes
+ * the rollup; the `customer.subscription.deleted` event writes the rest).
+ *
+ * The one place a member subscription is cancelled from Linyup: the staff
+ * action below, and a full refund of a membership payment (connect/refunds.ts).
+ * A subscription Stripe already ended answers `already_ended` rather than
+ * failing, so a refund of an old payment never trips over it.
+ */
+export async function cancelConnectSubscriptionNow(params: {
+  teamId: string
+  accountId: string
+  subscriptionId: string
+}): Promise<'cancelled' | 'already_ended'> {
+  const { teamId, accountId, subscriptionId } = params
+  const stripe = await getConnectStripe()
+  const current = await stripe.subscriptions.retrieve(subscriptionId, undefined, { stripeAccount: accountId })
+  const outcome =
+    current.status === 'canceled' || current.status === 'incomplete_expired' ? 'already_ended' : 'cancelled'
+  if (outcome === 'cancelled') {
+    await stripe.subscriptions.cancel(subscriptionId, undefined, { stripeAccount: accountId })
+  }
+  await admin
+    .firestore()
+    .collection(TEAMS_COLLECTION)
+    .doc(teamId)
+    .collection(MEMBER_SUBSCRIPTIONS_SUBCOLLECTION)
+    .doc(subscriptionId)
+    .set({ status: 'canceled', updated_at: FieldValue.serverTimestamp() }, { merge: true })
+  return outcome
+}
+
 export const cancelMemberSubscription = onCall(async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'Authentication required')
   const { teamId, subscriptionId } = (request.data ?? {}) as {
@@ -1414,23 +1448,12 @@ export const cancelMemberSubscription = onCall(async (request) => {
   const team = await loadEnabledTeam(teamId)
   const { accountId } = requireChargeableAccount(team)
 
-  const stripe = await getConnectStripe()
   try {
-    await stripe.subscriptions.cancel(subscriptionId, undefined, { stripeAccount: accountId })
+    await cancelConnectSubscriptionNow({ teamId, accountId, subscriptionId })
   } catch (err) {
     console.error('[connect] cancelMemberSubscription failed:', err)
     throw new HttpsError('internal', 'Failed to cancel the subscription')
   }
-
-  // Optimistic mirror → onMemberSubscriptionWrite recomputes the rollup + drops it from
-  // active_subscriptions immediately (the webhook confirms shortly after).
-  await admin
-    .firestore()
-    .collection(TEAMS_COLLECTION)
-    .doc(teamId)
-    .collection(MEMBER_SUBSCRIPTIONS_SUBCOLLECTION)
-    .doc(subscriptionId)
-    .set({ status: 'canceled', updated_at: FieldValue.serverTimestamp() }, { merge: true })
 
   return { ok: true, canceled: true }
 })

@@ -582,6 +582,13 @@ function cmdInit(flags) {
     },
     { create: true }
   )
+  // Every Stripe return URL the functions build from HOSTING_URL (SaaS plan
+  // checkout, the billing portal, emailed links) lands on this slot's web app,
+  // not slot 0's. Left at the template's :3000, a worktree's plan checkout pays
+  // and then returns the browser to whichever checkout owns :3000.
+  writeEnvBlock(join(ROOT, 'packages/functions/.env.local'), slot, {
+    HOSTING_URL: `http://localhost:${portFor('web', slot)}`,
+  })
 
   console.log('')
   console.log('  start this slot with:')

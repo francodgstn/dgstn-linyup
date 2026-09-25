@@ -2860,7 +2860,14 @@
     "trialEnds": "Il periodo di prova termina il {date}",
     "trialStatusBadge": "Prova",
     "updatePayment": "Aggiorna metodo di pagamento",
-    "updatingPayment": "Apertura…"
+    "updatingPayment": "Apertura…",
+    "managedByOrgTitle": "La fatturazione è gestita dalla tua organizzazione",
+    "managedByOrgBody": "Il tuo piano è gestito da <strong>{org}</strong>. Per la fatturazione o per cambiare piano, contatta l'amministrazione della tua organizzazione.",
+    "planHeading": "Piano {plan}",
+    "status_active": "Attivo",
+    "status_trial": "Prova",
+    "status_past_due": "Scaduto",
+    "status_cancelled": "Annullato"
   },
   "SaasBilling": {
     "cancelSuccess": "Abbonamento annullato. Mantieni l'accesso fino alla fine del periodo di fatturazione in corso.",
@@ -3536,7 +3543,8 @@
     "compedBadge": "Non fatturato",
     "compedFree": "Gratuito",
     "compedNote": "Linyup non addebita nulla a questa organizzazione. Non c'è alcun abbonamento né fattura da saldare.",
-    "perMonthSuffix": "/mese"
+    "perMonthSuffix": "/mese",
+    "talkToUs": "Contattaci"
   },
   "OrgSettings": {
     "title": "Impostazioni",
@@ -4949,7 +4957,7 @@
     "refundDifferentAmount": "Rimborsa un importo diverso",
     "refundAmountLabel": "Importo del rimborso",
     "refundAmountMax": "Al massimo {amount}",
-    "refundReversesSubscription": "Questo riprende anche ciò che il pagamento aveva dato: l’abbonamento che ha attivato e le lezioni non utilizzate. Ciò che ha pagato un pagamento più recente resta intatto.",
+    "refundReversesSubscription": "Questo riprende anche ciò che il pagamento aveva dato: l’abbonamento che ha attivato e le lezioni non utilizzate. Un abbonamento fatturato tramite Stripe viene disdetto subito e non si rinnova.",
     "refundReversesCourse": "Questo rimuove anche il corso dallo spazio di {name}.",
     "refundConsumedTitle": "Una parte di questo pacchetto è già stata usata",
     "refundConsumedWhat": "{name} ha usato {used} delle {granted} lezioni di questo pacchetto.",
@@ -5039,7 +5047,9 @@
     "selectCourseBlock": "Quale corso",
     "planLinkExact": "Il piano pagato con questo pagamento. Apre la sua scheda.",
     "planLinkByType": "Abbinato per tipo di piano: questo pagamento indica il suo piano, non l'abbonamento pagato. Apre la scheda.",
-    "planLinkFallback": "Piano"
+    "planLinkFallback": "Piano",
+    "refundSubscriptionCancelled": "Rimborsato. L’abbonamento è disdetto e non verrà più addebitato.",
+    "refundSubscriptionCancelFailed": "Il denaro è stato rimborsato, ma l’abbonamento non è stato disdetto e potrebbe essere addebitato di nuovo. Disdicilo dal profilo di {name}."
   },
   "PaymentErrors": {
     "setupIncomplete": "La configurazione del conto di pagamento non è ancora completata, quindi l'operazione non è riuscita. Completare la configurazione in Impostazioni → Pagamenti.",
@@ -5855,7 +5865,9 @@
     "coursesJoinWaitlist": "Avvisami se si libera un posto",
     "chooseCategorySubtitle": "Cosa desideri prenotare?",
     "choosePlaceSubtitle": "Scegli dove vuoi venire.",
-    "coursesCurriculum": "Programma"
+    "coursesCurriculum": "Programma",
+    "errorDropInSignedUpOnly": "Questo corso è riservato a chi è registrato presso lo studio. Accedi con l'email della tua registrazione per pagarlo.",
+    "dropInSubtitleSignIn": "Sei registrato/a da noi? Accedi e paga {price} per questa lezione"
   },
   "PublicTrialBooking": {
     "titleBookTrialClass": "Prenota una lezione di prova",

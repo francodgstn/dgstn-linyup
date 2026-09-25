@@ -358,7 +358,7 @@ export function EntryTemplatesSection({ teamId, isOwner }: { teamId: string; isO
 
       {/* Editor dialog */}
       <Dialog open={!!editor} onOpenChange={(open) => !open && setEditor(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{editor?.id ? t('editTemplate') : t('newTemplate')}</DialogTitle>
           </DialogHeader>
@@ -512,7 +512,7 @@ export function EntryTemplatesSection({ teamId, isOwner }: { teamId: string; isO
 
       {/* Use dialog */}
       <Dialog open={!!useTarget} onOpenChange={(open) => !open && setUseTarget(null)}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>{useTarget?.name}</DialogTitle>
           </DialogHeader>
