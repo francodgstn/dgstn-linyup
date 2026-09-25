@@ -27,7 +27,7 @@ export const ORG_AFFILIATION_STATUSES_SUBCOLLECTION = 'affiliation_statuses'
 // NO 'guest'. Not belonging is the ABSENCE of an affiliation row, never a status
 // — see the long note on the shared constant this mirrors. The seeders' own
 // `status: 'guest'` fixture label is a different thing: it is an INPUT meaning
-// "give this persona no affiliation", and each seeder already honours it that
+// "give this persona no affiliation", and each seeder already honors it that
 // way.
 export const DEFAULT_ORG_AFFILIATION_STATUSES = [
   {
@@ -43,7 +43,7 @@ export const DEFAULT_ORG_AFFILIATION_STATUSES = [
   {
     id: 'under_review',
     label: 'Under review',
-    description: 'Documents are being reviewed by the organisation.',
+    description: 'Documents are being reviewed by the organization.',
     color: 'blue',
     order: 1,
     isBuiltIn: true,
@@ -63,7 +63,7 @@ export const DEFAULT_ORG_AFFILIATION_STATUSES = [
   {
     id: 'active',
     label: 'Active',
-    description: 'Valid membership, recognised by the federation.',
+    description: 'Valid membership, recognized by the federation.',
     color: 'green',
     order: 3,
     isBuiltIn: true,
@@ -108,15 +108,15 @@ export interface SeedAffiliationType {
 }
 
 /**
- * Org-level affiliation types for a team that belongs to an organisation:
- * a federation licence + a club membership, both issued by the org.
+ * Org-level affiliation types for a team that belongs to an organization:
+ * a federation license + a club membership, both issued by the org.
  */
 export function orgAffiliationTypes(orgId: string): SeedAffiliationType[] {
   return [
     {
       id: 'federation_licence',
       key: 'federation_licence',
-      label: 'Federation licence',
+      label: 'Federation license',
       default_issuer: 'org',
       org_id: orgId,
       default_validity_months: 12,
@@ -170,7 +170,7 @@ export interface BuildAffiliationOpts {
    * DEFAULTS TO TRUE, and that is safe only because every seeder writes
    * `archived_at: null` and `deleted_at: null` on every contact it creates: no
    * seeded persona has ever left. A seeder that starts creating archived
-   * personas MUST pass this, or the organisation's status breakdown counts
+   * personas MUST pass this, or the organization's status breakdown counts
    * people who are gone — the exact defect #249 fixed.
    */
   contactLive?: boolean
@@ -192,7 +192,7 @@ export function buildAffiliationDoc(opts: BuildAffiliationOpts): Record<string, 
     issuer,
     status_id: statusId,
     active: statusCountsAsActive(statusId),
-    // Denormalised liveness — the organisation's status breakdown counts these
+    // Denormalised liveness — the organization's status breakdown counts these
     // rows through a collection group, which cannot reach the parent contact to
     // see `archived_at`. See `Affiliation.contact_live` in shared. Writing it
     // HERE is why no backfill exists: every seeded dataset is reproducible, so

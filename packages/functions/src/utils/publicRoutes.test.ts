@@ -224,7 +224,7 @@ describe('emailed + printed links stay byte-identical', () => {
   const ORIGIN = 'https://app.linyup.com'
   const slug = 'acme'
 
-  it('booking cancelled → rebook link (booking/index.ts)', () => {
+  it('booking canceled → rebook link (booking/index.ts)', () => {
     const activityId = 'act1'
     assert.equal(
       publicUrl(ORIGIN, slug, 'booking', { activity: activityId }),

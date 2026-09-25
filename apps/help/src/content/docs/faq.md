@@ -11,7 +11,7 @@ Alex sells a Beginners plan that should cover exactly two class types. In Linyup
 
 ## What's the difference between an activity and a session?
 
-Alex offers _Judo Fundamentals_ once: that is the activity, the template. The calendar then holds many sessions of it, such as Monday 6 pm and Wednesday 7 pm, week after week. When Alex changes the activity's description or access rule, every future session follows. Cancelling one rainy Monday touches only that single session.
+Alex offers _Judo Fundamentals_ once: that is the activity, the template. The calendar then holds many sessions of it, such as Monday 6 pm and Wednesday 7 pm, week after week. When Alex changes the activity's description or access rule, every future session follows. Canceling one rainy Monday touches only that single session.
 
 ## How do trial visitors end up in my contact list?
 

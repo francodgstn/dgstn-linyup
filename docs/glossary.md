@@ -13,8 +13,8 @@ Short definitions, each with the page that owns the details.
 
 - **Team**: one studio or coach, and the tenant boundary. Almost every document
   carries a `teamId`.
-- **Organisation**: a group of member studios, such as a federation or a chain.
-  Organisations have their own navigation scope and see only a limited slice of
+- **Organization**: a group of member studios, such as a federation or a chain.
+  Organizations have their own navigation scope and see only a limited slice of
   their members' people. See [Member visibility](./org-contact-visibility.md).
 - **Staff / team member**: someone who signs in to the dashboard, with a role
   (`owner`, `manager`, …). Not a contact.

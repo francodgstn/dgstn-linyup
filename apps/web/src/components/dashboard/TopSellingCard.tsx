@@ -119,7 +119,7 @@ export function TopSellingCard({
   trendsWeeks,
 }: {
   teamId: string | null
-  /** The shelf's window, so this card covers the same period as its neighbours. */
+  /** The shelf's window, so this card covers the same period as its neighbors. */
   trendsWeeks: number
 }) {
   const t = useTranslations('TopSelling')

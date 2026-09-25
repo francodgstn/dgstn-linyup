@@ -11,7 +11,7 @@ import { collection, deleteDoc, doc, getDoc, getDocs, setDoc, updateDoc } from '
 // Security rules for course blocks (types/courseBlock.ts).
 //
 // A course carries CAPACITY, `places_taken` is an absolute counter written only
-// from a transaction that read the enrolments beside it, and, from the sale
+// from a transaction that read the enrollments beside it, and, from the sale
 // stage, a price. So unlike the session series it owns, which any team member
 // may write directly, every client write here is denied and the studio's own
 // edits go through callables that check `schedule.manage`.
@@ -21,7 +21,7 @@ import { collection, deleteDoc, doc, getDoc, getDocs, setDoc, updateDoc } from '
 // leaving the asymmetry to be rediscovered.
 //
 // EVERY READ IS TESTED AS A LIST AS WELL AS A GET, and that is not belt and
-// braces. The first version of these rules authorised the subcollections with
+// braces. The first version of these rules authorized the subcollections with
 // `belongsToUserTeam(resource)`, which reads `resource.data.teamId`. On a get
 // that is the document in hand; on a LIST there is no document in hand, the
 // property access raises, and the whole query is denied, on an empty
@@ -108,7 +108,7 @@ describe('firestore.rules, course blocks', function () {
 
   it('a team owner CANNOT move the places counter', async () => {
     // The one that matters: `places_taken` is written only from a transaction
-    // that read the enrolments in the same read set. A client that could set it
+    // that read the enrollments in the same read set. A client that could set it
     // could sell a tenth place on a nine-place course.
     await assertFails(updateDoc(doc(ownerDb(), 'course_blocks', BLOCK), { places_taken: 0 }))
   })
@@ -118,7 +118,7 @@ describe('firestore.rules, course blocks', function () {
     await assertFails(deleteDoc(doc(ownerDb(), 'course_blocks', BLOCK)))
   })
 
-  it('a team owner CAN LIST the enrolments, which is what the roster does', async () => {
+  it('a team owner CAN LIST the enrollments, which is what the roster does', async () => {
     // THE ONE THAT WAS BROKEN. A get is not evidence that a list is allowed:
     // see the header. This is the assertion the roster panel's query actually
     // makes.
@@ -137,12 +137,12 @@ describe('firestore.rules, course blocks', function () {
     )
   })
 
-  it('a non-member CANNOT list the enrolments', async () => {
+  it('a non-member CANNOT list the enrollments', async () => {
     await assertFails(getDocs(collection(outsiderDb(), 'course_blocks', BLOCK, 'enrolments')))
   })
 
-  it('a team owner CAN read an enrolment but CANNOT write one', async () => {
-    // An enrolment IS the place. Writing one from a client is taking a place
+  it('a team owner CAN read an enrollment but CANNOT write one', async () => {
+    // An enrollment IS the place. Writing one from a client is taking a place
     // without anything having counted it.
     await assertSucceeds(getDoc(doc(ownerDb(), 'course_blocks', BLOCK, 'enrolments', CONTACT)))
     await assertFails(
@@ -157,7 +157,7 @@ describe('firestore.rules, course blocks', function () {
     await assertFails(deleteDoc(doc(ownerDb(), 'course_blocks', BLOCK, 'enrolments', CONTACT)))
   })
 
-  it('a non-member CANNOT read an enrolment', async () => {
+  it('a non-member CANNOT read an enrollment', async () => {
     await assertFails(getDoc(doc(outsiderDb(), 'course_blocks', BLOCK, 'enrolments', CONTACT)))
   })
 

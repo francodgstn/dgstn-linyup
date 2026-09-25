@@ -18,9 +18,9 @@
  *
  * The callable took `checkinTeamId` from the client and, on an org-scoped
  * event, stamped it VERBATIM. The gate in front of it asked only "are you an
- * org admin of this event's organisation" — and `createOrganization` lets ANY
- * authenticated user mint an organisation that writes them an `org_admin` row.
- * So the full path was: sign up, create your own organisation, create an
+ * org admin of this event's organization" — and `createOrganization` lets ANY
+ * authenticated user mint an organization that writes them an `org_admin` row.
+ * So the full path was: sign up, create your own organization, create an
  * org-scoped event in it, then post a check-in naming ANY team id in the
  * system. The row landed in that tenant, carrying attacker-chosen contact names
  * and an arbitrary payload, and the `checkins` trigger then wrote an
@@ -29,12 +29,12 @@
  *
  * Three rules follow, and each one is load-bearing on its own:
  *
- *   1. THE TARGET TEAM MUST BE IN THE EVENT'S ORGANISATION. Membership is the
+ *   1. THE TARGET TEAM MUST BE IN THE EVENT'S ORGANIZATION. Membership is the
  *      `org_teams/{teamId}` link with `status == 'active'` — the same fact, read
  *      the same way, as the `currentTeamInOrg` rules helper. Without this the
  *      caller picks the tenant.
- *   2. AUTHORITY IS PER ORGANISATION, NOT GLOBAL. Being an org admin somewhere
- *      authorises nothing here; it has to be an org admin OF THIS EVENT'S org.
+ *   2. AUTHORITY IS PER ORGANIZATION, NOT GLOBAL. Being an org admin somewhere
+ *      authorizes nothing here; it has to be an org admin OF THIS EVENT'S org.
  *   3. NEVER STAMP AN ABSENT TEAM. An org event stores `teamId: null`, so the
  *      old fallback wrote `teamId: null` whenever the client omitted the field —
  *      a row no rule can match, readable and deletable by nobody. Refusing is
@@ -79,7 +79,7 @@ export interface CheckinAuthSnapshot {
   }
   /** `checkinTeamId` from the client. Meaningful only on an org event. */
   requestedTeamId?: string | null
-  /** `org_members/{uid}.role` in the EVENT'S organisation, if any. */
+  /** `org_members/{uid}.role` in the EVENT'S organization, if any. */
   orgRole?: string | null
   /**
    * `organizations/{event.orgId}/org_teams/{resolvedTeamId}.status`, or null
@@ -137,12 +137,12 @@ export function decideCheckinAuthorization(s: CheckinAuthSnapshot): CheckinAuthD
   let teamId: string | null
   if (isOrgEvent) {
     // The client names the studio because an org event has none of its own.
-    // It is a REQUEST, and everything below decides whether to honour it.
+    // It is a REQUEST, and everything below decides whether to honor it.
     teamId = cleanId(s.requestedTeamId)
     if (!teamId) {
       return refuse(
         'invalid-argument',
-        'An organisation event needs the studio the contact belongs to.',
+        'An organization event needs the studio the contact belongs to.',
       )
     }
   } else {
@@ -160,23 +160,23 @@ export function decideCheckinAuthorization(s: CheckinAuthSnapshot): CheckinAuthD
     }
   }
 
-  // ── the target team must belong to the event's organisation ─────────────
+  // ── the target team must belong to the event's organization ─────────────
   if (isOrgEvent) {
     const link = s.orgTeamLink
     if (!link || !link.exists) {
-      return refuse('permission-denied', 'That studio is not part of this organisation.')
+      return refuse('permission-denied', 'That studio is not part of this organization.')
     }
     // Absent status reads as active — the same default `currentTeamInOrg` uses.
     const status = link.status ?? 'active'
     if (status !== 'active') {
-      return refuse('permission-denied', 'That studio is no longer part of this organisation.')
+      return refuse('permission-denied', 'That studio is no longer part of this organization.')
     }
   }
 
   // ── authority ───────────────────────────────────────────────────────────
   // Both arms are evaluated against the RESOLVED team, never the requested
   // one, so neither can be used to reach into a studio the caller does not
-  // hold. `orgRole` is the caller's role in THIS event's organisation.
+  // hold. `orgRole` is the caller's role in THIS event's organization.
   const isOrgAdmin = isOrgEvent && s.orgRole === 'org_admin'
   const runsThisTeam = s.teamRole != null && WRITE_ROLES.has(s.teamRole)
 
@@ -184,7 +184,7 @@ export function decideCheckinAuthorization(s: CheckinAuthSnapshot): CheckinAuthD
     return refuse(
       'permission-denied',
       isOrgEvent
-        ? 'Only an organisation admin, or an owner or manager of the studio, can check people in at this event.'
+        ? 'Only an organization admin, or an owner or manager of the studio, can check people in at this event.'
         : 'Only owners and managers can manage check-ins.',
     )
   }
@@ -203,7 +203,7 @@ export function decideCheckinAuthorization(s: CheckinAuthSnapshot): CheckinAuthD
 
   // ── an update may not move a row between tenants ────────────────────────
   // The existing row is found by (event, contact) across the WHOLE collection,
-  // so without this an authorised caller could retarget somebody else's row by
+  // so without this an authorized caller could retarget somebody else's row by
   // naming their own team.
   if (s.existingCheckinTeamId != null && cleanId(s.existingCheckinTeamId) !== teamId) {
     return refuse(

@@ -52,7 +52,7 @@ function localParts(
 /** A local wall-clock time → the UTC instant it names, DST-safe (the guess is
  *  re-read in the zone and corrected by the difference). Same technique as
  *  appointments/index.ts's localTimeToUtc, kept local so this module stays
- *  independent of the appointment scheduler. Day overflow normalises. */
+ *  independent of the appointment scheduler. Day overflow normalizes. */
 function localWallTimeToUtc(
   year: number, month: number, day: number, hour: number, timeZone: string
 ): Date {

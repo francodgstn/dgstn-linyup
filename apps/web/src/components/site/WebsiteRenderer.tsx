@@ -94,7 +94,7 @@ export default function WebsiteRenderer({
   shortenHref?: (href: string) => string
   /**
    * A page of THIS site as a public path — `[]` for home. Absent ⇒ a team
-   * site's (`/public/{slug}/site/…`). An organisation site passes its own
+   * site's (`/public/{slug}/site/…`). An organization site passes its own
    * (`/public/org/{slug}/…`), since its pages sit directly under the org slug.
    */
   siteHref?: (segments: readonly string[]) => string
@@ -365,7 +365,7 @@ export default function WebsiteRenderer({
   const headerIntent = ctaIntent(headerCta)
   const headerBookProps = headerIntent ? bookProps(headerHref, ctx, headerIntent) : null
 
-  /** Plain-navigation fallback, matching the nav links' preview behaviour. */
+  /** Plain-navigation fallback, matching the nav links' preview behavior. */
   const headerLinkProps = { href: preview ? undefined : headerHref, onClick: preview ? inert : undefined }
 
   const socials = (site.socialLinks ?? []).filter((s) => s.url)
@@ -506,7 +506,7 @@ export default function WebsiteRenderer({
                       />
                     </button>
                   )}
-                  {/* SOLID, not `headerBg`. That colour is the bar's own
+                  {/* SOLID, not `headerBg`. That color is the bar's own
                       translucent one, and the panel hangs inside a bar that is
                       already blurred — so the two transparencies stacked and
                       the page showed through the menu. A dropdown is a surface

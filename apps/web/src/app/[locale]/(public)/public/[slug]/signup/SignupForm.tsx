@@ -79,7 +79,7 @@ export default function SignupForm({ slug, from }: Props) {
   const tWaiver = useTranslations('Waiver')
   const locale = useLocale()
   // Where 'back' goes: the surface named by `?from=`, else whatever default the
-  // studio chose (bio-link, website, shop, …). Labelled to match, and resolved
+  // studio chose (bio-link, website, shop, …). Labeled to match, and resolved
   // here rather than by bouncing through the team root's client redirect.
   const backTo = returnHref(team, slug, from)
   const teamName = team.name || ''
@@ -114,7 +114,7 @@ export default function SignupForm({ slug, from }: Props) {
   const [email, setEmail] = useState('')
   const [codeId, setCodeId] = useState('')
   // Retained after a successful verify so completeSignup can re-present the code
-  // (defence in depth: ties completion to knowledge of the code, not just codeId).
+  // (defense in depth: ties completion to knowledge of the code, not just codeId).
   const [verifiedCode, setVerifiedCode] = useState('')
   const [countdown, setCountdown] = useState(0)
   const [error, setError] = useState<string | null>(null)

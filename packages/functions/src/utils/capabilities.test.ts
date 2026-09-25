@@ -50,7 +50,7 @@ describe('capabilities — coach role', () => {
     assert.equal(roleHasCapability('coach', 'members.manage'), false)
   })
 
-  it('honours a team override but never grants owner-only or members.manage', () => {
+  it('honors a team override but never grants owner-only or members.manage', () => {
     const override = resolveRoleCapabilities('coach', [
       'contacts.view',
       'reports.view',

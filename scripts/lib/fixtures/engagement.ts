@@ -80,7 +80,7 @@ export async function seedContactNotes(teamId: string, uid: string, limit = 4): 
 // ── A DYNAMIC contact group ───────────────────────────────────────────────────
 
 /**
- * One dynamic group, whose membership is a RULE and is never materialised.
+ * One dynamic group, whose membership is a RULE and is never materialized.
  *
  * The lead seeder writes manual groups; nothing anywhere wrote a dynamic one, so
  * the half of the feature that exists BECAUSE of age — the dimension that
@@ -88,7 +88,7 @@ export async function seedContactNotes(teamId: string, uid: string, limit = 4): 
  * wrong — had no coverage.
  *
  * Note what is NOT written: no `Contact.group_ids` entry for anybody. A group is
- * manual OR dynamic, the two membership sources are disjoint, and materialising
+ * manual OR dynamic, the two membership sources are disjoint, and materializing
  * a dynamic group's membership is the one thing that would make it wrong.
  */
 export async function seedDynamicContactGroup(teamId: string, uid: string): Promise<void> {

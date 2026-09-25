@@ -102,7 +102,7 @@ export interface AppointmentBookingContext {
  *  rule is resolved here any more — appointments dropped the access gate;
  *  money (the activity's durations + memberBenefit) is the only gate. Shared
  *  by the free path, the paid checkout, and (indirectly) the webhook's
- *  re-acquire, which rebuilds from an already-materialised session instead. */
+ *  re-acquire, which rebuilds from an already-materialized session instead. */
 export async function loadAppointmentBookingContext(params: {
   teamId: string
   providerId: string
@@ -149,7 +149,7 @@ export async function loadAppointmentBookingContext(params: {
   }
 
   // Provider time-off (availability_exceptions) OVERRIDES the templates — refuse a
-  // start inside one (defence-in-depth; listAvailability already hides these).
+  // start inside one (defense-in-depth; listAvailability already hides these).
   const exSnap = await db
     .collection(AVAILABILITY_EXCEPTIONS_COLLECTION)
     .where('teamId', '==', teamId)
@@ -382,7 +382,7 @@ export async function resolveOrCreateAppointmentContact(params: {
 export interface AppointmentSlotTxParams {
   sessionRef: FirebaseFirestore.DocumentReference
   /** Full session doc — this is a REPLACE (tx.set, no merge), matching the
-   *  materialise-lazily model: a reused doc id is fully rewritten, not patched. */
+   *  materialize-lazily model: a reused doc id is fully rewritten, not patched. */
   sessionDoc: Record<string, unknown>
   /** Booking subdoc id under sessionRef.collection('bookings') — the contactId. */
   bookingDocId: string
@@ -472,7 +472,7 @@ export async function runAppointmentSlotTransaction(params: AppointmentSlotTxPar
       // SITE 5 OF THE APPOINTMENT-HOLD RELEASE CENSUS (appointments/holdRelease.ts).
       // It deletes another attempt's booking without a `booking_token` check, and
       // the guard that makes that sound is the `cancelled || expiredHold`
-      // condition right here: a cancelled session and a lapsed hold are owned by
+      // condition right here: a canceled session and a lapsed hold are owned by
       // nobody. The `ownsLiveHold` branch — the retry path — deliberately does NOT
       // reclaim, because that booking IS ours and is rewritten instead.
       if (cancelled || expiredHold) {

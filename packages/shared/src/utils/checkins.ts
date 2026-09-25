@@ -28,7 +28,7 @@ export function isCheckinCompleted(
       // pending forever.
       //
       // An empty or absent map still means nobody was examined, which the
-      // "admit now, finalise later" door depends on: it asks this with
+      // "admit now, finalize later" door depends on: it asks this with
       // `checkinData = {}` to decide whether there is a second step at all.
       const disciplines = checkinData?.disciplines as Record<string, unknown> | undefined
       if (!disciplines) return false

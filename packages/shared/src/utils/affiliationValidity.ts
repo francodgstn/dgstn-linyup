@@ -77,7 +77,7 @@ function addMonths(base: Date, months: number): Date {
  * the same in both modes — it is only what "one term" MEANS that differs.
  *
  * `monthsOverride` is an explicit caller-supplied term (the renew dialog lets a
- * manager type one). It is honoured in `months` mode only: in `fixed_date` mode
+ * manager type one). It is honored in `months` mode only: in `fixed_date` mode
  * the whole point is that nobody has their own clock.
  */
 export function resolveAffiliationValidUntil(opts: {

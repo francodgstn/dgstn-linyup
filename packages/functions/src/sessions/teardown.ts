@@ -5,7 +5,7 @@
 // a small scope) and `runSeriesTeardownBatch` (the Cloud Task worker, for a
 // large one). They share this module precisely so "delete three classes" and
 // "delete two hundred" cannot drift into two different definitions of what
-// cancelling a class means.
+// canceling a class means.
 //
 // The concurrency contract — why a job may run while the calendar is live — is
 // written down ONCE, on `SeriesTeardownJob` in
@@ -102,12 +102,12 @@ export function buildCancellationEmail(params: {
   const rebookLine = params.rebookUrl
     ? `<p style="text-align:center;margin-top:24px;">${ctaButton(params.rebookUrl, 'Book another session')}</p>`
     : ''
-  const subject = `Session Cancelled – ${params.activityName}`
+  const subject = `Session Canceled – ${params.activityName}`
   const { html } = buildEmailTemplate({
-    title: 'Session cancelled',
-    body: `<p>Hi ${params.firstname},</p><p>Your session <strong>${params.activityName}</strong> on ${dateStr} at ${timeStr} has been cancelled by ${params.teamName}.</p><p>We apologise for the inconvenience.</p>${rebookLine}`,
+    title: 'Session canceled',
+    body: `<p>Hi ${params.firstname},</p><p>Your session <strong>${params.activityName}</strong> on ${dateStr} at ${timeStr} has been canceled by ${params.teamName}.</p><p>We apologize for the inconvenience.</p>${rebookLine}`,
   })
-  const text = `Hi ${params.firstname},\n\nYour session ${params.activityName} on ${dateStr} at ${timeStr} has been cancelled by ${params.teamName}.\n${params.rebookUrl ? `Book another session: ${params.rebookUrl}\n` : ''}We apologise for the inconvenience.`
+  const text = `Hi ${params.firstname},\n\nYour session ${params.activityName} on ${dateStr} at ${timeStr} has been canceled by ${params.teamName}.\n${params.rebookUrl ? `Book another session: ${params.rebookUrl}\n` : ''}We apologize for the inconvenience.`
   return { subject, html, text }
 }
 
@@ -154,7 +154,7 @@ export async function cancelSingleSession(
     // The exception pair IS the cancellation record for an occurrence of a
     // series (status and allowBooking are deliberately left alone — see
     // isSessionCancelled). Unguarded on purpose: if this write fails the class
-    // is NOT cancelled, and mailing everyone that it was would be the worse
+    // is NOT canceled, and mailing everyone that it was would be the worse
     // outcome.
     await sessionRef.update({
       isException: true,
@@ -187,7 +187,7 @@ export async function cancelSingleSession(
 
   // ── THE COUNTER IS A FACT ABOUT THE BOOKING; THE MAIL IS A MESSAGE ABOUT IT ──
   // `pending_bookings_count` used to be decremented INSIDE the notification loop
-  // below, so a studio that switched `session_cancellation` off cancelled classes
+  // below, so a studio that switched `session_cancellation` off canceled classes
   // without anybody's counter moving — and the contacts list went on saying those
   // people needed chasing for a session that no longer exists. (UX-76 then made
   // paid bookings notify regardless, which left free and paid decrementing
@@ -198,7 +198,7 @@ export async function cancelSingleSession(
   // WHICH documents own a count — decided by the ledger's existing seams, never a
   // fresh expression of the question (booking/index.ts, shape table in
   // docs/waitlist.md, fixtures in booking/pendingBookingsCount.test.ts):
-  //  • a DISPOSED booking (cancelled / no_show / rebooked) owns none — whoever
+  //  • a DISPOSED booking (canceled / no_show / rebooked) owns none — whoever
   //    disposed of it already gave the count back, and these documents are still
   //    sitting in the subcollection this read just returned.
   //  • a PLAIN drop-in payment hold (`payment_status: 'required'` without
@@ -387,7 +387,7 @@ export async function cancelSingleSession(
  * path only adds an ordering (already implied by the inequality) and a limit.
  *
  * Exceptions are excluded because an occurrence the studio already modified or
- * cancelled by hand is no longer the series speaking for it.
+ * canceled by hand is no longer the series speaking for it.
  */
 export function teardownScopeQuery(
   db: Firestore,
@@ -423,7 +423,7 @@ export type ClaimOutcome = 'claimed' | 'taken' | 'gone'
  * This is NOT what makes the job idempotent — deleting a session that is already
  * gone is a no-op all by itself. It is what stops two workers doing the one part
  * of a teardown that CANNOT be taken back: mailing a roster "your class is
- * cancelled" twice.
+ * canceled" twice.
  *
  * The claim carries `at` so it can expire. A worker that dies mid-session would
  * otherwise leave a document nothing may ever touch again — and a session that
@@ -470,7 +470,7 @@ export async function claimSessionForTeardown(
  *
  * `status: 'deleting'` is load-bearing and deliberately reuses a field the daily
  * roller already filters on (`where('status','==','active')`), so the generator
- * stops re-materialising occurrences behind the job with no change to
+ * stops re-materializing occurrences behind the job with no change to
  * rollSessionSeries at all. `teardown_job_id` is the explicit half the editing
  * callables refuse on.
  */

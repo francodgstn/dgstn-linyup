@@ -66,7 +66,7 @@ export const onInstalledPluginStatusChange = onDocumentWritten(
       // it, so deleting it takes a course away from the contact who BOUGHT it
       // (the `purchases/{contactId}` entitlement survives — the surface does
       // not), and nothing rewrites a mirror on reinstall (UX-16). On an
-      // ORGANISATION lapse that would punish a member for a third party's
+      // ORGANIZATION lapse that would punish a member for a third party's
       // unpaid bill, so `downgradeTeamToFree` stamps its disposition onto this
       // very document and this arm obeys it. Without this check, sparing the
       // mirrors over there is silently undone here a second later.

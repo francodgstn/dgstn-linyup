@@ -500,7 +500,7 @@ describe('callableRouter — the callable protocol survives routing, end to end'
   it('a member keeps its OWN enforceAppCheck', async () => {
     const refused = await post(`${routed.base}/rpcMember/guarded`, {})
     assert.equal(refused.status, 401)
-    // …and it is the member's, not the router's: its neighbour answers the same call.
+    // …and it is the member's, not the router's: its neighbor answers the same call.
     assert.equal((await post(`${routed.base}/rpcMember/echo`, {})).status, 200)
   })
 

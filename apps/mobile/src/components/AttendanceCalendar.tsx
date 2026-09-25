@@ -13,7 +13,7 @@ interface AttendanceCalendarProps {
   teamId?: string;
   initialMonth?: Date;
   contact?: Contact | null;
-  /** Fired after a booking here succeeds or is cancelled, so the screens that
+  /** Fired after a booking here succeeds or is canceled, so the screens that
    *  keep their own copy of the agenda (the dashboard's upcoming classes) can
    *  reload — the calendar reloads itself. Report 7107, M-03: booking on Train
    *  left the dashboard offering Book for the same class. */

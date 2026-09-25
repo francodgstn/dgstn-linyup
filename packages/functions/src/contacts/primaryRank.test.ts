@@ -78,7 +78,7 @@ describe('primaryRank', () => {
   })
 
   it('a numeric STRING is an id, never coerced to a value', () => {
-    // A level labelled "3" would slug to "3"; treating that as the number 3
+    // A level labeled "3" would slug to "3"; treating that as the number 3
     // would silently resolve a different belt.
     assert.strictEqual(primaryRank({ ranks: { belts: '2' } }, [belts]), null)
   })

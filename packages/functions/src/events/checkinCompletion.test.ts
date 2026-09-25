@@ -70,7 +70,7 @@ describe('isCheckinCompleted — exam', () => {
     {
       // The door writes `checkinData: {}` for everyone it admits and asks this
       // to decide whether to promise a second step. Exam must leave one.
-      name: 'the base check-in written by the add dialog leaves an exam to finalise',
+      name: 'the base check-in written by the add dialog leaves an exam to finalize',
       eventType: 'exam',
       checkinData: {},
       expected: false,
@@ -146,7 +146,7 @@ describe('isCheckinCompleted — default arm (categories, then auto-confirm)', (
       // The array must be PRESENT to gate: a fighting-cup check-in that has not
       // been through the form yet carries no categories key, and the type
       // collects nothing else, so it auto-confirms. That is the existing
-      // behaviour, pinned here so the exam fix cannot be read as licence to
+      // behavior, pinned here so the exam fix cannot be read as license to
       // change it.
       name: 'fighting_cup: no categories key at all auto-confirms',
       eventType: 'fighting_cup',
@@ -172,7 +172,7 @@ describe('isCheckinCompleted — default arm (categories, then auto-confirm)', (
       expected: true,
     },
     {
-      // A DELIBERATE NARROWING, recorded here because it is a behaviour change.
+      // A DELIBERATE NARROWING, recorded here because it is a behavior change.
       //
       // The rule used to live in core's `default` branch as a bare
       // `Array.isArray(checkinData.categories)`, so it applied to ANY event type

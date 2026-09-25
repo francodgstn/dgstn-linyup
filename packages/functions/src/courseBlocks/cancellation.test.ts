@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { buildCourseCancellationEmail, refundableRows, type PaymentRowLike } from './cancel'
 
-// CANCELLING A WHOLE COURSE.
+// CANCELING A WHOLE COURSE.
 //
 // Two things are pinned here, and they fail in opposite directions.
 //
@@ -14,7 +14,7 @@ import { buildCourseCancellationEmail, refundableRows, type PaymentRowLike } fro
 // down sends the studio round a loop it cannot finish.
 //
 // The ORDERING inside the cancellation is pinned STRUCTURALLY, against the
-// source, because its defect has no failing state a behaviour test could
+// source, because its defect has no failing state a behavior test could
 // sample: `notify: false` reaching only one of the two teardown paths means the
 // members are mailed a hundred and seventeen times instead of once, and only on
 // courses long enough to take the background path. That is a shape, not a
@@ -27,7 +27,7 @@ const row = (id: string, fields: Record<string, unknown>): PaymentRowLike => ({
   get: (f: string) => fields[f],
 })
 
-describe('the refund list a cancelled course hands the studio', () => {
+describe('the refund list a canceled course hands the studio', () => {
   it('offers a succeeded payment, in minor units, with whoever paid it', () => {
     const rows = refundableRows([
       row('pi_1', {
@@ -104,8 +104,8 @@ describe('the refund list a cancelled course hands the studio', () => {
   })
 })
 
-describe('the one mail a cancelled course sends', () => {
-  it('names the course, not the lesson, and says who cancelled it', () => {
+describe('the one mail a canceled course sends', () => {
+  it('names the course, not the lesson, and says who canceled it', () => {
     const mail = buildCourseCancellationEmail({
       firstname: 'Lena',
       teamName: 'Swimatic',
@@ -146,7 +146,7 @@ describe('the one mail a cancelled course sends', () => {
 })
 
 describe('the ordering, asserted against the source', () => {
-  // CRLF-normalised: a Windows checkout stores these files with \r\n, and a bare
+  // CRLF-normalized: a Windows checkout stores these files with \r\n, and a bare
   // newline anchor would pass in CI and fail on a laptop.
   const read = (rel: string) =>
     readFileSync(join(__dirname, '..', rel), 'utf8').replace(/\r\n/g, '\n')
@@ -190,7 +190,7 @@ describe('the ordering, asserted against the source', () => {
   it('keeps the counter write above the suppression, and the mail below it', () => {
     // The suppression is allowed to remove NEWS, never FACTS. Every
     // `pending_bookings_count` decrement, the waitlist close and the deletes all
-    // still happen when a course is cancelled; only the message is somebody
+    // still happen when a course is canceled; only the message is somebody
     // else's to send. Pinned by position, since a suppression that drifted above
     // the counter loop would silently strand every member's counter.
     const counterIdx = teardown.indexOf('pending_bookings_count: FieldValue.increment(-1)')

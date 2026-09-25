@@ -1,4 +1,4 @@
-// The ONE normalisation for a REDEEMABLE CODE — a string a person types in to
+// The ONE normalization for a REDEEMABLE CODE — a string a person types in to
 // redeem something. Two instruments use it today and both key their Firestore
 // DOCUMENT on the result:
 //   • gift cards  — teams/{teamId}/gift_cards/{code}      (stored value, a TENDER)

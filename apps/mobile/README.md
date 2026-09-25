@@ -106,8 +106,8 @@ presets and dark-mode rule as the studio's public site, `@linyup/shared`
 `themePreset.ts`) and the studio logo, all read off the `public_profile` mirror
 the app loads anyway. `src/utils/tenantTheme.ts` derives every MD3 primary role
 from the one accent (pure, WCAG-checked in tests); `TenantThemeContext` holds
-and persists the brand (a cold start opens in the studio's colours) and clears
-it with the session. Colours that mean something regardless of brand — status,
+and persists the brand (a cold start opens in the studio's colors) and clears
+it with the session. Colors that mean something regardless of brand — status,
 category, a third-party mark — come from `theme.semantic` (`useAppTheme`), never
 from a hex in a component. An org-branded *build* is a different thing
 (`app.config.js` → `APP_VARIANT`, one entry; roadmap §5).

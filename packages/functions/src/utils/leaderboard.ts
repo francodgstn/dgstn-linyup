@@ -32,7 +32,7 @@ export async function updateTeamLeaderboard(teamId: string, month: string): Prom
       contact_id: doc.id,
       firstname: (data.firstname as string) || '',
       lastname: (data.lastname as string) || '',
-      // Denormalized so the student app can anonymise not-yet-joined (trial) members.
+      // Denormalized so the student app can anonymize not-yet-joined (trial) members.
       acquisition_stage: (data.acquisition_stage as string) || '',
       score: (data.current_month_score as number) || 0,
       streak: (data.current_streak as number) || 0,

@@ -9,9 +9,9 @@
  *
  * ── THE VALUES, IN THE ORDER THEY ARE DECIDED ────────────────────────────────
  *
- *   deleted      in the bin, or already anonymised. Nothing reads them.
+ *   deleted      in the bin, or already anonymized. Nothing reads them.
  *   archived     the person left; the record is kept for history.
- *   provisional  a lead that has not materialised yet (shop registration
+ *   provisional  a lead that has not materialized yet (shop registration
  *                awaiting payment, unattended trial booking) — the Leads tab,
  *                exempt from the contact cap, shop ones purged unpaid.
  *   external     trains here without being on the roster — a partner-app

@@ -243,7 +243,7 @@ function durationMinutes(doc: admin.firestore.QueryDocumentSnapshot): number {
  * (drop-in / product / course) without buying a card first. It is shaped exactly
  * as the webhook's `mintGiftCard` writes one — the readable code IS the doc id.
  *
- * NOT seeded: `gift_card_issues`. That subcollection is the serialisation point
+ * NOT seeded: `gift_card_issues`. That subcollection is the serialization point
  * for a manager mint — whoever wins the `create()` mints and everyone else reads
  * the code back — so a seeded row would be a claim on a race that never happened.
  */

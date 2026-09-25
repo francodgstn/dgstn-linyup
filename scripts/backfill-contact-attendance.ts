@@ -1,5 +1,5 @@
 /**
- * RECOUNT A CONTACT'S ATTENDANCE SUMMARY FROM THE ROWS IT SUMMARISES.
+ * RECOUNT A CONTACT'S ATTENDANCE SUMMARY FROM THE ROWS IT SUMMARIZES.
  *
  *   pnpm backfill:contact-attendance --target staging --org hmd --dry-run
  *   pnpm backfill:contact-attendance --target staging --org hmd

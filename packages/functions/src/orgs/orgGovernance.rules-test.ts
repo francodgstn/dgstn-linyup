@@ -21,7 +21,7 @@ import { doc, setDoc, updateDoc } from 'firebase/firestore'
 //   1. `organizations/{orgId}` had NO governance guard at all — a bare
 //      `allow update: if hasOrgRole(orgId, 'org_admin')` — while becoming an
 //      org_admin is self-service (`createOrganization` checks only that the
-//      caller is signed in). So anyone could create an organisation and comp it.
+//      caller is signed in). So anyone could create an organization and comp it.
 //
 //   2. `users/{uid}` was writable by its owner with no field restriction, and
 //      `roles` lives on that document. `hasRole()` reads it, `superadmin`
@@ -89,7 +89,7 @@ async function seed() {
 const asOrgAdmin = () => testEnv.authenticatedContext('adminA').firestore()
 const asOwner = () => testEnv.authenticatedContext('ownerA').firestore()
 
-describe('firestore.rules — an organisation cannot comp itself', function () {
+describe('firestore.rules — an organization cannot comp itself', function () {
   this.timeout(30_000)
 
   before(async () => {
@@ -108,7 +108,7 @@ describe('firestore.rules — an organisation cannot comp itself', function () {
     await seed()
   })
 
-  it('an org admin can still edit ordinary organisation details', async () => {
+  it('an org admin can still edit ordinary organization details', async () => {
     await assertSucceeds(
       updateDoc(doc(asOrgAdmin(), 'organizations', ORG), {
         name: 'Renamed',
@@ -117,7 +117,7 @@ describe('firestore.rules — an organisation cannot comp itself', function () {
     )
   })
 
-  it('an org admin CANNOT comp their own organisation', async () => {
+  it('an org admin CANNOT comp their own organization', async () => {
     // The whole point. `flags.comped` exempts the org from the trial sweep, from
     // `lapseOrganization`, from the MRR line — and waives the platform fee at
     // every studio in it.
@@ -126,7 +126,7 @@ describe('firestore.rules — an organisation cannot comp itself', function () {
     )
   })
 
-  it('an org admin CANNOT hide the organisation from platform metrics', async () => {
+  it('an org admin CANNOT hide the organization from platform metrics', async () => {
     await assertFails(
       updateDoc(doc(asOrgAdmin(), 'organizations', ORG), { flags: { internal: true } })
     )
@@ -147,7 +147,7 @@ describe('firestore.rules — an organisation cannot comp itself', function () {
     )
   })
 
-  it('a NEW organisation cannot be created carrying flags', async () => {
+  it('a NEW organization cannot be created carrying flags', async () => {
     // An unguarded create is the same grant, one document earlier.
     await assertFails(
       setDoc(doc(asOrgAdmin(), 'organizations', 'orgNew'), {
@@ -273,7 +273,7 @@ describe('the org governance guard is capable of failing', () => {
       /allow update: if hasOrgRole\(orgId, 'org_admin'\) && tenantGovernanceUnchanged\(\)/.test(
         RULES
       ),
-      'the organisation update rule lost its governance guard'
+      'the organization update rule lost its governance guard'
     )
     assert.ok(
       /request\.resource\.data\.get\('roles', \{\}\) == resource\.data\.get\('roles', \{\}\)/.test(

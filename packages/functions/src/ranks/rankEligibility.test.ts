@@ -87,7 +87,7 @@ describe('duration arithmetic is whole-month and clamps', () => {
 describe('the evaluator distinguishes no-rule from not-eligible', () => {
   const empty: RankProgression = { id: 'test', rules: [] }
 
-  it('a level the organisation set no rule for is NOT_CONFIGURED, never a refusal', () => {
+  it('a level the organization set no rule for is NOT_CONFIGURED, never a refusal', () => {
     const r = rankEligibility({ progression: empty, system: SYSTEM, facts: facts() })
     assert.equal(r.eligibility, 'not_configured')
     assert.equal(r.targetLevel, 'two', 'the next level is read from the scale, by identity')

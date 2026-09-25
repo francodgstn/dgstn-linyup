@@ -19,7 +19,7 @@
 // reaches every other target by — so a redelivered webhook, a second event about
 // the same charge and a later manual assignment of an unassigned gateway payment
 // all converge on one row, and a refund finds it without a query. Staff grants
-// take an auto id or a sanitised idempotency key; the legacy slot's import takes
+// take an auto id or a sanitized idempotency key; the legacy slot's import takes
 // IMPORTED_SLOT_GRANT_ID.
 //
 // ── THE BRIDGE ───────────────────────────────────────────────────────────────

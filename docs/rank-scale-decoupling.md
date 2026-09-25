@@ -86,7 +86,7 @@ The census. Add to this list, never copy it.
   is the one piece of luck in this list.
 
 Dynamic groups deserve a second mention. They are derived lazily and never
-materialised, by design — there is no sync job and nothing to re-run. That is
+materialized, by design — there is no sync job and nothing to re-run. That is
 normally the feature's strength, and here it is the trap: a renumber leaves the
 stored *rule* holding stale numbers, and nothing anywhere recomputes it.
 

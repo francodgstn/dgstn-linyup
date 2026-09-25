@@ -1,11 +1,11 @@
-// The organisation tier, behind one function: creating an org, its member
+// The organization tier, behind one function: creating an org, its member
 // studios (invite, accept, decline, remove, request access), its own members and
 // their invitations, and taking the org website offline
 // (docs/functions-consolidation-plan.md → "Phase 2").
 //
 // SOME MEMBERS ARE CALLED SIGNED OUT, and that is theirs to decide: the
 // invitation pages read `getOrgInvitationDetails` / `getOrgMemberInvitation`
-// before the visitor has an account. The router adds no authorisation and
+// before the visitor has an account. The router adds no authorization and
 // removes none — each member keeps its own check, and a tenant boundary is
 // never the router's to enforce.
 //
@@ -41,7 +41,7 @@ export const rpcOrg = callableRouter(
   'rpcOrg',
   {
     // No member asks for more than the defaults. A router's ceiling is
-    // concurrency × maxInstances for its WHOLE domain; organisations are few.
+    // concurrency × maxInstances for its WHOLE domain; organizations are few.
     cpu: 1,
     concurrency: 40,
   },

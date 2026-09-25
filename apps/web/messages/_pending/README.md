@@ -28,7 +28,7 @@ apps/web/messages/_pending/<lane>.json
 }
 ```
 
-Namespaces may nest to any depth. A **leaf** is recognised by its shape — an
+Namespaces may nest to any depth. A **leaf** is recognized by its shape — an
 object whose keys are locale codes — so no depth needs declaring.
 
 **The four translations of one key live together, deliberately.** A translation

@@ -10,7 +10,7 @@
 //  1. NOBODY WAS TOLD WHAT HAPPENS TO THE CREDIT. `cancelBooking` puts a spent
 //     lesson credit back on the pack, unconditionally — no window, and even if
 //     the pack has expired since. That is a good deal, and every surface kept it
-//     secret; a member who does not know it stays home rather than cancelling,
+//     secret; a member who does not know it stays home rather than canceling,
 //     which costs the studio the seat AND the goodwill. The mirror image matters
 //     just as much: a booking somebody PAID for gets no refund here, and copy
 //     that implies otherwise would be a promise the code does not keep.

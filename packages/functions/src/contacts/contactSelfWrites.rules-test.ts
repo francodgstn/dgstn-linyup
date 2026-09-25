@@ -18,7 +18,7 @@ import { doc, addDoc, collection, setDoc, updateDoc } from 'firebase/firestore'
 // Expo app makes; before this the contacts self-update `hasOnly([...])` list
 // did not carry it, so the write was refused whole (a partial Firestore update
 // is one write, one allow/deny decision — there is no "the fields it does
-// recognise land, the rest are dropped").
+// recognize land, the rest are dropped").
 //
 // A ready exploratory probe of these cases (plus the goals/evaluations arms,
 // covered by their own rules-tests) lives at

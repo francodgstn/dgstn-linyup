@@ -1,10 +1,10 @@
-// ─── Session series → sessions: the ONE materialisation path ─────────────────
+// ─── Session series → sessions: the ONE materialization path ─────────────────
 //
 // Everything that turns a `session_series` doc into `sessions/*` docs goes
 // through here: the `generateRecurringSessions` callable (at creation), the
 // `rollSessionSeries` daily task (the rolling horizon),
 // `updateRecurringSession`'s regeneration branch (after a recurrence edit), and
-// `createCourseBlock` / `updateCourseBlock` (a course's lessons, materialised in
+// `createCourseBlock` / `updateCourseBlock` (a course's lessons, materialized in
 // full from its meeting list rather than rolled).
 //
 // Two properties this module owns, both of which were previously duplicated,
@@ -29,7 +29,7 @@ import { to } from '../utils/async'
 
 export { SESSION_SERIES_COLLECTION, SESSIONS_COLLECTION }
 
-/** How far ahead a series is materialised, in months. The calendar never holds
+/** How far ahead a series is materialized, in months. The calendar never holds
  *  more than this, and — thanks to `rollSessionSeries` — never less. */
 export const SERIES_HORIZON_MONTHS = 6
 /** A series is rolled forward once its coverage reaches inside this window, so
@@ -175,7 +175,7 @@ export async function materializeOccurrences(
   return created
 }
 
-/** The metadata write that follows a successful materialisation. Kept here so
+/** The metadata write that follows a successful materialization. Kept here so
  *  `lastGeneratedUntil` is only ever set to an instant sessions were actually
  *  generated to — a horizon that claims sessions which do not exist makes the
  *  daily roller skip the very series that needs it. */

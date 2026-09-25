@@ -1,5 +1,5 @@
 /**
- * RETIRED — the catalogue is where an activity is made, priced, linked and
+ * RETIRED — the catalog is where an activity is made, priced, linked and
  * archived now, and this page had become a second, thinner view of the same
  * records (Franco, 2026-09-02).
  *

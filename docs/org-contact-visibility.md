@@ -1,15 +1,15 @@
 ---
 title: Member visibility
-description: "What an organisation may see of a member studio's people — design"
+description: "What an organization may see of a member studio's people — design"
 status: living
 area: orgs
 order: 2
 ---
 # Member visibility
 
-**Status: BUILT 2026-09-08** (Franco). A studio inside an organisation keeps its
+**Status: BUILT 2026-09-08** (Franco). A studio inside an organization keeps its
 own contacts to itself. The federation sees a person only once that person is on
-its books — and "on its books" means holding an affiliation the organisation
+its books — and "on its books" means holding an affiliation the organization
 issued, in **any** status.
 
 Split out of `docs/studio-independent-contacts.md`, which asked when a coach
@@ -19,7 +19,7 @@ of it, and the answer is not a second studio at all.
 ## The case
 
 > "In HMD Basel I have a few contacts coming into the club spot, maybe doing
-> personalised activities, and contacts coming from fitness apps. In the old
+> personalized activities, and contacts coming from fitness apps. In the old
 > lineup those were marked 'guest' so they would not count in the total. The
 > amount and frequency is not enough to justify a dedicated studio, and I do
 > offer the activities under my club, but outside the HMD org — unless they take
@@ -35,7 +35,7 @@ are orthogonal:
 | **Whose business is this?** | the tenant — `teamId` |
 | **Whose member are they?** | the affiliation row |
 
-A contact can be the studio's business and not the organisation's member, and
+A contact can be the studio's business and not the organization's member, and
 that is the ordinary case, not an edge one. It needs **no second tenant** — which
 is what `docs/studio-independent-contacts.md` would have implied if the two axes
 stayed fused. That document answers a different case: the coach whose personal
@@ -50,7 +50,7 @@ needs no status to say it.
 
 **So the affiliation row IS the disclosure.** Creating one — in any status,
 `guest` and `requested` included — is the studio's act of putting this person on
-the organisation's books. Delete it and they go back to invisible:
+the organization's books. Delete it and they go back to invisible:
 `onAffiliationWrite` recomputes the summary from the rows that remain, so this
 reverses rather than merely stopping.
 
@@ -82,7 +82,7 @@ affiliation row, which is the exact disclosure this design withholds. The
 seeders' `status: 'guest'` fixture label is the same kind of thing: an input
 meaning "give this persona no affiliation".
 
-No backfill: there is no production data, and an org that auto-initialised its
+No backfill: there is no production data, and an org that auto-initialized its
 vocabulary keeps a `guest` doc that nothing can now select into existence.
 
 ### Removal is an action, not a status
@@ -119,11 +119,11 @@ The contact read admitted `isOrgAdminOfTeam(resource.data.teamId)`: an
 unconditioned grant over every contact of every member studio. Belonging to a
 federation meant handing it your address book.
 
-It now additionally requires the team's organisation to appear in the contact's
+It now additionally requires the team's organization to appear in the contact's
 `affiliation_summary.org_ids`.
 
 **`org_ids`, not `active_org_ids`.** An expired, revoked or merely requested
-licence still means the organisation knows this person, and renewing or
+license still means the organization knows this person, and renewing or
 reviewing them is exactly what an administrator opens the roster to do.
 `active_org_ids` answers "is it valid now", which is a FIGURE and not a
 permission; narrowing to it would hide the very people the federation needs to
@@ -167,7 +167,7 @@ own. Nothing here narrows what a tenant sees of itself.
 
 The org dashboard counted every live contact of every member studio and called it
 `people`. Two things were wrong with it and they pointed in opposite directions:
-it made the organisation look bigger than it is, and it scored a studio DOWN on
+it made the organization look bigger than it is, and it scored a studio DOWN on
 "coverage" for serving anyone outside the federation. The second is a perverse
 incentive — it rewards a studio for not taking on the very clients this design
 exists to protect.
@@ -189,7 +189,7 @@ model, alive in the UI. It now asks for `org_ids` array-contains the org. Under
 the new rule this is not a courtesy: without it the query is denied document by
 document.
 
-### 4. The studio is told what the organisation cannot see
+### 4. The studio is told what the organization cannot see
 
 A guarantee nobody can observe is worth very little, so the studio's Affiliations
 page states the number: *"N contacts are yours alone. {org} cannot see them. Add
@@ -204,7 +204,7 @@ demanding it.
 
 It counts `org_ids`, not `has_active` — the filter chips above it already answer
 "is their affiliation current", and this is the different question of whether the
-organisation knows the person at all. A lapsed member is inactive but very much
+organization knows the person at all. A lapsed member is inactive but very much
 on the books, and counting them here would tell a manager the federation cannot
 see somebody it can.
 
@@ -212,7 +212,7 @@ see somebody it can.
 
 **Added 2026-09-11, after `#274`/`#275`/`#276` landed.** `contactLifecycle`
 (shared) now names five buckets, and two of them are LIVE without being on the
-roster: a **provisional** lead whose registration has not materialised, and an
+roster: a **provisional** lead whose registration has not materialized, and an
 **external** — somebody who trains here without being looked after, the
 partner-app drop-in the bucket was made for. HMD Basel has 93 of the latter.
 
@@ -225,12 +225,12 @@ and pushing a manager to clear it is precisely what the notice's neutral styling
 exists to avoid, undone by one number.
 
 **`contact_live` on an affiliation is LIVE, not ROSTER, and that is deliberate.**
-An external who holds this organisation's licence IS on its books; the federation
+An external who holds this organization's license IS on its books; the federation
 counts its own members whether or not the studio looks after them day to day. The
-organisation's question is "is this person still real", not "is this person
+organization's question is "is this person still real", not "is this person
 yours". The writers now call `isLiveContact` from shared rather than testing
 `!deleted_at && !archived_at` by hand — which had silently missed
-`anonymized_at`, so a GDPR-anonymised person would have kept counting in the
+`anonymized_at`, so a GDPR-anonymized person would have kept counting in the
 status breakdown for ever.
 
 **The org dashboard needs no external subtraction, and could not run one.**
@@ -253,7 +253,7 @@ screen is FOR, not a repair. The notice above is now narrower than the table it
 sits on, which is defensible (a count that suggests action, over a table that
 shows everything) but worth deciding on purpose.
 
-## What the organisation gives up, knowingly
+## What the organization gives up, knowingly
 
 **It can no longer state its own reach.** "How many people are in our member
 studios" is a real federation question — insurance, grant applications, reporting
@@ -275,7 +275,7 @@ headcount — a number, never people. Not built; do not add it by widening a rea
   `canAccessContact`, which has no org branch at all. The federation never saw
   them.
 - **Org event check-ins and program items** still name participants. That is not
-  a hole: attending the organisation's event is itself a disclosure, and it is
+  a hole: attending the organization's event is itself a disclosure, and it is
   the second of the two triggers Franco named — "more consistent participation
   and/or join HMD events".
 - **The status strip** counts affiliation DOCUMENTS through the collection group,

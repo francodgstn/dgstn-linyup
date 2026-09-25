@@ -3,8 +3,8 @@ import type { Timestamp } from './common'
 
 // ─── Affiliation axis — "do they belong, and to what?" ───────────────────────
 //
-// Generalises the old single-valued org-membership into a SET: a contact may hold
-// several affiliations at once (a club membership + a federation licence + a
+// Generalizes the old single-valued org-membership into a SET: a contact may hold
+// several affiliations at once (a club membership + a federation license + a
 // grading), each its own record with an issuer, a (configurable) status, and a
 // validity window. Belonging never freezes — that's the subscription axis.
 //
@@ -15,7 +15,7 @@ import type { Timestamp } from './common'
 
 // Who grants / issues the affiliation:
 //  - 'team'     the studio grants it itself (an internal club membership)
-//  - 'org'      scoped to a linked organisation (a federation / Verein the team belongs to)
+//  - 'org'      scoped to a linked organization (a federation / Verein the team belongs to)
 //  - 'external' a governing body the studio only TRACKS (it issues, the studio records validity)
 export const AFFILIATION_ISSUERS = ['team', 'org', 'external'] as const
 export type AffiliationIssuer = (typeof AFFILIATION_ISSUERS)[number]
@@ -32,7 +32,7 @@ export interface Affiliation {
   issuer_name?: string // governing-body name when issuer === 'external'
   status_id: string // a configurable status def (org's affiliation_statuses, or the built-in defaults)
   active: boolean // denormalized from the status def's countsAsActive — drives rollups
-  reference?: string // licence / registration number
+  reference?: string // license / registration number
   valid_from?: Timestamp
   valid_until?: Timestamp
   /**
@@ -41,8 +41,8 @@ export interface Affiliation {
    * same pair `liveContactConstraints()` puts on every contact query.
    *
    * It exists because a collection-group query over affiliations CANNOT REACH
-   * THE PARENT. The organisation's status breakdown counts rows here, and
-   * without this an ex-member's licence sat in the federation's queue for ever
+   * THE PARENT. The organization's status breakdown counts rows here, and
+   * without this an ex-member's license sat in the federation's queue for ever
    * — "34 records" on a page whose headcount was 31 (#249).
    *
    * #249 solved that by moving the breakdown onto the CONTACT, filtering a
@@ -110,7 +110,7 @@ export interface AffiliationType {
   /**
    * The issuer's mark, shown on the type picker and beside a contact's row.
    *
-   * A federation licence, a club membership and a governing body's registration
+   * A federation license, a club membership and a governing body's registration
    * are told apart by their BADGE long before their name — which is most of why
    * a plain dropdown of type names reads as bureaucracy. A URL rather than an
    * upload: these are public marks a studio already has somewhere, and an
@@ -143,7 +143,7 @@ export interface AffiliationSummary {
    * IT EXISTS BECAUSE `org_ids` ANSWERS A DIFFERENT QUESTION, and a federation's
    * headline numbers were reading it as if it answered this one: the org
    * dashboard's affiliation figure, its coverage percentage and the Studios
-   * column all counted a licence that lapsed last season as current (Franco,
+   * column all counted a license that lapsed last season as current (Franco,
    * 2026-09-08 — "in the org dashboard, I see too high counts"). Narrowing
    * `org_ids` in place would have been a silent change of meaning to a field
    * whose name does not imply a status, so the current set got its own name.
@@ -176,7 +176,7 @@ export interface AffiliationSummary {
 // writer in the product already treated 'guest' as "write no row" (the HMD
 // import, all three seeders), so the ONLY way to create one was a manager
 // picking it from the roster's status list — which WRITES a row, and a row is
-// what discloses the contact to the organisation. The status whose label said
+// what discloses the contact to the organization. The status whose label said
 // "not a member" was the one control that made someone a member.
 // See `docs/org-contact-visibility.md`.
 //
@@ -205,7 +205,7 @@ export interface OrgAffiliationStatusDef {
 }
 
 // `order` is a SORT KEY, not an identity, which is why renumbering after the
-// removal costs nothing: an org that auto-initialised these before still holds
+// removal costs nothing: an org that auto-initialized these before still holds
 // docs numbered 1–5, and the two orderings interleave to the same sequence.
 export const DEFAULT_ORG_AFFILIATION_STATUSES: OrgAffiliationStatusDef[] = [
   {
@@ -221,7 +221,7 @@ export const DEFAULT_ORG_AFFILIATION_STATUSES: OrgAffiliationStatusDef[] = [
   {
     id: 'under_review',
     label: 'Under review',
-    description: 'Documents are being reviewed by the organisation.',
+    description: 'Documents are being reviewed by the organization.',
     color: 'blue',
     order: 1,
     isBuiltIn: true,
@@ -241,7 +241,7 @@ export const DEFAULT_ORG_AFFILIATION_STATUSES: OrgAffiliationStatusDef[] = [
   {
     id: 'active',
     label: 'Active',
-    description: 'Valid affiliation, recognised by the federation.',
+    description: 'Valid affiliation, recognized by the federation.',
     color: 'green',
     order: 3,
     isBuiltIn: true,

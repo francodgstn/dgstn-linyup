@@ -36,8 +36,8 @@ transmission (Phase 3, only if customers ask).
 |---|---|---|---|
 | `settings/legal_profile` | `StudioLegalProfile` | member read, owner write (existing `settings` rule) | **Shared** creditor identity: legal name, structured address, canton, IBAN, QR-IBAN?, VAT number/rate. Edited on Settings → Payments. Neither plugin owns it. |
 | `tarif595_settings/config` | `Tarif595Config` | manager+ read/write | The plugin's own identifiers: biller GLN/ZSR, provider GLN/location GLN/ZSR/UID, language (de/fr/it), modus, number prefix, `offerings` map. |
-| `tarif595_contacts/{contactId}` | `Tarif595ContactData` | manager+ read/write; **the contact's own session** reads its row and writes `TARIF595_CONTACT_SELF_FIELDS` (AHV number, insurer name, insured number) | AHV number (**required to issue**), insurer name/GLN, insured number, sex override, guardian. Never on `Contact`, never mirrored. **Deleted by the anonymisation sweep** with the identity. |
-| `tarif595_receipts/{receiptId}` | `Tarif595ReceiptDoc` | manager+ read, **write false** | Frozen snapshot; functions only. `pending → issued → voided`. The member's copy comes through `listMyTarif595Receipts`, never a contact read arm (the row carries the manager's uid and the storage paths). **Kept on anonymisation.** |
+| `tarif595_contacts/{contactId}` | `Tarif595ContactData` | manager+ read/write; **the contact's own session** reads its row and writes `TARIF595_CONTACT_SELF_FIELDS` (AHV number, insurer name, insured number) | AHV number (**required to issue**), insurer name/GLN, insured number, sex override, guardian. Never on `Contact`, never mirrored. **Deleted by the anonymization sweep** with the identity. |
+| `tarif595_receipts/{receiptId}` | `Tarif595ReceiptDoc` | manager+ read, **write false** | Frozen snapshot; functions only. `pending → issued → voided`. The member's copy comes through `listMyTarif595Receipts`, never a contact read arm (the row carries the manager's uid and the storage paths). **Kept on anonymization.** |
 | `tarif595_jobs/{jobId}` | `Tarif595BulkJob` | manager+ read, **write false** | Bulk-run progress: window, counts, `skips` with reasons, cursor, rounds. Only the worker writes it. |
 | `counters/tarif595_receipts` | `{last, year}` | member read, write false | Absolute value written inside the allocating transaction. |
 | Storage `teams/{t}/tarif595/{receiptId}/receipt.pdf\|xml` | — | excluded from the broad team rule on read AND write | Admin SDK writes; served only by `downloadTarif595Receipt` (sha256-verified, base64 inline, 6 MB cap). |
@@ -97,10 +97,10 @@ ahead:
   above the offerings table, the affected rows sorted first with their own state icon,
   and "valid until …" under each affected picker (main position and PT companion alike).
 - **There is no successor map.** The new edition regroups methods — no 2027 row is called
-  "Pilates" — so a replacement is a judgement. "Suggest replacements" asks
+  "Pilates" — so a replacement is a judgment. "Suggest replacements" asks
   `suggestTarif595Mappings` for those rows **as of the day after the last valid day**
   (`asOf`, clamped to [today, today + `TARIF595_SUGGEST_AS_OF_MAX_DAYS`], with `keys`
-  narrowing the call): the catalogue is then next year's, and the parser refuses this
+  narrowing the call): the catalog is then next year's, and the parser refuses this
   year's codes. A proposal is shown beside the row and applied only by **Use**. Nothing is
   saved until Save.
 - **"Use" writes a SUCCESSOR, never an overwrite** — `Tarif595OfferingMapping.successor
@@ -255,7 +255,7 @@ deterministic ids, `already_issued` for the rest).
   `TARIF595_CONTACT_SELF_FIELDS` (`selfWrite.test.ts` pins the rules literal to the
   constant). Shown only when `enabled` (the studio has the plugin), so nobody is asked
   for an AHV number by a studio that never issues receipts.
-- **Anonymisation**: the nightly sweep deletes the member's `tarif595_contacts` row in
+- **Anonymization**: the nightly sweep deletes the member's `tarif595_contacts` row in
   the same batch as the identity patch; receipts are kept. The census of plugin-owned
   records is `CONTACT_PLUGIN_RECORDS` beside the field list in `utils/contactDeletion.ts`.
 
@@ -268,7 +268,7 @@ deterministic ids, `already_issued` for the rest).
   identities; the provider block defaults to the biller with an optional location GLN.
 - **Receipts are paid receipts only** — `amount_due = 0`, QR-bill without amount. Reminders
   and open invoices are out of scope here (see `qr-invoices`).
-- **Receipts outlive contact anonymisation.** They are records of documents handed out and
+- **Receipts outlive contact anonymization.** They are records of documents handed out and
   are kept; the owner's privacy-policy work names this (a data-protection call, not a coding one).
 - **No certification exists.** Vendors are listed by Qualitop/insurers on request; the basis
   is the Wegleitung, the FAQ and XML 5.0. Marketing may say "Tarif 595 / XML 5.0-konform",

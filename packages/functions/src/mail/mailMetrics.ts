@@ -32,7 +32,7 @@ const TIMEZONE = 'Europe/Zurich'
 // Wall-clock midnight in Zurich, resolved to the UTC instant it actually is.
 // Guess-then-correct, the same trick as utils/recurrence.ts: Zurich is UTC+1 or
 // UTC+2 depending on the date, and a fixed offset puts the window an hour wrong
-// twice a year — which silently moves a day's worth of sends into its neighbour.
+// twice a year — which silently moves a day's worth of sends into its neighbor.
 function zurichMidnightUtc(year: number, month: number, day: number): Date {
   const guess = Date.UTC(year, month - 1, day, 0, 0, 0)
   const parts = Object.fromEntries(
@@ -71,7 +71,7 @@ function zurichDayStart(date: string): Date {
  * ('YYYY-MM-DD' — the snapshot's own date key).
  *
  * The capture cron runs just after midnight, so the last day it can report in
- * full is the one that has just ended. `Date.UTC` normalises day 0 into the
+ * full is the one that has just ended. `Date.UTC` normalizes day 0 into the
  * previous month, so the first of a month needs no special case.
  */
 export function previousZurichDay(date: string): { start: Date; end: Date } {

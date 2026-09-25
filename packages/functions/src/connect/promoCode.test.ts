@@ -60,7 +60,7 @@ function code(over: Partial<PromoCode> = {}): PromoCode {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('normalizeRedemptionCode (the ONE code normaliser)', () => {
+describe('normalizeRedemptionCode (the ONE code normalizer)', () => {
   it('trims and uppercases, and is idempotent', () => {
     assert.equal(normalizeRedemptionCode('  autumn25 '), 'AUTUMN25')
     assert.equal(normalizeRedemptionCode('gc-abcd-1234'), 'GC-ABCD-1234')
@@ -73,7 +73,7 @@ describe('normalizeRedemptionCode (the ONE code normaliser)', () => {
 })
 
 describe('promo code format', () => {
-  it('accepts 3–24 uppercase alphanumerics and hyphens, normalising first', () => {
+  it('accepts 3–24 uppercase alphanumerics and hyphens, normalizing first', () => {
     assert.equal(isValidPromoCodeFormat('summer26'), true)
     assert.equal(isValidPromoCodeFormat('  autumn-25  '), true)
     assert.equal(isValidPromoCodeFormat('A1B'), true)
@@ -87,7 +87,7 @@ describe('promo code format', () => {
     assert.equal(isValidPromoCodeFormat('SUMMER!'), false)
     assert.equal(isValidPromoCodeFormat(''), false)
   })
-  it('a gift card pasted into the promo field is recognised, not just "invalid"', () => {
+  it('a gift card pasted into the promo field is recognized, not just "invalid"', () => {
     assert.equal(looksLikeGiftCardCode(' gc-abcd-1234 '), true)
     assert.equal(looksLikeGiftCardCode('SUMMER26'), false)
     // …and it is a well-formed promo string, which is exactly why the distinct

@@ -82,7 +82,7 @@ const weekly = Array.from({ length: 12 }, (_, i) => ({
   sessions_count: i % 3,
 }))
 // Tuesday 18:00 Zurich = 16:00Z in summer. Two Tuesdays kept, one no-show on a
-// Thursday, one cancelled, one upcoming Tuesday.
+// Thursday, one canceled, one upcoming Tuesday.
 const bookings: DossierBooking[] = [
   { when: new Date('2026-09-15T16:00:00Z'), activity: 'Yoga Basics', status: 'confirmed' },
   { when: new Date('2026-09-08T16:00:00Z'), activity: 'Yoga Basics', status: 'confirmed' },
@@ -110,7 +110,7 @@ describe('contact summary — the dossier the model sees', () => {
   it('carries the training relationship and the computed signals', () => {
     for (const expected of [
       'Person: Anna',
-      'Plans held: Unlimited (recurring billing, cancelled — ends 2026-10-01); Kids (bought, ends 2026-12-31)',
+      'Plans held: Unlimited (recurring billing, canceled — ends 2026-10-01); Kids (bought, ends 2026-12-31)',
       'Membership history: 2 periods on record; first started 2025-03-12; last ended 2026-02-28 (renewed)',
       'Credits: 4 left on Ten-pack',
       '47 sessions in total',
@@ -120,7 +120,7 @@ describe('contact summary — the dossier the model sees', () => {
       'Computed signals:',
       '- Attendance trend:',
       '- Active in 8 of the last 12 weeks',
-      '- Bookings, last 5: 2 kept, 1 no-show (33% of decided bookings), 1 cancelled, 1 upcoming — next 2026-09-15 Yoga Basics',
+      '- Bookings, last 5: 2 kept, 1 no-show (33% of decided bookings), 1 canceled, 1 upcoming — next 2026-09-15 Yoga Basics',
       '- Usual rhythm: Tuesday; evenings; mostly Yoga Basics (3), HIIT (1)',
       '- Tenure: 18 months',
       "- Engagement band by the studio's own thresholds: active",

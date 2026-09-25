@@ -14,11 +14,11 @@ import {
  *   `checkins/{id}.teamId` is the tenant boundary. It used to be copied
  *   verbatim from a client field on any org-scoped event, behind a gate that
  *   asked only "are you an org admin of this event's org" — and any
- *   authenticated user can mint an organisation that makes them one. So an
+ *   authenticated user can mint an organization that makes them one. So an
  *   outsider could write a row, with contact names and payload of their
  *   choosing, into ANY tenant in the system.
  *
- * `ORG` below is the ATTACKER'S organisation in the escalation cases, which is
+ * `ORG` below is the ATTACKER'S organization in the escalation cases, which is
  * the whole point: they really are an org admin, of an org the victim has
  * never heard of.
  */
@@ -66,12 +66,12 @@ function approval(s: CheckinAuthSnapshot) {
 }
 
 describe('decideCheckinAuthorization — the tenant stamp', () => {
-  it('THE ESCALATION: an org admin cannot stamp a team outside their organisation', () => {
+  it('THE ESCALATION: an org admin cannot stamp a team outside their organization', () => {
     // The attacker owns ORG and is genuinely its admin. They name a team that
     // has no link document in it. Before the fix this wrote into that tenant.
     const d = refusal(orgEvent({ requestedTeamId: OTHER_TEAM, orgTeamLink: { exists: false } }))
     assert.equal(d.code, 'permission-denied')
-    assert.match(d.message, /not part of this organisation/)
+    assert.match(d.message, /not part of this organization/)
   })
 
   it('a studio whose membership has lapsed is refused too', () => {
@@ -110,8 +110,8 @@ describe('decideCheckinAuthorization — the tenant stamp', () => {
 })
 
 describe('decideCheckinAuthorization — authority', () => {
-  it('an org admin of ANOTHER organisation is refused', () => {
-    // Authority is per organisation. `orgRole` is the caller's role in THIS
+  it('an org admin of ANOTHER organization is refused', () => {
+    // Authority is per organization. `orgRole` is the caller's role in THIS
     // event's org, so "admin somewhere" is not expressible as an approval.
     const d = refusal(orgEvent({ orgRole: null, teamRole: null }))
     assert.equal(d.code, 'permission-denied')
@@ -173,7 +173,7 @@ describe('decideCheckinAuthorization — the contact', () => {
 describe('decideCheckinAuthorization — updating an existing row', () => {
   it('refuses to move a row between tenants', () => {
     // The existing row is found by (event, contact) across the WHOLE
-    // collection, so without this an authorised caller could retarget somebody
+    // collection, so without this an authorized caller could retarget somebody
     // else's row by naming their own team.
     const d = refusal(orgEvent({ existingCheckinTeamId: OTHER_TEAM }))
     assert.equal(d.code, 'permission-denied')

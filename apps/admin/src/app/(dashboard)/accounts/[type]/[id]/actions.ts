@@ -49,7 +49,7 @@ export async function setConnectEnabled(teamId: string, enabled: boolean): Promi
  *
  * ── IT WORKS ON BOTH TENANT KINDS, AND THAT IS THE POINT ────────────────────
  * Every other action in this file takes a `teamId` and writes `teams/`. A comp
- * is normally decided for an ORGANISATION — Linyup's first migrated one is
+ * is normally decided for an ORGANIZATION — Linyup's first migrated one is
  * comped whole — and the fee waiver reads the org's flag for every studio in it,
  * so comping the org is what actually stops the charging. An action that could
  * only reach teams would force the operator back to the console for the one case
@@ -107,7 +107,7 @@ export async function setTenantComped(
  * NEGOTIATE a platform-fee rate for a tenant — a flat percentage on its member
  * payments in place of the plan's published take-rate, optionally until a date.
  *
- * On an organisation it reaches every studio in it, read through at charge time
+ * On an organization it reaches every studio in it, read through at charge time
  * like the comp. The resolver (`resolveTakeRate`) charges the LOWER of this and
  * the published rate, so a rate at or above it simply has no effect.
  *

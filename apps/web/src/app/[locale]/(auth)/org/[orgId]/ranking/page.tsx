@@ -328,9 +328,9 @@ export default function OrgRankingPage() {
   const systems: RankingSystem[] = org?.ranking_systems ?? []
 
   // The contacts an org-level ranking edit touches belong to the member
-  // studios, never to the organisation itself, so the scope of "who is
+  // studios, never to the organization itself, so the scope of "who is
   // affected" is this list. `null` — still loading, or the read failed — is
-  // reported as "we do not know", not as an empty organisation.
+  // reported as "we do not know", not as an empty organization.
   const {
     data: memberTeamIds,
     isPending: teamsPending,
@@ -343,7 +343,7 @@ export default function OrgRankingPage() {
         query(
           collection(db, ORGANIZATIONS_COLLECTION, orgId, ORG_TEAMS_SUBCOLLECTION),
           // Active only: an invited studio has not linked its contacts to this
-          // organisation's systems yet, so counting it would inflate the answer.
+          // organization's systems yet, so counting it would inflate the answer.
           where('status', '==', 'active'),
         ),
       )

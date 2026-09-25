@@ -574,7 +574,7 @@ function SettingsTab({
   hideFromShop?: boolean
 }) {
   const t = useTranslations('Courses')
-  // The matcher's own copy lives in the catalogue namespace that owns it.
+  // The matcher's own copy lives in the catalog namespace that owns it.
   const tCat = useTranslations('OfferCatalogue')
   const { team } = useAuth()
   const currency = team?.default_currency ?? 'CHF'
@@ -614,7 +614,7 @@ function SettingsTab({
   // exactly one writer in the product and it is `ActivityPlanLinks`, which saves
   // itself (no `onDirtyChange` here: unlike the activity DIALOG, nothing on this
   // page closes over an unsaved edge).
-  // Modelled as "show in shop" for the UI (on = visible); stored as hideFromShop.
+  // Modeled as "show in shop" for the UI (on = visible); stored as hideFromShop.
   const [localShowInShop, setLocalShowInShop] = useState(hideFromShop !== true)
   const [uploading, setUploading] = useState(false)
   const [confirmArchive, setConfirmArchive] = useState(false)
@@ -651,7 +651,7 @@ function SettingsTab({
    * Safe only because a course carries the SAME facets on both plan-bearing
    * tiers: the matcher's write is identical whichever of the two is stored, and
    * only the dimming differs. Before that unification this would have offered
-   * controls the stored tier could not honour.
+   * controls the stored tier could not honor.
    */
   const draftCourse: Course = {
     ...course,
@@ -686,7 +686,7 @@ function SettingsTab({
        *
        * It used to migrate the studio's plan list between two homes — a gate
        * when unsold, an `included` benefit when sold — because the two tiers
-       * honoured different fields. They no longer do: a course carries a gate
+       * honored different fields. They no longer do: a course carries a gate
        * AND a rate on both plan-bearing tiers, exactly as a class does, so the
        * list stays where the matcher put it whichever way this switch is
        * flicked. Roughly forty lines of carry-over, and the warning that had to
@@ -774,7 +774,7 @@ function SettingsTab({
       {/* ── WHO CAN OPEN THIS ─────────────────────────────────────────────
           The TIER, and (for a sold course) the price. Nothing else: which plans
           open it or make it cheaper is the matcher below, which is the same
-          control the activity editor and the catalogue mount.
+          control the activity editor and the catalog mount.
 
           THE TIERS OVERLAPPED BEFORE (Franco, 2026-08-31). "Specific
           subscriptions" and "Sold" both carried a subscription list, so a studio
@@ -865,12 +865,12 @@ function SettingsTab({
 
       {/* ── WHAT EACH PLAN DOES ABOUT IT ──────────────────────────────────
           The matcher, in its offering direction — the SAME component the
-          activity editor and the catalogue mount, so there is one writer of the
+          activity editor and the catalog mount, so there is one writer of the
           plan edge and the three surfaces cannot drift.
 
           It reads the tier: `coursePlanFacets` offers the gate columns for a
           subscription course and the rate columns for a sold one, so the
-          columns that appear are the ones the tier can honour. A free or
+          columns that appear are the ones the tier can honor. A free or
           sign-in-only course has neither, which is why this is hidden rather
           than shown empty.
 
@@ -914,7 +914,7 @@ function SettingsTab({
       )}
 
       {/* Shop visibility — the shop lists every published course; a studio can hide
-          a specific one from the catalogue (it stays openable via direct link). */}
+          a specific one from the catalog (it stays openable via direct link). */}
       <div className="flex items-start justify-between gap-4 rounded-md border p-3">
         <div className="space-y-0.5">
           <Label htmlFor="show-in-shop" className="font-normal">{t('showInShop')}</Label>

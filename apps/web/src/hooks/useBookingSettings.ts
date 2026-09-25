@@ -17,7 +17,7 @@ import { useAuth } from '@/contexts/AuthContext'
 // (`settings.booking`), which is owner-only — so a manager's mirror write was
 // denied, the form re-hydrated from the mirror and showed her the OLD value, and
 // the booking callables (which read the mirror) ignored the cutoff she had just
-// set while the public page honoured it. Nothing reads `settings.booking`
+// set while the public page honored it. Nothing reads `settings.booking`
 // anymore; if you find a reader, it is a bug, not a fallback (UX-6).
 
 export function bookingSettingsRef(teamId: string) {

@@ -414,7 +414,7 @@ export default function PaymentsDashboardPage() {
      * WHAT "NEEDS ATTENTION" MEANS HERE — three things, each one a decision the
      * studio has to make and none of them visible from the amount:
      *   past_due   an invoice failed; the card needs chasing
-     *   cancelling still live, will not renew; the win-back window is open and
+     *   canceling still live, will not renew; the win-back window is open and
      *              has a deadline
      *   unlinked   Stripe is billing a subscription no contact's plan list
      *              knows about — money moving unaccounted for
@@ -433,7 +433,7 @@ export default function PaymentsDashboardPage() {
           contactId: c.id,
           name: contactName.get(c.id) ?? t('unknownMember'),
           planName: plan.subscription_type_name ?? sub?.subscriptionTypeName ?? t('membership'),
-          // The plan list stores MAJOR units, the subscription Rappen — normalise
+          // The plan list stores MAJOR units, the subscription Rappen — normalize
           // to minor here so the one formatter below is right for both.
           amount:
             typeof plan.amount === 'number' ? Math.round(plan.amount * 100) : (sub?.amount ?? null),
@@ -922,7 +922,7 @@ export default function PaymentsDashboardPage() {
                           </TableCell>
                           <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                             {/* WHETHER and WHEN asked separately — a pre-migration
-                                doc is plainly cancelling with no date to give. */}
+                                doc is plainly canceling with no date to give. */}
                             {cancelling ? (
                               <span className="text-amber-600">
                                 {endsAtMs !== null
@@ -1003,7 +1003,7 @@ export default function PaymentsDashboardPage() {
         {hasAggregatorType && (
           <TabsContent value="partnerVisits" className="space-y-3">
             {/* No chips here — a partner visit has one axis (booked or
-                cancelled) and it is already on every row. The search still sits
+                canceled) and it is already on every row. The search still sits
                 right, so the three tabs agree on where it is. */}
             <div className="flex justify-end">
               <SearchBox
@@ -1314,7 +1314,7 @@ function CreatePaymentLinkDialog({ teamId }: { teamId: string }) {
 // IT COVERS PAYMENT-LINK ROWS TOO (UX-59). They used to be excluded on the
 // theory that "the Connect webhook settles those on its own" — true only if the
 // client actually uses the link. Pay cash at the door instead and nothing
-// settled it: the row sat there until Stripe's 7-day expiry cancelled the
+// settled it: the row sat there until Stripe's 7-day expiry canceled the
 // appointment, and the money was never recorded at all. The callable expires the
 // link before it records the cash; the three outcomes it can report are all
 // surfaced below, because "recorded, but the link may still be live" is not the

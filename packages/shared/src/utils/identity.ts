@@ -26,8 +26,8 @@ import { normalizeEmail } from './normalizeEmail'
  * hard-deleted: `purgeProvisionalContacts` removes abandoned provisional
  * contacts overnight.
  *
- * So: the normalised EMAIL, because every rail collects one and every rail
- * normalises it the same way. Hashed so a ledger's DOC IDS are not a
+ * So: the normalized EMAIL, because every rail collects one and every rail
+ * normalizes it the same way. Hashed so a ledger's DOC IDS are not a
  * harvestable list of a studio's customer addresses, and hex so the result is
  * always safe as a Firestore doc id, a map key and a FieldPath segment.
  * Prefixed so the two kinds of key can never collide.
@@ -37,7 +37,7 @@ import { normalizeEmail } from './normalizeEmail'
  * mailbox gives a parent and a child the SAME key. That over-inclusion is
  * harmless for a redemption cap and is a FABRICATION in a consent artefact,
  * which is why the waiver ledger keys its signer rows on `contactId` and uses
- * this only as a SECONDARY query, rendered in its own labelled section.
+ * this only as a SECONDARY query, rendered in its own labeled section.
  */
 export function contactIdentityKey(
   input: { email?: string | null; contactId: string },

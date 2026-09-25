@@ -22,7 +22,7 @@ import { join } from 'node:path'
 //
 // This file spans the functions/web boundary for the same reason
 // `connect/commitSites.test.ts` does: that boundary is where corrections stop
-// travelling. It is also W25's lockstep check made executable — a grep over four
+// traveling. It is also W25's lockstep check made executable — a grep over four
 // JSON files run by hand once at the end of a phase is not a gate, it is a
 // memory.
 //

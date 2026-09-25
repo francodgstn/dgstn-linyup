@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * THE ORGANISATION'S DASHBOARD.
+ * THE ORGANIZATION'S DASHBOARD.
  *
  * ── WHY IT IS NOT THE STUDIO DASHBOARD WITH A WIDER QUERY ───────────────────
  *
@@ -10,9 +10,9 @@
  * trends below the fold. Every one of those is answered from a position inside
  * one tenant, and most of them change between breakfast and lunch.
  *
- * An organisation has no day. It runs no sessions, takes no bookings and has no
+ * An organization has no day. It runs no sessions, takes no bookings and has no
  * agenda — its studios do. What it has is SCALE (how many studios, how many
- * people, how many of them hold its licence), COMPOSITION (which studios ARE the
+ * people, how many of them hold its license), COMPOSITION (which studios ARE the
  * federation, and how unevenly), and a queue that is almost entirely invitations
  * and requests. So the composition is deliberately the other way round from the
  * studio page:
@@ -31,7 +31,7 @@
  *      └───────────────────────────────────────────────────────┘
  *
  * The figures lead instead of sitting in a margin, because scale IS the
- * organisation's headline; and exactly ONE thing wears the accent frame, because
+ * organization's headline; and exactly ONE thing wears the accent frame, because
  * a federation has one subject where a studio's morning has two. Same building
  * blocks (`Figure`, `Panel`, `Card`), a different sentence.
  *
@@ -51,7 +51,7 @@
  * itself either: reading sixteen studios four at a time through a 320px window
  * is a summary of a summary.
  *
- * ── EVERYTHING HERE IS A READ THE ORGANISATION ALREADY HAD ──────────────────
+ * ── EVERYTHING HERE IS A READ THE ORGANIZATION ALREADY HAD ──────────────────
  *
  * No rule was relaxed and no Cloud Function was added, which is what makes a
  * first cut safe to reshape: see the header of `components/org-dashboard/data.ts`
@@ -60,7 +60,7 @@
  * ── WHAT IS DELIBERATELY ABSENT ─────────────────────────────────────────────
  *
  * **Money.** `saas_subscriptions/{orgId}` is the org's own bill, not a figure
- * about the federation, and it already has a page. What an organiser would
+ * about the federation, and it already has a page. What an organizer would
  * actually want — what its studios take — lives in per-team Connect accounts an
  * org admin has no rule to read.
  *
@@ -72,7 +72,7 @@
  *
  * **A greeting.** The studio dashboard opens with "Good morning, Franco" because
  * it is a personal daily surface. This is a reference surface about an
- * institution; the organisation's own name is the title.
+ * institution; the organization's own name is the title.
  */
 
 import { useParams } from 'next/navigation'
@@ -140,7 +140,7 @@ export default function OrgDashboardPage() {
   // page already withholds PEOPLE from them, and a breakdown OF that number
   // should not be the one thing that leaks it.
   // No studio scope: the breakdown counts affiliation ROWS through the collection
-  // group, where `org_id` already bounds it to this organisation — and where the
+  // group, where `org_id` already bounds it to this organization — and where the
   // rules can prove it. See the hook's own note.
   const { data: statusCounts, isLoading: statusCountsLoading } = useOrgAffiliationStatusCounts(
     orgId,

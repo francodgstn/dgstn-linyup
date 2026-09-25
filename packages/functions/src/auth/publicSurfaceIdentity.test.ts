@@ -7,7 +7,7 @@ import { join, dirname, relative, sep } from 'node:path'
 //
 // It spans the functions/web boundary for the same reason `waivers/surfaces.test.ts`
 // and `connect/commitSites.test.ts` do: that boundary is where corrections stop
-// travelling. Run with: pnpm --filter @linyup/functions test
+// traveling. Run with: pnpm --filter @linyup/functions test
 //
 // ── WHY THIS FILE EXISTS ────────────────────────────────────────────────────
 // `PublicContactAuthProvider` is mounted at the team root (`[slug]/layout.tsx`),
@@ -267,7 +267,7 @@ describe('THE PUBLIC-SURFACE IDENTITY CENSUS', () => {
     assert.ok(
       rail.includes('usePublicContactAuth('),
       'the appointment booking rail must read the session too: it is the screen that ' +
-        'asks for details, and asking a contact the server has already recognised is the ' +
+        'asks for details, and asking a contact the server has already recognized is the ' +
         'defect this census was built around'
     )
   })
@@ -282,7 +282,7 @@ describe('THE PUBLIC-SURFACE IDENTITY CENSUS', () => {
       )
     )
     // The guest form and the sign-in offer live behind the SAME derived fork,
-    // so neither can be shown to somebody the server already recognises.
+    // so neither can be shown to somebody the server already recognizes.
     assert.match(
       src,
       /if \(caller\.kind !== 'guest'\)/,

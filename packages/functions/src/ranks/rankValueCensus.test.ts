@@ -14,7 +14,7 @@ import path from 'node:path'
  * call it, and that nobody has put the number back into a seed, a preset or a
  * hand-copied type. It reads the SOURCE, across the package boundary, the way
  * connect/commitSites.test.ts does — that boundary is where corrections stop
- * travelling.
+ * traveling.
  *
  * When Phase 4b lands (the flip has run everywhere and `--strip-values` has
  * emptied the ladders), `legacyRankValue` is deleted and the allow-list below

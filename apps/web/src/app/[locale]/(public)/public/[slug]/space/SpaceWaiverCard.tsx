@@ -98,7 +98,7 @@ export function SpaceWaiverCard({ variant }: { variant: 'banner' | 'card' }) {
           'resolveWaiverRequirement'
         )
         // `surface: 'space'` is what asks for EVERY required waiver rather than
-        // only the ones scoped to every booking. The server honours it for a
+        // only the ones scoped to every booking. The server honors it for a
         // contact session and nothing else.
         const res = await fn({
           teamId,

@@ -1,9 +1,9 @@
-// Small, dependency-free colour arithmetic — pure, hex-in/hex-out, so it can be
+// Small, dependency-free color arithmetic — pure, hex-in/hex-out, so it can be
 // unit-tested and so a theme can be derived from ONE studio accent (the member
 // app's `utils/tenantTheme.ts`).
 //
 // ONE contrast rule. `contrastText` / `isLightColor` use WCAG relative
-// luminance and contrast ratio. Three other copies of "is this colour light?"
+// luminance and contrast ratio. Three other copies of "is this color light?"
 // used the YIQ approximation (`0.299r + 0.587g + 0.114b`) with two different
 // thresholds (`> 0.5` in two places, `>= 0.6` in the third), and the four
 // disagreed for mid-tones — the same studio accent could get black text on one
@@ -53,7 +53,7 @@ export function mix(a: string, b: string, t: number): string {
   })
 }
 
-/** `rgba(r, g, b, alpha)` for a hex colour; unparseable → the input unchanged. */
+/** `rgba(r, g, b, alpha)` for a hex color; unparseable → the input unchanged. */
 export function withAlpha(hex: string, alpha: number): string {
   const p = parseHex(hex)
   if (!p) return hex
@@ -72,7 +72,7 @@ export function relativeLuminance(hex: string): number {
   return 0.2126 * lin(p.r) + 0.7152 * lin(p.g) + 0.0722 * lin(p.b)
 }
 
-/** WCAG contrast ratio between two colours (1 … 21). */
+/** WCAG contrast ratio between two colors (1 … 21). */
 export function contrastRatio(a: string, b: string): number {
   const la = relativeLuminance(a)
   const lb = relativeLuminance(b)
@@ -85,7 +85,7 @@ export function contrastText(hex: string): '#000000' | '#FFFFFF' {
   return contrastRatio(hex, '#000000') >= contrastRatio(hex, '#FFFFFF') ? '#000000' : '#FFFFFF'
 }
 
-/** Is this a light colour (black text reads better on it)? */
+/** Is this a light color (black text reads better on it)? */
 export function isLightColor(hex: string): boolean {
   return contrastText(hex) === '#000000'
 }

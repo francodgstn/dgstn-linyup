@@ -1,6 +1,6 @@
 // THE SEED CONTRACT — the four rules at `PLUGIN_SEEDS`, made executable.
 //
-// Three of the four are behavioural and pinned by `seedShouldWrite` below. The
+// Three of the four are behavioral and pinned by `seedShouldWrite` below. The
 // fourth (a seed never touches a tenant's own collections) is a claim about the
 // applier's reach, so it is checked by reading the source: a seeder that learns
 // to write `contacts` is a different and much more dangerous thing than the one
@@ -60,7 +60,7 @@ describe("the applier stays inside the plugin's own model", () => {
 
   it('has NO teardown — an uninstall leaves seeded content standing', () => {
     // RULE 3. A rule that has been grading people for a year belongs to the
-    // organisation, and deleting it would strand every grading recorded against
+    // organization, and deleting it would strand every grading recorded against
     // it. The absence of a delete is the feature.
     assert.ok(!/\.delete\(\)/.test(code), 'the seeder deletes something')
     assert.ok(
@@ -88,7 +88,7 @@ describe("the applier stays inside the plugin's own model", () => {
   })
 })
 
-describe("HMD's ladder, as the organisation grades", () => {
+describe("HMD's ladder, as the organization grades", () => {
   const hmd = pluginSeeds('hmd-belts')
 
   it('is carried by the hmd-belts plugin', () => {
@@ -96,13 +96,13 @@ describe("HMD's ladder, as the organisation grades", () => {
     assert.equal(hmd!.rankProgressions?.length, 2, 'both disciplines must be seeded')
   })
 
-  it('COLOUR BELTS HAVE NO BAND — the organisation grades them by judgement', () => {
+  it('COLOR BELTS HAVE NO BAND — the organization grades them by judgment', () => {
     // The engine answers `not_configured` for a level no band contains, and the
     // UI must not render that as a refusal. A permissive band here would be a
     // claim HMD never made.
     const hmdSystem = hmd!.rankProgressions!.find((r) => r.systemId === 'hmd')!
     // Bands name levels by ID since the scale decoupling. None may name a
-    // colour belt — those are graded by judgement, and the engine must answer
+    // color belt — those are graded by judgment, and the engine must answer
     // `not_configured` for them.
     const colourBelts = ['no-belt', 'white', 'yellow', 'orange', 'orange-green', 'green', 'green-blue', 'blue', 'blue-red', 'red', 'red-black']
     for (const r of hmdSystem.progression.rules) {

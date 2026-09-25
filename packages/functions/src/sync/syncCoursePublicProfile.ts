@@ -36,7 +36,7 @@ export const syncCoursePublicProfile = onDocumentWritten('courses/{courseId}', a
       // already public in the shop); the shop renders the member price from it.
       benefit: data.benefit ?? null,
       // The shop lists ALL tiers; a studio can still hide a specific course from the
-      // catalogue. Absent/false ⇒ visible.
+      // catalog. Absent/false ⇒ visible.
       hideFromShop: data.hideFromShop === true,
       moduleCount: data.moduleCount ?? 0,
       lessonCount: data.lessonCount ?? 0,

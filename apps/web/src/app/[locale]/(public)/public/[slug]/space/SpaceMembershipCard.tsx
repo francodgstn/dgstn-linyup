@@ -6,10 +6,10 @@
 //
 // WHY IT IS SHARED. It was written twice, and the two copies had already
 // diverged in the direction that matters: Account learned to say "ends on
-// {date}" when a membership is cancelling, Home never did. So a member who
-// cancelled in the billing portal opened her portal home and saw a plain,
+// {date}" when a membership is canceling, Home never did. So a member who
+// canceled in the billing portal opened her portal home and saw a plain,
 // live-looking membership — the one screen most likely to be checked after
-// cancelling was the one screen that did not acknowledge it. A second copy of a
+// canceling was the one screen that did not acknowledge it. A second copy of a
 // display rule is a second answer to "am I still a member", and this one was
 // already wrong.
 //
@@ -131,7 +131,7 @@ export function SpaceMembershipCard({ variant, slug, hasSubscriptionsForSale }: 
               <span className="text-sm font-medium" style={{ color: textMain }}>
                 {s.subscription_type_name ?? t('membershipActive')}
                 {s.recurrence ? <span style={{ color: textMuted }}> · {s.recurrence}</span> : null}
-                {/* A membership that has been cancelled but still runs is a THIRD
+                {/* A membership that has been canceled but still runs is a THIRD
                     STATE — the member keeps training until this date. THE DATE
                     ONLY: the rest of the cancellation record (reason, survey,
                     comment) is the studio's to read, not read back to the member
@@ -145,7 +145,7 @@ export function SpaceMembershipCard({ variant, slug, hasSubscriptionsForSale }: 
                   </span>
                 ) : s.cancelling ? (
                   // WITHOUT the date, when that is all we have: a subscription
-                  // doc predating the Dahlia field migration is cancelling with
+                  // doc predating the Dahlia field migration is canceling with
                   // no date stored anywhere, and keying this line on the date
                   // alone showed that member nothing.
                   <span className="block text-xs font-normal" style={{ color: '#b45309' }}>

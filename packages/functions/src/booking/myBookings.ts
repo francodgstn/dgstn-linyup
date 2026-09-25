@@ -234,7 +234,7 @@ export const getMyBookings = onCall(async (request): Promise<MyBookingsResult> =
 
   // `autoConfirm` is denormalised onto every session the appointment rails
   // create and onto class sessions that carry it; only the rest need their
-  // activity, and only to answer the cancellable question the same way
+  // activity, and only to answer the cancelable question the same way
   // cancelBooking does. Batched, and over the upcoming set alone — typically
   // one or two documents.
   const activityIds = [
@@ -297,7 +297,7 @@ export const getMyBookings = onCall(async (request): Promise<MyBookingsResult> =
         sessionCancelled,
         // Read off THIS booking's own markers — the same three fields
         // cancelBooking's transaction acts on. The row can therefore say what
-        // cancelling returns (and, for a paid seat, what it does not) before
+        // canceling returns (and, for a paid seat, what it does not) before
         // she presses, instead of leaving her to guess about her own money.
         cancelEffect: {
           credit: !!booking.credit_grant_id && !!booking.credit_spent,

@@ -36,7 +36,7 @@ bookings, and check in. If you change your mind, sign in and cancel — nothing
 further happens, and there is no penalty for having asked. This grace period
 exists so an accidental tap costs you nothing.
 
-**At the deadline your record is anonymised.** The details that identify you —
+**At the deadline your record is anonymized.** The details that identify you —
 your name, email address, phone number, address, date of birth and any notes
 about you — are removed.
 

@@ -80,7 +80,7 @@ export default function KioskSettingsPage() {
   const [confirmSignOut, setConfirmSignOut] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
-  // Initialise the working draft once data has settled.
+  // Initialize the working draft once data has settled.
   useEffect(() => {
     if (config || configLoading || !currentTeamId) return
     setConfig(savedConfig ?? DEFAULT_KIOSK_CONFIG)

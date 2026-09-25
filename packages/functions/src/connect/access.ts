@@ -47,7 +47,7 @@ export interface EnabledTeam {
   feeWaived: boolean
   /**
    * The take-rate this studio's member payments are charged at — comped, a
-   * negotiated rate (its own or its organisation's) or the plan's published one.
+   * negotiated rate (its own or its organization's) or the plan's published one.
    * Resolved in the same read as `feeWaived`, which is `fee.source === 'comped'`.
    */
   fee: ResolvedTakeRate
@@ -108,8 +108,8 @@ export async function loadEnabledTeam(teamId: string): Promise<EnabledTeam> {
  * plan's published rate. The decision is `resolveTakeRate` in @linyup/shared;
  * this only fetches the two flag sets it needs.
  *
- * ── WHY IT IS READ THROUGH TO THE ORGANISATION, NOT COPIED ONTO THE TEAM ─────
- * A comp is normally decided for an ORGANISATION — Linyup's first migrated one
+ * ── WHY IT IS READ THROUGH TO THE ORGANIZATION, NOT COPIED ONTO THE TEAM ─────
+ * A comp is normally decided for an ORGANIZATION — Linyup's first migrated one
  * is comped in full, org and studios alike — while the fee is charged by each
  * STUDIO, on its own connected account. So the decision and the enforcement sit
  * on different documents and something has to bridge them.
@@ -120,20 +120,20 @@ export async function loadEnabledTeam(teamId: string): Promise<EnabledTeam> {
  * whichever direction happens to be wrong, with nothing to notice. It would also
  * need a third and fourth writer (`removeTeamFromOrg` and `lapseOrganization`
  * both have to clear it) and a backfill for the studios that already exist —
- * and a studio that kept a stale `true` after leaving the organisation would be
+ * and a studio that kept a stale `true` after leaving the organization would be
  * charged nothing, forever, silently.
  *
  * Reading through costs ONE extra document get, only for a team that is actually
- * in an organisation, on a path that is already several reads plus a round-trip
+ * in an organization, on a path that is already several reads plus a round-trip
  * to Stripe. It cannot go stale, needs no propagation, no backfill and no second
- * writer, and a studio that joins the organisation next year inherits the comp
+ * writer, and a studio that joins the organization next year inherits the comp
  * by construction rather than by somebody remembering.
  *
- * A team's OWN `flags.comped` is honoured too, so a standalone comped studio
- * works without inventing an organisation for it.
+ * A team's OWN `flags.comped` is honored too, so a standalone comped studio
+ * works without inventing an organization for it.
  *
  * Both flags are unwritable by any client: `tenantGovernanceUnchanged()` pins
- * `flags` on the team document and (since 2026-08-28) on the organisation
+ * `flags` on the team document and (since 2026-08-28) on the organization
  * document, and `users/{uid}.roles` — which backs the `hasRole('admin')` bypass
  * on the team rule — is pinned in the same change. Without those three the
  * waiver would be self-serve for every studio owner on the platform.
@@ -159,9 +159,9 @@ export async function resolvePlatformFee(
     orgFlags = org.data()?.flags as TenantFlags | undefined
   } catch (err) {
     // FAIL TOWARDS THE PUBLISHED RATE. A read that failed is not evidence of a
-    // comp or a deal, and the alternative — treating an unavailable organisation
+    // comp or a deal, and the alternative — treating an unavailable organization
     // document as "bills nothing" — turns a transient Firestore error into free
-    // transactions for every studio in every organisation until it clears.
+    // transactions for every studio in every organization until it clears.
     console.error(`[connect] fee-rate lookup failed for org ${orgId}:`, err)
   }
   return resolveTakeRate({ tier: plan, teamFlags, orgFlags, nowMs })

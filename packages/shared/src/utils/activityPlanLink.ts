@@ -9,7 +9,7 @@
 // This is that write, once. BOTH directions call `activityPlanEdgeUpdate` with
 // the same arguments, so "editing the edge from the plan produces the same
 // document as editing it from the activity" holds BY CONSTRUCTION rather than by
-// two implementations agreeing — which is the property the catalogue page exists
+// two implementations agreeing — which is the property the catalog page exists
 // to offer, and the one that quietly stopped holding before (UX-69: the plan
 // side read only `accessRule`, so every appointment benefit looked unlinked, and
 // an unlinked-looking tick gets wiped on the next save).
@@ -47,7 +47,7 @@ import {
 } from '../types/activity'
 import type { Benefit, BenefitEffect } from '../types/benefit'
 import { normalizeBenefit } from '../types/benefit'
-// The effect sets the RESOLVER honours — the editor offers exactly these.
+// The effect sets the RESOLVER honors — the editor offers exactly these.
 import {
   APPOINTMENT_EFFECTS,
   COURSE_EFFECTS,
@@ -356,7 +356,7 @@ export function benefitOpensDoorAt(a: ActivityEdgeFields, minutes: number): bool
 /**
  * Every plan that shares an activity's rate rule, minus the one being edited.
  *
- * The catalogue needs this BEFORE a change lands, not after: the rate is one
+ * The catalog needs this BEFORE a change lands, not after: the rate is one
  * rule for the whole list, so setting "20% off" from Premium reprices Basic and
  * Gold too, and a warning that names them is the only thing standing between the
  * studio and doing that unknowingly. Returns ids; the caller resolves names.
@@ -394,7 +394,7 @@ export function plansSharingRate(
 // it, and per-plan rates on a course are what falls out (Franco, 2026-09-01).
 //
 // THE LEGACY SPELLING. A `benefit` with effect `included` is the OLD way to say
-// "these plans get it free", and both rule files still honour it. It is read
+// "these plans get it free", and both rule files still honor it. It is read
 // here as part of the GATE, and the first edge write ABSORBS it into
 // `accessRule.subscriptionTypeIds` and clears it — so there is one canonical
 // home going forward and no backfill to deploy.
@@ -405,7 +405,7 @@ import type { CourseBlock } from '../types/courseBlock'
 export type CourseEdgeFields = Pick<Course, 'accessRule' | 'benefit'>
 
 /** Which facets an offering can actually carry. The UI renders a control only
- *  where this says the field is honoured. */
+ *  where this says the field is honored. */
 export interface OfferingFacets {
   access: boolean
   rate: boolean
@@ -576,7 +576,7 @@ export function plansSharingCourseRate(c: Pick<Course, 'benefit'>, subTypeId: st
 //
 // A benefit meaning "free" is read as the GATE and absorbed on write, exactly
 // as the online course does. Nothing writes that state today, but the resolver
-// HONOURS it (`COURSE_BLOCK_EFFECTS` carries `included`), so reading it as the
+// HONORS it (`COURSE_BLOCK_EFFECTS` carries `included`), so reading it as the
 // rate instead would show a plan in neither column while it was live in
 // pricing: invisible and wrong, which is worse than a dead branch.
 
@@ -704,7 +704,7 @@ export function plansSharingCourseBlockRate(
 
 // ─── ONE ENTRY POINT FOR EVERY KIND ──────────────────────────────────────────
 //
-// The catalogue lists activities and courses side by side, and every row does
+// The catalog lists activities and courses side by side, and every row does
 // the same thing to a different document. Dispatching here rather than in the
 // component keeps that decision on the tested side of the boundary — and means
 // a third kind is added in this file, not in a `switch` inside some JSX.
@@ -757,7 +757,7 @@ export function offeringRateChoiceOf(t: PlanLinkTarget): ActivityRateChoice {
 
 /**
  * The rate effects an editor may OFFER for this offering — derived from the very
- * sets `resolvePaymentOptions` honours, so the two cannot drift.
+ * sets `resolvePaymentOptions` honors, so the two cannot drift.
  *
  * THE CASE THIS EXISTS FOR: a CLASS. Its rate rule is applied to the DROP-IN
  * price and price-modifying effects are the only ones the resolver reads there,
@@ -768,7 +768,7 @@ export function offeringRateChoiceOf(t: PlanLinkTarget): ActivityRateChoice {
  * (the price is the gate), so `included` there is the ONLY way to say a holder
  * books free, and it must stay on offer.
  *
- * `spend_credits` is filtered out for every kind: the resolver honours it on an
+ * `spend_credits` is filtered out for every kind: the resolver honors it on an
  * appointment, but no editor writes it and the UI story for it does not exist
  * yet (see BenefitEditor's module doc). Offering it here would ship a control
  * ahead of the feature.
@@ -825,7 +825,7 @@ export function offeringRateEffects(t: PlanLinkTarget): OfferableRateEffect[] {
       ? COURSE_EFFECTS
       : t.kind === 'course_block'
         ? // NOT `COURSE_BLOCK_EFFECTS`, which carries `included` because the
-          // RESOLVER honours it. The editor must not OFFER it: the access
+          // RESOLVER honors it. The editor must not OFFER it: the access
           // column already says free, and two controls for one fact is what the
           // online course's overlapping tiers used to be.
           DROP_IN_EFFECTS

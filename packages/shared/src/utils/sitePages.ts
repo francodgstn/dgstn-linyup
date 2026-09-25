@@ -7,7 +7,7 @@
 // segment with a dot as a static file and never rewrites it), no umlauts or
 // spaces (they would be percent-encoded into every link), no leading slash.
 //
-// Pure and dependency-free: the editor normalises what a studio types, the
+// Pure and dependency-free: the editor normalizes what a studio types, the
 // publish sanitizer refuses anything else, and the renderer resolves a URL.
 
 import { TENANT_ROUTE_SEGMENTS } from './customDomainPaths'

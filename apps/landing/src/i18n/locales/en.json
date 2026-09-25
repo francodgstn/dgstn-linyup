@@ -106,7 +106,7 @@
     "shots": {
       "schedule": {
         "title": "See your whole week",
-        "detail": "Every class, room, and coach in one colour-coded calendar — and let members book their spot online."
+        "detail": "Every class, room, and coach in one color-coded calendar — and let members book their spot online."
       },
       "contact": {
         "title": "Track every member's progress",
@@ -125,7 +125,7 @@
   },
   "features": {
     "title": "Everything you need to run a modern studio",
-    "subtitle": "From solo coach to multi-location organisation, Linyup adapts to the way you work.",
+    "subtitle": "From solo coach to multi-location organization, Linyup adapts to the way you work.",
     "moreEyebrow": "And there's more",
     "moreTitle": "Everything else Linyup does",
     "moreSubtitle": "Plenty of tools cover part of this. We built Linyup because we couldn't find one that covers it all at a fair price.",
@@ -139,7 +139,7 @@
       "calendar": {
         "title": "Calendar",
         "description": "See your whole week at a glance.",
-        "detail": "Your entire studio's week in one colour-coded view, by activity and instructor — never double-book a room again."
+        "detail": "Your entire studio's week in one color-coded view, by activity and instructor — never double-book a room again."
       },
       "contacts": {
         "title": "Contacts",
@@ -237,8 +237,8 @@
       },
       "groups": {
         "title": "Groups",
-        "description": "Organise contacts into cohorts.",
-        "detail": "Organise contacts into squads, levels, or committees for targeted communication and effortless management."
+        "description": "Organize contacts into cohorts.",
+        "detail": "Organize contacts into squads, levels, or committees for targeted communication and effortless management."
       },
       "customFields": {
         "title": "Custom fields",
@@ -358,7 +358,7 @@
     "cmpCore": "Run your studio",
     "cmpOrg": "Multi-studio Organization",
     "cmpContacts": "Contacts",
-    "cmpContactsNote": "Counts active (non-archived) contacts only. Studio can add +300 blocks for CHF 10/mo; archived contacts auto-anonymise after 2 years.",
+    "cmpContactsNote": "Counts active (non-archived) contacts only. Studio can add +300 blocks for CHF 10/mo; archived contacts auto-anonymize after 2 years.",
     "cmpMembers": "Multiple studio managers/viewers",
     "cmpUiLanguages": "Modern UI in 4 languages",
     "cmpUiLanguagesNote": "English · Deutsch · Français · Italiano",
@@ -416,9 +416,9 @@
       ]
     },
     "org": {
-      "name": "Organisation",
+      "name": "Organization",
       "price": "CHF 25",
-      "audience": "For multi-studio organisations, federations, and franchises.",
+      "audience": "For multi-studio organizations, federations, and franchises.",
       "features": [
         "Everything in Studio",
         "Central multi-team admin",

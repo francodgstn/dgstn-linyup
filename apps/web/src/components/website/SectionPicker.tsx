@@ -18,7 +18,7 @@ import { DynamicIcon } from '@/components/ui/icon-picker'
  * a glance, and a search box for the studio that already knows the word.
  *
  * The component is deliberately COPY-FREE — it takes the caller's `t`. The team
- * builder and the organisation builder hold their section copy in two different
+ * builder and the organization builder hold their section copy in two different
  * i18n namespaces (`Website` / `OrgWebsite`), and the alternative to passing
  * the translator in is two near-identical pickers, which is how the two
  * builders' Add menus drifted in the first place.

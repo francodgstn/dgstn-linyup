@@ -112,7 +112,7 @@ export const trackBookings = onDocumentWritten(
     // own 'pending'/'required' booking write must NOT trigger the recount below:
     // count >= max_participants (1) would immediately clobber 'pending_payment'
     // into 'open'/'full', breaking hold-expiry (isExpiredAppointmentHold only
-    // recognises 'pending_payment') and the admin's "awaiting payment" ghosting.
+    // recognizes 'pending_payment') and the admin's "awaiting payment" ghosting.
     // Once the webhook confirms, session.status is already 'full' (same
     // transaction as the booking's own 'confirmed' write), so this only ever
     // skips the hold-creation event — everything else recounts normally.
@@ -163,7 +163,7 @@ export const trackBookings = onDocumentWritten(
     const descMap: Record<string, string> = {
       booking_created: `${contactFullname} booked a ${isAppointment ? 'appointment session' : 'session'} on ${sessionDateLabel}.`,
       booking_confirmed: `${contactFullname} confirmed for ${isAppointment ? 'appointment session' : 'session'} on ${sessionDateLabel}.`,
-      booking_cancelled: `Booking for ${contactFullname} on ${sessionDateLabel} was cancelled.`,
+      booking_cancelled: `Booking for ${contactFullname} on ${sessionDateLabel} was canceled.`,
       booking_rebooked: `${contactFullname} rebooked from session on ${sessionDateLabel}.`,
       booking_no_show: `${contactFullname} did not attend the ${isAppointment ? 'appointment' : 'session'} on ${sessionDateLabel}.`,
     }
@@ -292,7 +292,7 @@ export const trackContacts = onDocumentWritten('contacts/{contactId}', async (ev
   const oldData = event.data?.before.exists ? event.data.before.data() : null
 
   // THE LIVE-CONTACT COUNTER, before anything else — it is the one effect here
-  // that must survive every early return below. An anonymised contact still
+  // that must survive every early return below. An anonymized contact still
   // leaves the live set, and a contact created with no name still joins it, so
   // gating this on the activity-log conditions would drift the counter by
   // exactly the cases nobody looks at. One rule, in @linyup/shared, so the
@@ -593,7 +593,7 @@ export const trackSessionParticipants = onDocumentWritten(
     // perfectly in a seeded emulator and returned on line one in production.
     // Dead with it: `total_sessions` (the contact detail's "0 sessions" after a
     // whole season), `last_session_at`, the trial_booked → trial_attended
-    // promotion, provisional materialisation, and every attendance row in the
+    // promotion, provisional materialization, and every attendance row in the
     // activity feed.
     //
     // The id comes from the DOCUMENT ID now, which is the invariant every other

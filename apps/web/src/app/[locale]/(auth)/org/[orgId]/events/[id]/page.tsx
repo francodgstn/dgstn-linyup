@@ -90,7 +90,7 @@ export default function OrgEventDetailPage() {
 
   const [teamFilter, setTeamFilter] = useState<string>('all')
   const [toggling, setToggling] = useState<string | null>(null)
-  // PARITY WITH THE TEAM EVENT PAGE. An organisation RUNS the federation's
+  // PARITY WITH THE TEAM EVENT PAGE. An organization RUNS the federation's
   // events — HMD's Fighting Cup is the case — and could previously see only the
   // program and the check-ins, which is the half of the story that happens on
   // the day. Who accepted, who was asked and the competition categories were all
@@ -242,7 +242,7 @@ export default function OrgEventDetailPage() {
           event's `publicVisibility`: the org events list has no control for it,
           so an org admin could only publish by landing on the studio page,
           which is the wrong page for an org event. Once published, the event
-          appears on the organisation's public events page AND on every member
+          appears on the organization's public events page AND on every member
           studio's. */}
       {event && tab === 'overview' && (
         <div className="space-y-6">

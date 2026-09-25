@@ -34,7 +34,7 @@ import {
 } from '@linyup/shared'
 import { sendEmail, buildEmailTemplate } from '../utils/email'
 
-// Self-serve checkout is Coach & Studio only. Organisation is sales-led
+// Self-serve checkout is Coach & Studio only. Organization is sales-led
 // (base + per-studio, 2-studio minimum — see ORG_PER_STUDIO) and quoted on a
 // call, so it's never created through the public createCheckoutSession path.
 const VALID_PLANS: SaasPlan[] = ['coach', 'studio']
@@ -44,12 +44,12 @@ const VALID_PLANS: SaasPlan[] = ['coach', 'studio']
 /**
  * TEAM ownership, and only that — a read of `teams/{teamId}/team_members/{uid}`.
  *
- * Every callable in this file is therefore TEAM-ONLY. An organisation pays for
+ * Every callable in this file is therefore TEAM-ONLY. An organization pays for
  * itself through the sibling rail in `../orgs/billing.ts`, guarded by
  * `assertOrgAdmin` against `organizations/{orgId}/org_members/{uid}`; the two
  * share their Stripe work via `./actions.ts` and nothing else. Passing an org id
- * here fails closed (an organisation has no `team_members`), which is the
- * behaviour that made UX-75 look like a permissions problem for a year.
+ * here fails closed (an organization has no `team_members`), which is the
+ * behavior that made UX-75 look like a permissions problem for a year.
  */
 async function assertOwner(uid: string, teamId: string): Promise<void> {
   const isOwner = await hasTeamRole(uid, teamId, 'owner')
@@ -124,19 +124,19 @@ export const createCheckoutSession = onCall(async (request) => {
   await assertOwner(request.auth.uid, teamId)
   await assertNotComped(TEAMS_COLLECTION, teamId, 'team')
 
-  // A STUDIO INSIDE AN ORGANISATION DOES NOT OWN ITS OWN BILLING (UX-35), and
+  // A STUDIO INSIDE AN ORGANIZATION DOES NOT OWN ITS OWN BILLING (UX-35), and
   // this callable never asked. `acceptOrgInvitation` puts the studio on the
-  // organisation's plan and the ORG's subscription is what pays for it, so a
+  // organization's plan and the ORG's subscription is what pays for it, so a
   // second subscription bought here is a second charge for one seat — and on
   // payment the webhook's team branch overwrites `plan`/`plan_status` on the
-  // team document, knocking the studio off the organisation tier it is
+  // team document, knocking the studio off the organization tier it is
   // legitimately on. Both halves are silent.
   const teamSnap = await admin.firestore().collection(TEAMS_COLLECTION).doc(teamId).get()
   const teamOrgId = teamSnap.data()?.org_id as string | undefined
   if (teamOrgId) {
     throw new HttpsError(
       'failed-precondition',
-      'This studio is billed by its organisation. Ask an organisation admin about the plan.',
+      'This studio is billed by its organization. Ask an organization admin about the plan.',
       { reason: 'billed_by_org' }
     )
   }
@@ -354,7 +354,7 @@ export const handleStripeWebhook = onRequest(
           // It has ENDED — there is no longer a future end to announce.
           update.cancel_at_period_end = false
           update.cancel_at = null
-          // …but WHEN and WHY it was cancelled are KEPT, and this is the event that
+          // …but WHEN and WHY it was canceled are KEPT, and this is the event that
           // carries them most reliably. Only overwritten when the payload actually
           // says something: a `deleted` event with no cancellation_details must not
           // erase the reason an earlier `updated` already recorded.
@@ -400,9 +400,9 @@ export const handleStripeWebhook = onRequest(
         entityUpdate.purge_at = FieldValue.delete()
       }
 
-      // A cancelled subscription lands the payer on what it now pays for, and the
+      // A canceled subscription lands the payer on what it now pays for, and the
       // TWO TIERS FOLLOW THE SAME RULE (UX-10) — a team lands on Free; an
-      // organisation winds down through `lapseOrganization`, which puts each of
+      // organization winds down through `lapseOrganization`, which puts each of
       // its studios on Free through this very same `downgradeTeamToFree`.
       //
       // `past_due` deliberately does NOT tear anything down, on either tier. It is
@@ -418,12 +418,12 @@ export const handleStripeWebhook = onRequest(
       // A COMPED TENANT IS EXEMPT FROM THE TEARDOWN ON BOTH TIERS. The org side
       // already refuses inside `lapseOrganization`; the team side did not, and
       // the asymmetry bites at exactly the wrong moment. Comping an existing
-      // customer means cancelling the subscription it currently pays — which
+      // customer means canceling the subscription it currently pays — which
       // fires this event — so without the check the act of comping a studio is
       // also the act of stripping it to Free: plugins off, site down, course
       // mirrors deleted one-way. The flag is the record that nothing upstream
       // can legitimately conclude this tenant stopped paying.
-      // A STUDIO INSIDE AN ORGANISATION DOES NOT OWN ITS OWN BILLING (UX-35), AND
+      // A STUDIO INSIDE AN ORGANIZATION DOES NOT OWN ITS OWN BILLING (UX-35), AND
       // ITS OWN SUBSCRIPTION'S EVENTS MUST NOT SPEAK FOR IT.
       //
       // `acceptOrgInvitation` now refuses a studio that still has a live
@@ -444,7 +444,7 @@ export const handleStripeWebhook = onRequest(
       //   beside `plan: 'free'` (the state `orgs/lifecycle.ts` goes out of its
       //   way to avoid).
       //
-      // The organisation's own subscription still governs the studio — that
+      // The organization's own subscription still governs the studio — that
       // event arrives on the `org` branch below and propagates from there.
       const teamDoc =
         entityType === 'team'
@@ -495,10 +495,10 @@ export const handleStripeWebhook = onRequest(
       // Handles trial→paid conversion (carried add-ons become paid items) and
       // external removals. Only touches paid add-on installs (config.addonItemId).
       //
-      // SKIPPED for a studio billed by its organisation, for the same reason the
+      // SKIPPED for a studio billed by its organization, for the same reason the
       // plan write above is: this DELETES installs whose add-on item is absent
       // from the subscription, and an ex-subscription's event carries none — so
-      // a late event would strip paid plugins off a studio whose organisation is
+      // a late event would strip paid plugins off a studio whose organization is
       // what grants them ("org_id IS the grant", `useInstalledPlugins`).
       if (
         entityType === 'team' &&
@@ -546,7 +546,7 @@ export const handleStripeWebhook = onRequest(
 
 // ─────────────────────────────────────────────────────────────────────────────
 // The four TEAM billing callables. Each is one line of authorization plus the
-// shared action from ./actions.ts; the organisation's four are in
+// shared action from ./actions.ts; the organization's four are in
 // ../orgs/billing.ts and differ only in their guard. `teamId` on the wire is
 // now TRUE of all four — an org id never reaches here (UX-75).
 // ─────────────────────────────────────────────────────────────────────────────
@@ -759,14 +759,14 @@ export const deactivatePluginAddon = onCall(async (request) => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Trial lifecycle: lapsed trials (and cancelled paid subscriptions) land on
+// Trial lifecycle: lapsed trials (and canceled paid subscriptions) land on
 // the Free plan — data kept, app fully usable within Free's limits. Daily
 // scheduled job. The old wall + 90-day purge are retired.
 // ─────────────────────────────────────────────────────────────────────────────
 
 // `downgradeTeamToFree` — THE one writer — now lives in ./downgrade.ts, imported
 // above. It moved out of this file so `orgs/lifecycle.ts` can call the SAME
-// function for every studio a lapsed organisation was paying for, without
+// function for every studio a lapsed organization was paying for, without
 // importing a module whose top level registers every billing function. There is
 // one downgrade path for both tiers; do not write a second one.
 
@@ -840,7 +840,7 @@ export const handleTrialLifecycle = onSchedule(
         console.log(`[trial] skipped ${trialSweepExemption(flags)} team ${teamId}`)
         continue
       }
-      // A TEAM INSIDE AN ORGANISATION DOES NOT OWN ITS OWN BILLING (UX-35).
+      // A TEAM INSIDE AN ORGANIZATION DOES NOT OWN ITS OWN BILLING (UX-35).
       // `acceptOrgInvitation` sets org_id together with plan 'organization' and
       // copies the ORG's plan_status onto the team — so a member studio of an
       // org that is itself on trial matches this query, on the strength of a
@@ -871,12 +871,12 @@ export const handleTrialLifecycle = onSchedule(
       }
     }
 
-    // Phase 2 — lapsed ORGANISATION trials (UX-9).
+    // Phase 2 — lapsed ORGANIZATION trials (UX-9).
     //
     // This sweep reads `organizations`, and it has to: phase 1 above cannot see
     // an org's trial, and it is forbidden from touching an org's studios (UX-35),
     // so before this block existed NOTHING ended an org trial. An unpaid
-    // organisation — and every studio it billed — sat on the top tier forever.
+    // organization — and every studio it billed — sat on the top tier forever.
     //
     // Same shape as phase 1, same exemptions, and the deadline is READ from the
     // document rather than derived from `created`: extending a hand-onboarded

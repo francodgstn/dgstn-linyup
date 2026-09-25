@@ -26,7 +26,7 @@
  * Passes: setup | auth-users | users | teams | activities | session-series | contacts | sessions | events | exam-checkins | cup-checkins | event-categories | referrals | team-subcollections | places | org-website | season-calendar | activation | affiliations | plan-grants | verify
  *
  *   activation    — part of every full run that has --live; alone, to flip a club live at its wave
- *   affiliations  — never part of a full run; the licence re-sync while the old system stays master
+ *   affiliations  — never part of a full run; the license re-sync while the old system stays master
  *   plan-grants   — part of every full run; each contact's legacy plan slot as a plan grant. A
  *                   per-club contacts catch-up runs it after: --only plan-grants --teams X
  */
@@ -279,7 +279,7 @@ async function run() {
   // flip a club live at its wave. It iterates the SOURCE club list, so `--only
   // activation` needs no teamIds and never touches a non-HMD tenant.
   if ((!only && cfg.live?.length) || only === 'activation') await pass15Activation(cfg)
-  // The licence re-sync is never part of a full run — pass 05 writes the same
+  // The license re-sync is never part of a full run — pass 05 writes the same
   // rows on import; this exists for the weeks the old system stays master.
   if (only === 'affiliations')                 await pass16Affiliations(cfg, teamIds)
   // After the contacts pass, which writes the slot this imports as a plan grant

@@ -172,7 +172,7 @@ function AppearancePanel({
       )}
 
       {/* Theme — TWO COLUMNS: the controls on the left (2/3), a live preview on
-          the right (1/3). A studio changing colours wants to watch them decide
+          the right (1/3). A studio changing colors wants to watch them decide
           something; a preview beside the controls is that, and it is why the
           strength dials the first cut had are gone — the preview does the job
           they were pretending to (Franco, 2026-09-03). */}
@@ -334,7 +334,7 @@ function AppearancePanel({
             They are ordinary menu items now — added, renamed, nested and ordered
             beside everything else in the Menu editor, which is where a studio
             looks for them. `SiteHeader.surfaceLinks` stays in the type and is
-            still honoured when deriving a menu for a site that has never been
+            still honored when deriving a menu for a site that has never been
             edited, so no existing header changes. */}
       </div>
 
@@ -458,7 +458,7 @@ export default function WebsiteBuilderPage() {
   // what it is about to put in front of visitors before it does it.
   const [confirmPublish, setConfirmPublish] = useState(false)
 
-  // Initialise the working draft once data has settled.
+  // Initialize the working draft once data has settled.
   useEffect(() => {
     if (draft || draftLoading || !currentTeamId || !team) return
     setDraft(
@@ -991,7 +991,7 @@ export default function WebsiteBuilderPage() {
               <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/30 p-2.5 lg:hidden">
                 {/* A studio thinking "my website has these pages" had nothing
                     on screen saying "pages" — only an unlabelled dropdown in a
-                    grey strip. The count is here for the same reason: the caps
+                    gray strip. The count is here for the same reason: the caps
                     (30 pages, 100 posts) were only ever mentioned by the error
                     you got when you hit one. */}
                 <Label className="shrink-0 text-xs font-medium text-muted-foreground">
@@ -1178,7 +1178,7 @@ export default function WebsiteBuilderPage() {
                               {/* The pencil and the bin were the only two
                                   row actions with no name — hovered, they said
                                   nothing, and to a screen reader they were two
-                                  unlabelled buttons beside three labelled ones. */}
+                                  unlabelled buttons beside three labeled ones. */}
                               <Tip label={t('editSection')}>
                                 <button
                                   type="button"

@@ -79,7 +79,7 @@ missing, and each absence surfaces as something that looks like a code bug:
 | `apps/admin/.env.local` | operator console rejects every login |
 | `packages/functions/.env.local` | **every callable returns a bare `internal`** — see below |
 | `apps/mobile/.env.staging` | `pnpm dev:mobile` refuses at config time (it names the file) |
-| `packages/shared/dist`, `packages/functions/dist` | `X is not a function`, or last week's behaviour — see traps |
+| `packages/shared/dist`, `packages/functions/dist` | `X is not a function`, or last week's behavior — see traps |
 | `scripts/leads/.env.local`, `scripts/leads/{lead}/` | `pnpm lead:seed` cannot find the profile |
 | `keys/` | `pnpm migrate:hmd` has no source credentials |
 

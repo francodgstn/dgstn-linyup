@@ -51,7 +51,7 @@ import { HintTip, SettingsRow, SettingsSection } from '@/components/settings/Set
  * and the callables read, so this screen cannot drift from what is enforced.
  * Coach renders the same list, editable.
  *
- * ── EVERY ROLE SHOWS THE WHOLE CATALOGUE ───────────────────────────────────
+ * ── EVERY ROLE SHOWS THE WHOLE CATALOG ───────────────────────────────────
  * …including the capabilities the role does NOT have, and (for Coach) the ones
  * it can never be given. A list of only what a role can do cannot answer "can
  * this role do X" for any X outside it — the reader is left unable to tell "no"
@@ -66,7 +66,7 @@ import { HintTip, SettingsRow, SettingsSection } from '@/components/settings/Set
  * wall they are behind (`coachLockReason`) instead of vanishing.
  *
  * ── THE ROWS SAY WHAT THEY ACTUALLY GOVERN ─────────────────────────────────
- * Not every id in the catalogue gates something in the app. `contacts.view`,
+ * Not every id in the catalog gates something in the app. `contacts.view`,
  * `contacts.view.all`, `schedule.view` and `schedule.view.all` are read only by
  * the public-API scope table — reading a contact in the web app is
  * `canAccessContact` in firestore.rules, which asks for team membership and
@@ -376,7 +376,7 @@ function RolePermissions() {
                         {tc(meta.labelKey as Parameters<typeof tc>[0])}
                         {apiOnly && (
                           // Visible text, so `title` is extending something already
-                          // labelled rather than being the label — which is the line
+                          // labeled rather than being the label — which is the line
                           // components/ui/tip.tsx draws for when a styled tooltip is owed.
                           <span
                             title={t('apiOnlyTitle')}

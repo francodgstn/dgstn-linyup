@@ -8,7 +8,7 @@ description: Keep the Linyup roadmap board (GitHub project "Linyup roadmap", fra
 The board is the **lead-facing** picture of Linyup: what is available, what is
 being built, what is coming, what is being considered. It is NOT an engineering
 tracker — issues, PRs and `docs/` hold the detail. A few dozen items, each one a
-thing a studio owner would recognise.
+thing a studio owner would recognize.
 
 - Project: `https://github.com/users/francodgstn/projects/2` — owner
   `francodgstn`, number `2`, node id `PVT_kwHOADowus4Bj7lN`.
@@ -159,6 +159,6 @@ area name. Never hand-edit `roadmap.json`.
 
 ## Answering "what's on the roadmap"
 
-Read the board and summarise by status in the same public-grade language. The
+Read the board and summarize by status in the same public-grade language. The
 board is the source of truth for that question — do not re-derive it from
 `docs/` or memory, which are logs.

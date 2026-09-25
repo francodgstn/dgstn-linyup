@@ -24,14 +24,14 @@ describe('publicPagesIndexable', () => {
     [{ plan: 'free', plan_status: 'active' }, false, 'free is never indexable'],
     [{ plan: 'coach', plan_status: 'active' }, true, 'a paying coach is'],
     [{ plan: 'studio', plan_status: 'active' }, true, 'a paying studio is'],
-    [{ plan: 'organization', plan_status: 'active' }, true, 'a paying organisation is'],
+    [{ plan: 'organization', plan_status: 'active' }, true, 'a paying organization is'],
     // THE case the whole guard turns on: self-service signups are provisioned
     // studio/trial, so keying on the plan alone would leave the spam vector open
     // for the length of a trial — and a page only has to be crawled once.
     [{ plan: 'studio', plan_status: 'trial' }, false, 'a trial is NOT a paid tier'],
     [{ plan: 'studio', plan_status: 'expired' }, false, 'a lapsed trial is refused before the cron'],
     [{ plan: 'studio', plan_status: 'past_due' }, false, 'an unpaid invoice is not paying'],
-    [{ plan: 'studio', plan_status: 'cancelled' }, false, 'a cancelled plan is not paying'],
+    [{ plan: 'studio', plan_status: 'cancelled' }, false, 'a canceled plan is not paying'],
     // Fail closed on anything unknown.
     [{}, false, 'a team with no plan fields at all'],
     [{ plan: null, plan_status: null }, false, 'explicit nulls'],
@@ -129,7 +129,7 @@ describe('the documents teardown is gone', () => {
     // fallback sentence with no link to the studio's Terms, and since it echoes
     // back only what it displayed, recordSignupConsent wrote ZERO acceptance
     // rows. Silent, unbounded, and the missed rows are not recoverable.
-    // Normalise line endings before slicing. This test isolates the function
+    // Normalize line endings before slicing. This test isolates the function
     // body by looking for a closing brace at column 0, and `core.autocrlf` gives
     // every Windows checkout CRLF — so the LF-only needle missed, the slice
     // collapsed to an empty string, and the assertion below failed against

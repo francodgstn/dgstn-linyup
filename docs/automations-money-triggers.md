@@ -100,13 +100,13 @@ the same way.
 
 **A scope is only real if the ENGINE narrows on it.** `subscription_cancel_requested`
 shipped emitting a `subscriptionTypeId` delta that `fireEventRules` never matched on,
-so a rule narrowed to one plan fired when any plan was cancelled — the builder offered
+so a rule narrowed to one plan fired when any plan was canceled — the builder offered
 a control that silently did nothing. Nothing typed catches that: the delta field is
 optional, the branch is a valid boolean expression, and the rule fires; only the
 narrowing is missing. It was found by driving the emulator, and
 `automation/subscriptionScope.test.ts` now reads both files and pins them in agreement.
 
-All three payment triggers honour a delay, through the same Cloud Tasks path as every
+All three payment triggers honor a delay, through the same Cloud Tasks path as every
 other event trigger. `delayedRules.test.ts` reads both the engine and the rule builder
 and fails the build if the two ever disagree about that.
 

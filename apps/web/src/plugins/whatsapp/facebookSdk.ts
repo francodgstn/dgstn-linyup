@@ -35,7 +35,7 @@ declare const globalThis: { __linyupFbSdkPromise?: Promise<void> } & typeof wind
 
 const SDK_SRC = 'https://connect.facebook.net/en_US/sdk.js'
 
-/** Resolves once `window.FB` is initialised for `appId`/`graphVersion`. Safe to
+/** Resolves once `window.FB` is initialized for `appId`/`graphVersion`. Safe to
  *  call more than once (returns the same in-flight/cached promise). */
 export function loadFacebookSdk(appId: string, graphVersion: string): Promise<void> {
   if (typeof window === 'undefined') return Promise.reject(new Error('no_window'))

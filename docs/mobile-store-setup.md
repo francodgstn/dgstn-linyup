@@ -56,11 +56,11 @@ moment the first build is uploaded.
 - **In-app account deletion exists** — `Profile → Delete account` →
   `requestContactDeletion`, which schedules deletion 30 days out, keeps the
   account working, and cancels on sign-in; `dailyTasks/anonymizeScheduledContacts`
-  anonymises at the deadline. Apple guideline 5.1.1(v) is satisfied.
+  anonymizes at the deadline. Apple guideline 5.1.1(v) is satisfied.
 - **The web deletion URL exists**: `linyup.com/delete-account`. Play requires
   one alongside the in-app route.
 - **The privacy policy covers app users** — `/privacy` §2.10, written for
-  members, matching the deletion behaviour above.
+  members, matching the deletion behavior above.
 - **The app runs on a real device and the review login works** — verified
   2026-09-03 on build `0e3f3ee6`, which is what the store reviewer will do
   first. Two device checks remain open; see `docs/mobile-eas-setup.md` step 7.
@@ -330,5 +330,5 @@ Add the `ascAppId`, the Apple team id, and the Play track to
 
 Public launch itself: store screenshots, the App Store description and
 keywords, the content rating questionnaire, and the decision about the
-production Firebase key. Each is a judgement call about the product rather
+production Firebase key. Each is a judgment call about the product rather
 than a mechanical step.

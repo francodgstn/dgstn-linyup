@@ -1,11 +1,11 @@
 'use client'
 
-// A labelled disclosure for the OPTIONAL tail of a long form.
+// A labeled disclosure for the OPTIONAL tail of a long form.
 //
 // ── THE DISCLOSURE RULE (read this before putting a field behind it) ─────────
 //
 // Only a field whose default is right for a studio that NEVER opens this may
-// live here. Concretely: leaving it untouched must produce the behaviour that
+// live here. Concretely: leaving it untouched must produce the behavior that
 // studio would have chosen, and an empty value must render nothing rather than
 // something wrong. A default that is wrong is worse than a question.
 //

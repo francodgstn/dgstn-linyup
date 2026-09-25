@@ -217,7 +217,7 @@ const REFERENCE_RE = new RegExp(`^(?:BK-)?([${REFERENCE_ALPHABET}]{6})$`, 'i')
 
 /**
  * The `BK-…` code off a confirmation email or the booking success screen,
- * normalised — or null for anything that isn't one.
+ * normalized — or null for anything that isn't one.
  *
  * The prefix is optional because a caller reads out the six characters as often
  * as the whole code. That means a six-letter NAME drawn from the same alphabet

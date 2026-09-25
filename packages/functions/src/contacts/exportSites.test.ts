@@ -18,7 +18,7 @@ import { join, relative, resolve } from 'node:path'
 // (a month's journal) may stay in the browser. This file is the gate on that
 // rule — it spans the functions/web boundary on purpose, exactly like
 // connect/commitSites.test.ts, because that boundary is where corrections stop
-// travelling.
+// traveling.
 //
 // ── WHY IT IS A TEST AND NOT A COMMENT ──────────────────────────────────────
 // CLAUDE.md forbids a comment that asserts a COUNT of code sites, and allows a

@@ -165,7 +165,7 @@ function stripeCard(st: StripeCostSnapshot | null, recordedOn: string | null): C
   // studio as fee payer, so it pays Stripe nothing on the member→studio rail:
   // adding these together would overstate COGS by the whole width of payment
   // volume. The platform bill is the headline; the studios' figure sits below a
-  // rule, smaller and separately labelled, so the card cannot be read as one sum.
+  // rule, smaller and separately labeled, so the card cannot be read as one sum.
   return {
     kind,
     headline: st.platform
@@ -316,7 +316,7 @@ function FigureView({ figure, lead = false }: { figure: Figure; lead?: boolean }
 
 /** Usage against a cap the vendor reported. Past 100% the bar stays full but the
  *  percentage keeps counting — an overrun is the one thing this must not hide.
- *  Colour appears only when the share needs attention, so a healthy bar stays
+ *  Color appears only when the share needs attention, so a healthy bar stays
  *  neutral and amber and red keep their meaning. */
 function Meter({ used, cap, of }: { used: number; cap: number; of: string }) {
   const ratio = used / cap

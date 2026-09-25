@@ -5,7 +5,7 @@
 // decisions live in ./recipients.ts, pure and unit-tested:
 //
 //  • CONSENT. Contact.email_unsubscribed is the studio's own marketing opt-out
-//    and must be honoured here. The mail service's suppression list is a
+//    and must be honored here. The mail service's suppression list is a
 //    different thing (bounces/blocks/spam reports from the ESP) and does not
 //    cover it — the automation engine has always checked this flag; the manual
 //    path did not, and quietly mailed people who had opted out.

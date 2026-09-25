@@ -9,7 +9,7 @@
  * three.
  *
  * PUBLIC BY NATURE. A studio's address reaches its bio-link through its primary
- * place; an organisation has no places of its own, so this is where its contact
+ * place; an organization has no places of its own, so this is where its contact
  * section gets an address from. Nothing is shown that has not been filled in,
  * so an org that would rather not publish a street address simply leaves it
  * empty — there is no separate visibility switch to get wrong.

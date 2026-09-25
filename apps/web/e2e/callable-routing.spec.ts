@@ -113,7 +113,7 @@ function assertRouted(seen: Seen[], surface: string) {
   return routed
 }
 
-test('the watcher recognises BOTH shapes of a functions URL', () => {
+test('the watcher recognizes BOTH shapes of a functions URL', () => {
   // The first version only knew the emulator's shape, so against a deployed project
   // it recorded nothing and failed with "no routed callable was requested at all" —
   // a failure that read like a routing defect and was a blind watcher.

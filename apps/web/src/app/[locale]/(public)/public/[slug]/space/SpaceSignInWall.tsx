@@ -12,7 +12,7 @@
 //  2. All four gated on `isAuthenticated` ALONE. Restoring a persisted contact
 //     session takes two async hops, and for that whole window `isAuthenticated`
 //     is false — so a signed-in member opening her own portal was told, in the
-//     studio's own colours, "Sign in to view your membership and details."
+//     studio's own colors, "Sign in to view your membership and details."
 //     (UX-37). Four copies meant four places to get that wrong, and they did.
 //
 // The rule this encodes: WE DO NOT KNOW YET is not the same answer as NO, and

@@ -119,7 +119,7 @@ export function sanitizeOrgSection(raw: unknown): OrgSiteSection | null {
   if (!section) return null
   // An org button opens one of its own pages or an external link — the shared
   // builders also accept booking, signup and appointment buttons, which on an
-  // organisation's site would point at surfaces it does not have.
+  // organization's site would point at surfaces it does not have.
   const withCta = section as { cta?: { action?: string } }
   if (withCta.cta && withCta.cta.action !== 'url' && withCta.cta.action !== 'page') delete withCta.cta
   // Nav membership + menu label — one rule for both tenants.
@@ -140,7 +140,7 @@ export function sanitizeOrgSections(raw: unknown): OrgSiteSection[] {
 /**
  * The org site's meta: the team sanitizer, plus the HEADER BUTTON RULE.
  *
- * An organisation has no booking page, no signup form and no appointments, so
+ * An organization has no booking page, no signup form and no appointments, so
  * its header button opens one of the site's own PAGES or a link — exactly the
  * two actions its section buttons offer (`sanitizeOrgSection`). The shared
  * sanitizer defaults the button's action to 'booking' — right for a studio, and
@@ -166,9 +166,9 @@ export function sanitizeOrgMeta(raw: unknown, fallbackTitle: string): SiteMeta {
 
 /**
  * The language the org site is WRITTEN in — the site's own setting first, the
- * organisation's working language after. The team publish has asked in this
+ * organization's working language after. The team publish has asked in this
  * order since sites gained a language of their own; the org publish read only
- * the organisation's, so a federation that set its site to German while
+ * the organization's, so a federation that set its site to German while
  * working in English had its German copy "translated" from English.
  */
 export function orgSiteSourceLocale(meta: Pick<SiteMeta, 'language'>, org: { language?: string | null }): UiLanguage {

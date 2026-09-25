@@ -6,7 +6,7 @@
 // which is why `/settings/plugins` is still a route: it redirects here and
 // carries `?plugin=<id>` with it (see that file).
 //
-// It is not a settings panel. It is a catalogue you browse, compare and buy
+// It is not a settings panel. It is a catalog you browse, compare and buy
 // from, and it is the one screen in the app that is nothing but a card grid — so
 // the rail beside it was spending a third of the width on navigation the reader
 // had already finished using. Full width, three columns from xl.
@@ -146,15 +146,15 @@ function PluginBadgeIcons({
 }) {
   const t = useTranslations('Plugins')
 
-  // Icons are monochrome (muted) at rest and reveal their semantic colour only on
-  // hover — keeps the grid calm while still signalling on interaction.
+  // Icons are monochrome (muted) at rest and reveal their semantic color only on
+  // hover — keeps the grid calm while still signaling on interaction.
   //
   // `tooltip` defaults to `label`. It exists for the one signal whose label is a
   // word rather than a fact: a tooltip reading "Recommended" over an icon that
   // already means "recommended" explains nothing (UX-65), so it says who is
   // recommending and on what basis. The aria-label stays the short form.
   //
-  // NOT A STAR: the star now means "favourite" in the nav, and the settings rail
+  // NOT A STAR: the star now means "favorite" in the nav, and the settings rail
   // — which carries that very toggle — renders down the left of THIS page, so a
   // star here would put both meanings on one screen. Not `Puzzle` either (every
   // card is a plugin) and not `Sparkles`/`Award` (already the AI and gamification

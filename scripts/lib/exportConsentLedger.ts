@@ -84,7 +84,7 @@ export async function exportConsentLedger(
  * throw if any of it failed.
  *
  * Callers pass `skip: true` for `--no-consent-export`, which is echoed rather
- * than silently honoured — the console output of a destructive run is its only
+ * than silently honored — the console output of a destructive run is its only
  * record.
  */
 export async function requireConsentExport(

@@ -79,7 +79,7 @@ export const SETUP_GUIDE_INTRO = 'setup-guide'
 
 /**
  * The param the checklist's "view all your QR codes" step arrives with, and
- * which `/public-page` honours by opening its QR dialog.
+ * which `/public-page` honors by opening its QR dialog.
  *
  * It lives here rather than at either end because both ends need the same
  * spelling and neither owns the other: the step is a URL string in

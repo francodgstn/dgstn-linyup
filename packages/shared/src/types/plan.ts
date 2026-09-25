@@ -12,7 +12,7 @@ export const TRIAL_DAYS = 30
 // When the trial lapses the team is downgraded to the Free plan (see
 // handleTrialLifecycle); there is no wall or data purge.
 
-// An ORGANISATION's trial (createOrganization). Separate constant, same length
+// An ORGANIZATION's trial (createOrganization). Separate constant, same length
 // today: the org tier is sales-led and its setup is operator-assisted, so the
 // number is expected to move independently of a self-service team's. It was 14
 // while nothing ended it at all — the sweep that ends it (handleTrialLifecycle,
@@ -26,7 +26,7 @@ export const TRIAL_DAYS = 30
 export const ORG_TRIAL_DAYS = 30
 
 // Base subscription pricing per plan. Declarative source for scripts/stripe-sync.ts
-// (the whole Stripe catalogue — plans + add-ons — lives in the repo).
+// (the whole Stripe catalog — plans + add-ons — lives in the repo).
 // Amounts are INDICATIVE base prices in CHF/month; the authoritative amount is the
 // Stripe Price for the lookup key. `stripe:sync` only *creates* missing prices —
 // it never repriced an existing one unless run with --reprice.
@@ -37,10 +37,10 @@ export interface PlanPrice {
   stripeLookupKey: string | null
   /**
    * Included contacts. The cap counts ACTIVE (non-archived) contacts only —
-   * archived contacts never count and are auto-anonymised after 2 years (see
+   * archived contacts never count and are auto-anonymized after 2 years (see
    * the retention policy). The cap is acquisition-stage-neutral: a contact at any
    * stage (trial_booked / trial_attended / joined) counts the same — `archived_at`
-   * is the sole input. null = unlimited (organisation). Over-cap behaviour is
+   * is the sole input. null = unlimited (organization). Over-cap behavior is
    * per-tier and carries NO per-contact charge — see `contactOverageForPlan`.
    */
   includedContacts: number | null
@@ -58,10 +58,10 @@ export const PLAN_PRICING: Record<SaasPlan, PlanPrice> = {
     stripeLookupKey: 'linyup_studio_monthly',
     includedContacts: 300,
   },
-  // Organisation has NO fixed price and NO base fee — it is priced PER STUDIO
+  // Organization has NO fixed price and NO base fee — it is priced PER STUDIO
   // (ORG_PER_STUDIO). `baseMonthly: 0` is the honest value rather than a
   // placeholder, and `stripeLookupKey: null` follows from it: a base fee of zero
-  // has no price to bill, so the catalogue creates none and the org's whole
+  // has no price to bill, so the catalog creates none and the org's whole
   // subscription is the per-studio line at quantity = studios.
   //
   // Anything reading `baseMonthly` to render "the price of this tier" is WRONG
@@ -112,13 +112,13 @@ export function publicPagesIndexable(team: {
   return status === 'active'
 }
 
-// ─── Over-cap behaviour (NO per-contact metering) ───────────────────────────────
+// ─── Over-cap behavior (NO per-contact metering) ───────────────────────────────
 // When a team exceeds includedContacts the response depends on the tier — there
 // is no per-head overage charge:
 //   free   → hard cap, prompt to upgrade (planHasHardContactCap).
 //   coach  → prompt to upgrade to Studio (grown past a solo coach).
 //   studio → buy optional +N-contact blocks (STUDIO_CONTACT_BLOCK) for more
-//            room, or upgrade to Organisation. Never hard-blocked mid-month.
+//            room, or upgrade to Organization. Never hard-blocked mid-month.
 //   org    → unlimited.
 export interface ContactBlock {
   /** Contacts added per block. */
@@ -136,7 +136,7 @@ export const STUDIO_CONTACT_BLOCK: ContactBlock = {
   stripeLookupKey: 'linyup_studio_contact_block_monthly',
 }
 
-// ─── Organisation pricing: A FLAT RATE PER STUDIO ───────────────────────────────
+// ─── Organization pricing: A FLAT RATE PER STUDIO ───────────────────────────────
 //
 // CHF 25 per studio per month, from 2 studios to 10. Above ten the number is
 // quoted rather than listed, and that is a FOURTH STATE OF THE SAME TIER, not a
@@ -153,7 +153,7 @@ export const STUDIO_CONTACT_BLOCK: ContactBlock = {
 //
 // The base fee existed to stop unrelated studios grouping up to undercut the
 // Studio tier. Nothing in code replaces it: eligibility (common ownership, or a
-// single federating body) was always a sales judgement and still is.
+// single federating body) was always a sales judgment and still is.
 //
 // Stripe bills ONE recurring item — ORG_PER_STUDIO at quantity = studios. There
 // is no base price any more, which is why PLAN_PRICING.organization carries a
@@ -169,7 +169,7 @@ export const ORG_PER_STUDIO: { monthly: number; stripeLookupKey: string } = {
 }
 
 /**
- * Monthly total for an organisation with `studios` studios.
+ * Monthly total for an organization with `studios` studios.
  *
  * The minimum is enforced because the tier does not exist below it; the MAXIMUM
  * deliberately is not, so a caller that asks about 14 studios gets the honest
@@ -191,7 +191,7 @@ export type ContactOverage =
   | { kind: 'hard' } // free: blocked, upgrade
   | { kind: 'upgrade'; to: SaasPlan } // coach: prompt next tier
   | { kind: 'block'; block: ContactBlock } // studio: buy blocks (or upgrade)
-  | { kind: 'unlimited' } // organisation
+  | { kind: 'unlimited' } // organization
 
 export function contactOverageForPlan(plan: SaasPlan | null): ContactOverage {
   switch (plan) {
@@ -454,8 +454,8 @@ export function minimumPlanForFeature(feature: PlanFeature): SaasPlan {
   return 'organization'
 }
 
-// Affiliations (the belonging axis: club / federation licence / grading) are an
-// opt-in surface for Verein-structured and licence-bound clubs. Available from the
+// Affiliations (the belonging axis: club / federation license / grading) are an
+// opt-in surface for Verein-structured and license-bound clubs. Available from the
 // Studio tier up, off by default per team (see Team.affiliations_enabled). Phase 2.
 export function planSupportsAffiliations(plan: SaasPlan | null): boolean {
   return plan === 'studio' || plan === 'organization'

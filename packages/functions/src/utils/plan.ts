@@ -15,7 +15,7 @@ export function planStatusIsInactive(status: string | null | undefined): boolean
 
 /**
  * Throws HttpsError('permission-denied') if the team's plan is below minPlan.
- * Also rejects inactive plans (past_due, cancelled) unless `allowTrial` is true
+ * Also rejects inactive plans (past_due, canceled) unless `allowTrial` is true
  * (trial is considered active for all feature checks).
  *
  * BOTH refusals carry `details.reason` — 'plan_inactive' for a lapsed

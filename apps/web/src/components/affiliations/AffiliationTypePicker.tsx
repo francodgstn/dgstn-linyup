@@ -21,7 +21,7 @@
  * ── WHY CARDS ───────────────────────────────────────────────────────────────
  *
  * There are a handful of these per tenant, not a hundred, and each is a thing
- * with a mark: a federation licence, a club membership, a governing body's
+ * with a mark: a federation license, a club membership, a governing body's
  * registration. `logo_url` is shown where it exists, the label's initial where
  * it does not, so a picker without logos still reads as a set of things rather
  * than as an empty grid.

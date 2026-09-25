@@ -54,8 +54,8 @@ export const SocialActionsCard: React.FC<SocialActionsCardProps> = ({
 }) => {
   const theme = useAppTheme();
   const t = useTranslations('Social');
-  // Accent colours (small touches only — the card stays neutral): the referral
-  // action in the studio's own colour, the third-party marks in theirs.
+  // Accent colors (small touches only — the card stays neutral): the referral
+  // action in the studio's own color, the third-party marks in theirs.
   const REFERRAL_COLOR = theme.colors.primary;
   const IG_COLOR = theme.semantic.instagram;
   const REVIEW_COLOR = theme.semantic.warning;

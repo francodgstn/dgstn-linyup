@@ -18,7 +18,7 @@
 //
 // ── WHAT IT DOES ─────────────────────────────────────────────────────────────
 // Both directions of the relation, from whichever document changed:
-//   • a REQUIRER was written  → materialise its missing requirements;
+//   • a REQUIRER was written  → materialize its missing requirements;
 //   • a REQUIREMENT went away → put it back if a requirer is still active.
 // The second arm is what makes the marketplace's blocked-remove more than a
 // suggestion: the client explains why it refuses, and a client that bypasses
@@ -32,7 +32,7 @@
 // the fact it is indistinguishable from one the tenant chose.
 //
 // ── LOOP BREAKERS ────────────────────────────────────────────────────────────
-// Two, mirroring `bundleReconcile`, and neither is an optimisation:
+// Two, mirroring `bundleReconcile`, and neither is an optimization:
 //   1. a document that is neither a requirer nor a requirement returns before
 //      any read — most install writes are neither;
 //   2. an empty diff returns before committing, so the write this function

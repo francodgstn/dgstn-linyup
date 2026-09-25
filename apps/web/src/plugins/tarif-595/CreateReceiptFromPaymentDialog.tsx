@@ -20,7 +20,7 @@
 //
 //   • WHICH RECORD — this plan period, that course. Answerable only when the
 //     Connect webhook stamped a `line_item` carrying the id. A legacy row has
-//     none (`connectLineItem` synthesises a label-only item), and NO SEEDER
+//     none (`connectLineItem` synthesizes a label-only item), and NO SEEDER
 //     WRITES ONE AT ALL — so on the emulator, /try and every lead tenant this
 //     is unanswerable for every row, which is exactly where it was found.
 //
@@ -126,7 +126,7 @@ interface SourceChoice {
  * shortcut worked on no non-production dataset at all.
  *
  * The NAME is the step between, and it is not decoration. Seeded contact Luca
- * Ferrari holds four periods; his CHF 189 payment labelled "Elite" falls on
+ * Ferrari holds four periods; his CHF 189 payment labeled "Elite" falls on
  * 2026-08-21, and TWO periods cover that day — "Starter" and "Elite". Date
  * alone picked Starter, so the dialog pre-selected a plan the row it was opened
  * from visibly contradicts (found by clicking it, 2026-09-20). Matching the
@@ -201,7 +201,7 @@ export function CreateReceiptFromPaymentDialog({
    * the one to start on, and whether the ROW itself named it.
    *
    * THE ROW NAMES THE KIND; IT OFTEN CANNOT NAME THE RECORD. A plan id reaches a
-   * payment only via a webhook-stamped `line_item`; `connectLineItem` synthesises
+   * payment only via a webhook-stamped `line_item`; `connectLineItem` synthesizes
    * a `{kind, label}` for every older row without one, and no seeder writes one
    * at all. Refusing in that case — which is what this did — made the shortcut
    * useless on every non-production dataset and on every legacy sale.

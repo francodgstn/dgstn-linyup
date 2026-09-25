@@ -1,5 +1,5 @@
 // Publishing a site's PAGES — the part of a publish that is identical for a
-// team site and an organisation site.
+// team site and an organization site.
 //
 // Both keep the home page's sections on the site doc and every other page in a
 // `pages` subcollection beside it, listed by the site doc's `pages` index

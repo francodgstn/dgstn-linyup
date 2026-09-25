@@ -18,8 +18,8 @@ import { callFunction } from '@/lib/callFunction'
  * There used to be no way to do this from either roster. The status selector
  * only ever called `upsertAffiliation`, so the nearest thing to "not a member"
  * was picking the built-in `guest` status — which WRITES an affiliation row, and
- * a row is exactly what discloses the contact to the organisation
- * (`orgAdminMayReadContact`). The control labelled "not a member" was the one
+ * a row is exactly what discloses the contact to the organization
+ * (`orgAdminMayReadContact`). The control labeled "not a member" was the one
  * that made someone a member. `removeAffiliation` existed but was wired only to
  * the contact detail page. See `docs/org-contact-visibility.md`.
  *
@@ -36,7 +36,7 @@ import { callFunction } from '@/lib/callFunction'
  *
  * ── AND WHY IT IS NOT A SOFT FLAG ───────────────────────────────────────────
  *
- * The row IS the disclosure, so hiding a contact from the organisation again
+ * The row IS the disclosure, so hiding a contact from the organization again
  * means the row has to GO. `onAffiliationWrite` recomputes
  * `affiliation_summary` from the rows that remain, so this genuinely reverses:
  * the contact drops out of `org_ids` and the read rule stops admitting the org

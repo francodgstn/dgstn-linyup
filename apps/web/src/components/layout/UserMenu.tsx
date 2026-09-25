@@ -109,7 +109,7 @@ export function UserMenu({ collapsed }: { collapsed: boolean }) {
             <DropdownMenuGroup>
               {/* THE PERSON, NOT THE PLACE. This used to add the studio name
                   under the email — which named the STUDIO even while you stood
-                  in an ORGANISATION, the same wrong-scope label the header row
+                  in an ORGANIZATION, the same wrong-scope label the header row
                   was rebuilt to remove. The place is said once, at the top of
                   the sidebar, by the control that also changes it. */}
               <DropdownMenuLabel className="font-normal">

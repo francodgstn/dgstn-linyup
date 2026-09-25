@@ -327,8 +327,8 @@ describe('matchesFilter — rank', () => {
     assert.equal(countActiveFilters(filter({ rankRanges: { hwal: { min: 2, max: null } } })), 1)
   })
 
-  it('normalising drops an inert band but keeps a real one', () => {
-    // Via countActiveFilters, which normalises. An all-open band must not make
+  it('normalizing drops an inert band but keeps a real one', () => {
+    // Via countActiveFilters, which normalizes. An all-open band must not make
     // the dimension read as active anywhere.
     assert.equal(countActiveFilters(filter({ rankRanges: { hwal: { min: null, max: null } } })), 0)
   })

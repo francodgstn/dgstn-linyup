@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 // THE DAHLIA READS, PINNED TO THE SOURCE — because reverting any of them is
-// currently INVISIBLE to every behavioural test in this repo.
+// currently INVISIBLE to every behavioral test in this repo.
 //
 // ── Why this file exists at all ──────────────────────────────────────────────
 // The Basil→Dahlia defect shipped for one reason: `obj.field` on an `any`
@@ -17,7 +17,7 @@ import { join } from 'node:path'
 // That is the same hole the migration was about, one level up: the guard was
 // placed on the reader and not on anyone's obligation to use it.
 //
-// ── Why SOURCE assertions rather than behavioural tests ─────────────────────
+// ── Why SOURCE assertions rather than behavioral tests ─────────────────────
 // These handlers take a live Stripe client, firebase-functions and the Admin
 // SDK; reaching `handleInvoice` behaviourally means standing up the emulator and
 // a Stripe fixture per case, and the property under test — "this call site reads
@@ -25,7 +25,7 @@ import { join } from 'node:path'
 // the TEXT. Same technique and same reasoning as connect/commitSites.test.ts and
 // waivers/surfaces.test.ts, which pin counts and call-site lists the same way.
 //
-// A source guard cannot prove behaviour. What it can do is make a silent
+// A source guard cannot prove behavior. What it can do is make a silent
 // reversion loud, which is precisely what was missing.
 //
 // Run with: pnpm --filter @linyup/functions test
@@ -35,7 +35,7 @@ const SRC = join(__dirname, '..')
  *  lives outside the package and is half of the writer-parity claim below. */
 const ROOT = join(SRC, '..', '..', '..')
 
-/** LF-normalised: CRLF on Windows, LF on CI, and these patterns span lines. */
+/** LF-normalized: CRLF on Windows, LF on CI, and these patterns span lines. */
 function read(rel: string): string {
   return readFileSync(join(SRC, rel), 'utf8').replace(/\r\n/g, '\n')
 }
@@ -296,7 +296,7 @@ describe('`status` HAS ONE OWNER, AND handleInvoice IS NOT IT', () => {
     // Until now this was enforced by a comment saying "must not start". Re-adding
     // `status: 'active'` there is invisible to the suite, and what it costs is
     // specific: Stripe orders `invoice.paid` and `customer.subscription.deleted`
-    // however it likes, so a late or retried invoice would flip a cancelled
+    // however it likes, so a late or retried invoice would flip a canceled
     // subscription back to active and re-grant the entitlement behind it.
     const body = code(functionBody(webhook, 'handleInvoice'))
     const writes = body.match(/(?<![\w$])status\s*:/g) ?? []
@@ -377,7 +377,7 @@ describe('THE BACKFILL WRITES WHAT THE WEBHOOK WRITES', () => {
       /current_period_end:\s*periodEnd/.test(handler),
       'handleSubscription must still write the period END it owns'
     )
-    // LF-normalised, because the slice below is anchored on a bare newline and
+    // LF-normalized, because the slice below is anchored on a bare newline and
     // core.autocrlf gives every Windows checkout CRLF. The needle then misses,
     // the slice collapses to nothing, and the assertion fails against an empty
     // string while the source it is guarding is perfectly correct. That failure
@@ -428,7 +428,7 @@ describe('THE BACKFILL WRITES WHAT THE WEBHOOK WRITES', () => {
       saasWebhook.indexOf("case 'subscription.cancelled':"),
       saasWebhook.indexOf("case 'payment.succeeded':")
     )
-    assert.ok(branch.length > 0, 'the subscription.cancelled branch moved')
+    assert.ok(branch.length > 0, 'the subscription.canceled branch moved')
     assert.ok(/update\.cancel_at_period_end = false/.test(branch))
     assert.ok(/update\.cancel_at = null/.test(branch))
     // …and writes the record fields ONLY when the payload carries them, so a
@@ -443,7 +443,7 @@ describe('THE BACKFILL WRITES WHAT THE WEBHOOK WRITES', () => {
     // corrected that.
     assert.ok(
       !/update\.current_period_(start|end)/.test(branch),
-      'the subscription.cancelled branch now writes a billing period — if that is deliberate, ' +
+      'the subscription.canceled branch now writes a billing period — if that is deliberate, ' +
         "the backfill's ended-branch has to start writing one too"
     )
   })
@@ -460,7 +460,7 @@ describe('THE BACKFILL WRITES WHAT THE WEBHOOK WRITES', () => {
     assert.ok(/cancel_at: null/.test(branch))
     assert.ok(
       !/current_period_(start|end)/.test(branch),
-      'the ended SaaS payload writes a billing period the subscription.cancelled branch never ' +
+      'the ended SaaS payload writes a billing period the subscription.canceled branch never ' +
         'writes — a "current" period stamped onto a subscription the codebase says has none'
     )
     assert.ok(
@@ -476,7 +476,7 @@ describe('THE BACKFILL WRITES WHAT THE WEBHOOK WRITES', () => {
 
   it('the drift report compares through the rail’s vocabulary, not raw strings', () => {
     // Raw `stored.status !== target.stripeStatus` printed EVERY correctly-
-    // cancelled studio as drift — Stripe says `canceled`, SaasStatus says
+    // canceled studio as drift — Stripe says `canceled`, SaasStatus says
     // `cancelled` — under a heading claiming a webhook event had been missed.
     const src = code(script)
     assert.ok(

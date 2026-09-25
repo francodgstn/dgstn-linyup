@@ -182,11 +182,11 @@ service cloud.firestore {
     }
 
     // MAY AN ORG ADMIN READ THIS CONTACT? Only once the contact is ON THE
-    // ORGANISATION'S BOOKS — and being in a member studio is not that.
+    // ORGANIZATION'S BOOKS — and being in a member studio is not that.
     //
     // A studio inside a federation has contacts who are nobody's business but
     // its own: someone who trains at the club spot, a lead from a fitness app,
-    // a person doing a personalised activity the studio runs under its own name
+    // a person doing a personalized activity the studio runs under its own name
     // (Franco, 2026-09-08, describing HMD Basel). The old product expressed this
     // with a 'guest' membership status — a person on the federation's roster
     // marked as not counting. Affiliations replaced that: belonging is a ROW,
@@ -194,13 +194,13 @@ service cloud.firestore {
     //
     // THE AFFILIATION ROW IS THEREFORE THE DISCLOSURE. Creating one — in ANY
     // status, `guest` and `requested` included — is the studio's act of putting
-    // this person on the organisation's books, and it is what makes them
+    // this person on the organization's books, and it is what makes them
     // readable here. Delete the row and they go back to being invisible:
     // `onAffiliationWrite` recomputes the summary from the rows that remain, so
     // this reverses rather than merely stopping.
     //
-    // `org_ids` is the MEANING: an expired or merely requested licence still means
-    // the organisation knows this person and has to be able to renew or review
+    // `org_ids` is the MEANING: an expired or merely requested license still means
+    // the organization knows this person and has to be able to renew or review
     // them. `active_org_ids` answers "is it valid now", which is a FIGURE, not a
     // permission — narrowing to it would hide the very people an administrator
     // opens the page to chase.
@@ -256,7 +256,7 @@ service cloud.firestore {
       return e.get('scope', '') == 'org' && orgId != null && hasOrgRole(orgId, 'org_admin');
     }
 
-    // A MEMBER STUDIO of the organisation that owns this event.
+    // A MEMBER STUDIO of the organization that owns this event.
     //
     // The parent event's own read rule already admits `currentTeamInOrg`, but its
     // subcollections did not — and `belongsToUserTeam` starts `teamId != null`,
@@ -326,7 +326,7 @@ service cloud.firestore {
     }
 
     // ── Coach own-data scope (capability model) ──────────────────────────────
-    // owner/manager/viewer are all-scoped (today's behaviour); a coach is own-scoped
+    // owner/manager/viewer are all-scoped (today's behavior); a coach is own-scoped
     // and may only manage contacts/sessions assigned to or created by them. Members
     // without a stored `scope` are treated as all-scoped, so existing members and the
     // three system roles are entirely unaffected by these gates.
@@ -348,7 +348,7 @@ service cloud.firestore {
              || sessionRes.data.get('createdBy', null) == request.auth.uid;
     }
 
-    // Team access to a specific contact, honouring coach own-scope. Equivalent to
+    // Team access to a specific contact, honoring coach own-scope. Equivalent to
     // belongsToUserTeam for all-scoped members; adds the ownership filter for a coach.
     function canAccessContact(contactRes) {
       return belongsToUserTeam(contactRes)
@@ -744,7 +744,7 @@ service cloud.firestore {
       // Team places subcollection. Team members read; managers manage (CRUD).
       //
       // AN ORG ADMIN ALSO READS, so Org > Places can list every member studio's
-      // locations beside the organisation's own — the same shape
+      // locations beside the organization's own — the same shape
       // `program_templates` and `contacts` already use. READ ONLY, deliberately:
       // a studio's locations stay the studio's to edit, so `write` is untouched,
       // and an org_viewer is not admitted at all.
@@ -893,7 +893,7 @@ service cloud.firestore {
         allow write: if hasTeamRole(teamId, 'manager') || hasTeamRole(teamId, 'owner');
       }
 
-      // Team-local affiliation type catalog (club / licence / grading). Org-wide
+      // Team-local affiliation type catalog (club / license / grading). Org-wide
       // types live under organizations/{orgId}/affiliation_types.
       match /affiliation_types/{typeId} {
         allow read: if isTeamMember(teamId);
@@ -904,9 +904,9 @@ service cloud.firestore {
       // The public storefront reads the world-readable public_profile summary, never
       // this collection; the checkout callable resolves products via the Admin SDK.
       match /products/{productId} {
-        // Only team members can read the raw catalogue (e.g. inactive drafts).
+        // Only team members can read the raw catalog (e.g. inactive drafts).
         allow read: if isTeamMember(teamId);
-        // Managers and owners manage the catalogue.
+        // Managers and owners manage the catalog.
         allow write: if hasTeamRole(teamId, 'manager') || hasTeamRole(teamId, 'owner');
       }
 
@@ -1064,7 +1064,7 @@ service cloud.firestore {
         allow read:  if hasTeamRole(teamId, 'manager') || hasTeamRole(teamId, 'owner');
         allow write: if false;
 
-        // The durable per-PERSON ledger, keyed by a HASH of the normalised
+        // The durable per-PERSON ledger, keyed by a HASH of the normalized
         // email so the doc ids are not a harvestable list of customer
         // addresses. Read for the admin list; cleared only by
         // clearPromoRedemption.
@@ -1177,7 +1177,7 @@ service cloud.firestore {
       // copies are pinned to each other by tarif595/selfWrite.test.ts. A
       // create is checked on its keys, an update on the keys it touches, so a
       // member cannot smuggle a field in by writing the whole document. The
-      // contact never deletes it — the anonymisation sweep does, server-side.
+      // contact never deletes it — the anonymization sweep does, server-side.
       match /tarif595_contacts/{contactId} {
         allow read: if hasTeamRole(teamId, 'manager') || hasTeamRole(teamId, 'owner')
                        || (isContactOfTeam(teamId) && request.auth.token.contactId == contactId);
@@ -1373,7 +1373,7 @@ service cloud.firestore {
       // ONLY — no branch above may forge them, same guard shape as `tags` on
       // a session below. `ai_summary` (generateContactSummary, contacts/
       // aiSummary.ts) joins them for a different reason: it is a callable's
-      // write, and a client that could set it would be labelling its own
+      // write, and a client that could set it would be labeling its own
       // prose as the model's. `held_plans`, `held_plan_type_ids` and
       // `held_plans_next_change_at_ms` are `recomputeHeldPlans`'s alone
       // (sync/heldPlans.ts): the list of plans the contact holds, which phase 3
@@ -1580,7 +1580,7 @@ service cloud.firestore {
       // usage_windows / plan_purchases from its write grant.
       match /{subcollection}/{docId} {
         // `contact_notes` is the studio's PRIVATE staff commentary about a contact
-        // (behavioural / health / financial), authored in the staff-only Notes tab
+        // (behavioral / health / financial), authored in the staff-only Notes tab
         // and by the automation engine — never a member-facing surface. So the
         // contact-facing read predicates (isSelfContact / sharesContactEmail) are
         // withheld for it: a member must not read the confidential notes the studio
@@ -1642,7 +1642,7 @@ service cloud.firestore {
     // and only for team managers or owners.
     //
     // THE FIELD CONSTRAINT IS WHAT MAKES THAT COMMENT TRUE. It used to be prose
-    // only: the rule authorised the caller and then let them write ANY field of
+    // only: the rule authorized the caller and then let them write ANY field of
     // the document. `teamId` IS the tenant boundary here — every arm below
     // dereferences it, and `tenantData.ts` matches this collection by it — so a
     // manager could move one of their own rows into ANOTHER studio by rewriting
@@ -1907,13 +1907,13 @@ service cloud.firestore {
     //
     // EVERY CLIENT WRITE IS DENIED, unlike the session series above. A course
     // carries capacity, `places_taken` is an ABSOLUTE counter written only from
-    // a transaction that read the enrolments beside it, and, from the sale
+    // a transaction that read the enrollments beside it, and, from the sale
     // stage, a price. A client that could edit either could sell a place that
     // does not exist or buy one at a number it chose. The studio's own edits go
     // through `createCourseBlock` / `updateCourseBlock` / `setCourseBlockStatus`
     // / `deleteCourseBlock`, which check `schedule.manage`.
     //
-    // Enrolments are the same, and for the same reason: an enrolment IS the
+    // Enrollments are the same, and for the same reason: an enrollment IS the
     // place. The public sees a course through its `public_profile` mirror, which
     // the global rule at the foot of this file already makes world-readable and
     // write-denied.
@@ -1921,7 +1921,7 @@ service cloud.firestore {
       allow read: if belongsToUserTeam(resource) || hasRole('admin');
       allow write: if false;
 
-      // BOTH SUBCOLLECTIONS AUTHORISE FROM THE PARENT COURSE, never from
+      // BOTH SUBCOLLECTIONS AUTHORIZE FROM THE PARENT COURSE, never from
       // `resource`, and that is the difference between a rule that works and
       // one that only looks like it does.
       //
@@ -1945,7 +1945,7 @@ service cloud.firestore {
         allow write: if false;
       }
 
-      // The waiting list for a full course. Same authorisation, same reason,
+      // The waiting list for a full course. Same authorization, same reason,
       // and one of its own: an OFFERED entry carries the credential that takes
       // a place, so a client that could write one could take a place it was
       // never offered. Every write goes through a callable.
@@ -2059,9 +2059,9 @@ service cloud.firestore {
     //
     // ── THE ISSUER'S ARM ────────────────────────────────────────────────────
     //
-    // An organisation could not read the licences it had issued itself. It reads
+    // An organization could not read the licenses it had issued itself. It reads
     // `org_id` off the affiliation, so it admits exactly the rows this
-    // organisation granted — never a studio's own internal club membership
+    // organization granted — never a studio's own internal club membership
     // (`issuer: 'team'`) and never a governing body the studio merely tracks
     // (`issuer: 'external'`), both of which live in this same subcollection and
     // are nobody's business but the studio's. `org_id` is set only when
@@ -2069,7 +2069,7 @@ service cloud.firestore {
     //
     // Reachable PII is unchanged: `contacts/{contactId}` already admits
     // `isOrgAdminOfTeam` for read, so an org admin can already see the person.
-    // This adds the fact the organisation itself recorded about them.
+    // This adds the fact the organization itself recorded about them.
     //
     // READ ONLY, and writes are untouched: they stay with the nested catch-all
     // and the `upsertAffiliation` callable (Admin SDK), which is where the org's
@@ -2092,7 +2092,7 @@ service cloud.firestore {
     // `waitlist` in this repo runs in a callable over the Admin SDK, which
     // bypasses rules entirely. This block is a defensive team-scoping grant for a
     // future client-side collection-group read (the shape `listMyWaitlist`
-    // exists to avoid, since isSelfContact authorises a get and not a list). It
+    // exists to avoid, since isSelfContact authorizes a get and not a list). It
     // widens nothing: a team member can already read every one of these
     // documents individually, so it grants a query shape, not data.
     match /{path=**}/waitlist/{entryId} {
@@ -2104,14 +2104,14 @@ service cloud.firestore {
 
     // purchases (collection group) — a contact reading their OWN course entitlements.
     //
-    // What this authorises, precisely: the query the Space ("My courses") and the
+    // What this authorizes, precisely: the query the Space ("My courses") and the
     // shop ("Open" instead of "Buy") both issue —
     //   collectionGroup('purchases').where('contactId','==',me).where('teamId','==',myTeam)
     // The nested courses/{courseId}/purchases block (further down, under "Online
     // Courses plugin") cannot serve it: a collection-group read is matched only
     // by a `{path=**}` statement.
     //
-    // A LIST is authorised from the QUERY, not from the documents it would
+    // A LIST is authorized from the QUERY, not from the documents it would
     // return. Firestore admits the query only if its own constraints prove that
     // every matching document satisfies the condition below, and both operands
     // here are pinned to the caller's token — so BOTH `where` clauses are
@@ -2376,7 +2376,7 @@ service cloud.firestore {
       // worse — with a `current_version` pointing at a version document that
       // does not exist, which is the state the acceptance ledger's central
       // assumption (an acceptance names a version whose frozen text can be
-      // served) has no defence against. `createDocument` in
+      // served) has no defense against. `createDocument` in
       // apps/web/src/plugins/documents/hooks.ts already writes exactly this
       // shape — status 'draft', neither pointer present — so no legitimate
       // create changes.
@@ -2527,7 +2527,7 @@ service cloud.firestore {
     // Standalone embed widgets. Keyed by teamId. World-readable so the public
     // /embed/[slug]/[widgetId] route can render a widget without a published site.
     // Authored directly by managers (the widget config IS the public config — no
-    // private draft to sanitise), so client write is allowed for the team's own doc.
+    // private draft to sanitize), so client write is allowed for the team's own doc.
     match /embed_widgets/{teamId} {
       allow read;            // fully public
       allow write: if hasTeamRole(teamId, 'manager')
@@ -2585,7 +2585,7 @@ service cloud.firestore {
       // HMD studio would have been in that state.
       //
       // READ only. Writing stays `hasOrgRole(orgId, 'org_admin')` below: a studio
-      // reads the organisation's standards, it does not set them.
+      // reads the organization's standards, it does not set them.
       allow read: if isOrgMember(orgId) || currentTeamInOrg(orgId);
 
       // GOVERNANCE IS NOT THE ORG ADMIN'S TO WRITE, exactly as it is not the team
@@ -2594,14 +2594,14 @@ service cloud.firestore {
       //
       // Becoming an org_admin is self-service: `createOrganization` checks only
       // that the caller is signed in, then writes them an `org_members` row with
-      // that role. So any user could create an organisation and then set
+      // that role. So any user could create an organization and then set
       // `flags.comped`, `plan`, `plan_status` and `trial_ends_at` on it freely —
       // a permanent top tier that no sweep can lapse (`tenantExemptFromTrialSweep`
       // reads exactly that flag), and, once the platform-fee waiver reads it, no
-      // Linyup fee on any member payment at any of the organisation's studios.
+      // Linyup fee on any member payment at any of the organization's studios.
       //
       // The guard is the SAME function the team rule uses, deliberately: a team
-      // and an organisation must never answer "may I write my own governance?"
+      // and an organization must never answer "may I write my own governance?"
       // differently. `create` pins `flags` too — an unguarded create is the same
       // grant one document earlier.
       allow create: if isAuthed() && request.resource.data.createdBy == request.auth.uid
@@ -2644,7 +2644,7 @@ service cloud.firestore {
         allow write: if false; // Cloud Functions only
       }
 
-      // A PERSON invited to help run the organisation (org_admin / org_viewer).
+      // A PERSON invited to help run the organization (org_admin / org_viewer).
       // CLOSED: written only by Cloud Functions (inviteOrgMember / accept /
       // decline / revoke / the daily expiry sweep) — a client write could mint a
       // membership grant for any address.

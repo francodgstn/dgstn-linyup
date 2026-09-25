@@ -124,7 +124,7 @@ M5 · manager · costs-money · weekly · traced · new
 unbookable: "{name} is gated but allows no subscription types — nobody can book
 it." (`OfferPricing.healthGatedEmptyAllowlist`), "…member benefit points to a
 subscription type that no longer exists", "…sold only with a subscription or
-pack…". The catalogue says "The price is the gate" on every appointment row.
+pack…". The catalog says "The price is the gate" on every appointment row.
 **Fix:** rewrite in the form's own words and name the fix: "Nobody can book
 {name}: it's members-only with a plan required, but no plan includes it." Section
 title "Health" → "Things to fix".
@@ -257,10 +257,10 @@ Franco shaped recently, and the all-plans-at-a-glance view may be the point.
   *Members only*, then only when relevant the trial and the drop-in
   (`ActivityPricingForm.tsx`). Reuse for courses.
 - **A new class opens straight onto Access & pricing**, not a tab to find.
-- **The catalogue's dead-end banner** counts only true nobody-can-book states, with
+- **The catalog's dead-end banner** counts only true nobody-can-book states, with
   one resolver at two severities (`computePricingHealth`) so Pricing and Offerings
   cannot disagree.
-- **Catalogue rows state who, what it costs and the trial without opening them**,
+- **Catalog rows state who, what it costs and the trial without opening them**,
   from the *resolved* price.
 - **Booking prices hide behind a quiet tooltip** instead of stacking under every card.
 - **A covered member's confirm screen is one sentence and a button.**

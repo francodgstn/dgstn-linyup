@@ -39,7 +39,7 @@ describe('groupActivitiesForBooking', () => {
     )
   })
 
-  it('is case-insensitive, labelled by the first spelling — a typo is not a second section', () => {
+  it('is case-insensitive, labeled by the first spelling — a typo is not a second section', () => {
     const sections = groupActivitiesForBooking([act('A', 0, 'Kinder'), act('B', 1, 'kinder')])
     assert.equal(sections.length, 1)
     assert.equal(sections[0].group, 'Kinder')

@@ -56,14 +56,14 @@ export function PreviewOverlay({
   onOpenChange: (v: boolean) => void
   site: RenderableSite
   /** The page being previewed, when it isn't home — see the note beside this
-   *  prop on `WebsiteRenderer`. Absent ⇒ home, today's behaviour. */
+   *  prop on `WebsiteRenderer`. Absent ⇒ home, today's behavior. */
   page?: { ref: SitePageRef; sections: (WebsiteSection | OrgSiteSection)[] }
   /** Without these the renderer cannot resolve a `surface` menu item and DROPS
    *  it — so a studio who just added Shop to the menu would watch it vanish
    *  from the preview and reasonably conclude the feature is broken. */
   surfaceLinks?: { surface?: PublicSurface; href: string; label: string }[]
   /** ORG SITES ONLY. The clubs, locations and coaches blocks are aggregates over
-   *  an organisation's member studios; without these they render empty, and a
+   *  an organization's member studios; without these they render empty, and a
    *  preview that silently drops three of the seven section types is worse than
    *  no preview. A team site passes neither. */
   orgId?: string

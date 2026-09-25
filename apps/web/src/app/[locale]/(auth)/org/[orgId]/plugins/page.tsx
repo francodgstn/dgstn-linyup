@@ -98,7 +98,7 @@ function OrgPluginCard({
               <Badge variant="secondary" className="text-xs">{t('statusComingSoon')}</Badge>
             )}
             {/* Shown once INSTALLED too. The `!isInstalled` gate hid the caveat
-                from exactly the organisations that had adopted the module — the
+                from exactly the organizations that had adopted the module — the
                 only ones whose numbers it is about. */}
             {manifest.status === 'beta' && (
               <Badge
@@ -218,7 +218,7 @@ export default function OrgPluginsPage() {
 
   // All available plugins, recommended first. Discovery allow-list applied
   // against THIS org (the route param), not against whatever team the admin
-  // happens to have selected — an org admin browsing the org catalogue is
+  // happens to have selected — an org admin browsing the org catalog is
   // shopping for the org. `pluginVisibleToTenant` is called directly rather
   // than through `usePluginDiscovery` for exactly that reason. An org already
   // running a plugin keeps seeing it (with its Uninstall control) even if it is

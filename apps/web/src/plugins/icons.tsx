@@ -1,13 +1,13 @@
 // THE plugin icon map.
 //
 // A manifest names its icon as a STRING (`iconName`, and `navContributions[].icon`)
-// because manifests are plain data — they are read by catalogues, by the sidebar
+// because manifests are plain data — they are read by catalogs, by the sidebar
 // and by the org console, and a component reference would drag lucide into every
 // one of them. Something has to turn the string back into a component, and that
 // something used to be three separate maps: the sidebar's, the studio
-// marketplace's and the org catalogue's.
+// marketplace's and the org catalog's.
 //
-// They had already drifted. The org catalogue's copy was missing Tag, ListPlus,
+// They had already drifted. The org catalog's copy was missing Tag, ListPlus,
 // ClipboardList, FileText and Monitor, so five plugins quietly rendered a
 // fallback puzzle piece on that page and nowhere else — the failure mode of a
 // hand-maintained map is silent, which is why one map is worth the indirection.

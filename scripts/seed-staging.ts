@@ -599,7 +599,7 @@ const CONTACT_POOL: PoolEntry[] = [
   },
 ]
 
-// Badge catalogue — assigned by attendance milestones / behaviour.
+// Badge catalog — assigned by attendance milestones / behavior.
 function badgesFor(totalSessions: number, streak: number, seed: string): string[] {
   const out: string[] = []
   if (totalSessions >= 50) out.push('50_sessions')
@@ -660,7 +660,7 @@ async function seedTeam(opts: TeamSeed) {
 
   // ── affiliation config ───────────────────────────────────────────────────────
   // Studio/Org teams enable the affiliation axis. Org-member teams issue at the
-  // ORG level (federation licence + club); standalone studios issue a team-local
+  // ORG level (federation license + club); standalone studios issue a team-local
   // club membership. Coach plan stays single-surface (no axis).
   const affiliationsEnabled = plan === 'studio' || plan === 'organization'
   const affiliationTypeDefs = affiliationsEnabled
@@ -2146,7 +2146,7 @@ async function seedDocuments(
 <h3>1. Membership</h3>
 <p>Your membership is personal and non-transferable. Access to classes requires a valid subscription or a valid drop-in pass.</p>
 <h3>2. Cancellation</h3>
-<p>Monthly subscriptions can be cancelled at any time with 30 days' notice. Annual plans are non-refundable once the commitment period begins.</p>
+<p>Monthly subscriptions can be canceled at any time with 30 days' notice. Annual plans are non-refundable once the commitment period begins.</p>
 <h3>3. Conduct</h3>
 <p>All members are expected to maintain respectful conduct during classes and open-mat sessions. The Studio reserves the right to revoke access for repeated violations.</p>
 <h3>4. Liability</h3>
@@ -2467,7 +2467,7 @@ async function main() {
     ],
   })
 
-  // 3. Organisation — org admin + 2 member teams (each with manager + coach)
+  // 3. Organization — org admin + 2 member teams (each with manager + coach)
   await seedTeam({
     uid: 'seed-org-uid',
     email: 'org@linyup.com',

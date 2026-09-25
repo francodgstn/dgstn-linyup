@@ -31,7 +31,7 @@ export const AppNavigator: React.FC = () => {
 
   // The studio look belongs to a SESSION: once there is none, the app is
   // Linyup's again (the login screen never knows a studio). Not cleared while
-  // initialising — a restored session keeps the persisted look from the first
+  // initializing — a restored session keeps the persisted look from the first
   // frame instead of flashing purple.
   useEffect(() => {
     if (!isInitializing && !isAuthenticated) setBrand(null);

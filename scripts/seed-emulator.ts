@@ -134,7 +134,7 @@ import {
 import { seedTeamMoney, seedTeamSales } from './lib/fixtures/money'
 
 /** Which seeded contacts are on the term course. The FIRST is the one who paid,
- *  and their `member_payments` row is written with their enrolment. */
+ *  and their `member_payments` row is written with their enrollment. */
 const COURSE_ROSTER_INDEXES = [0, 1, 2, 4, 6]
 
 import { seedTeamSubscriptionHistory } from './lib/fixtures/subscriptionHistory'
@@ -296,7 +296,7 @@ async function seedTeam(opts: {
 
   // ── affiliation config ───────────────────────────────────────────────────────
   // Studio/Org demo teams enable the affiliation axis. Org-linked teams issue
-  // affiliations at the ORG level (federation licence + club); standalone studios
+  // affiliations at the ORG level (federation license + club); standalone studios
   // issue a team-local club membership. Coach plan stays single-surface (no axis).
   const teamOrgId = TEAM_ORG[teamId]
   const affiliationsEnabled = plan === 'studio' || plan === 'organization'
@@ -817,7 +817,7 @@ async function seedTeam(opts: {
       //   - everyone else who signed up with the studio pays the drop-in;
       //   - a visitor who never signed up cannot book, even paying — except
       //     through the newcomer trial (`trialEnabled`), which admits them once.
-      // Catalogue chip: "Members · CHF 30". Under the derived rule it is the
+      // Catalog chip: "Members · CHF 30". Under the derived rule it is the
       // drop-in price that keeps this from being plan-holders-only.
       id: `${teamId}-act-mma`,
       name: 'MMA',
@@ -1691,7 +1691,7 @@ async function seedTeam(opts: {
   // ── contact alerts — the coach's own reminders on a person ───────────────────
   // Written flat (`schedule_type` / `schedule_value`), which is the canonical
   // `ContactAlert` shape the admin contact page writes; the server writers use a
-  // nested `schedule` map and the page normalises both on read. Seeding the flat
+  // nested `schedule` map and the page normalizes both on read. Seeding the flat
   // one keeps the demo on the shape the admin UI round-trips.
   await seedContactAlerts({ teamId, vocabulary: 'martial_arts' })
 
@@ -2128,7 +2128,7 @@ async function seedTeam(opts: {
     const c = contactSeeds[i]
     // Re-derive the stage through the SAME function that wrote it onto the
     // contact doc — a second copy of that mapping here would drift silently and
-    // the charts would disagree with the list they summarise. Only `type` and
+    // the charts would disagree with the list they summarize. Only `type` and
     // `hasAttended` reach the stage, so the other arguments are inert.
     const stage = acquisitionFieldsFor({
       type: c.type as 'student' | 'trial' | 'external',
@@ -2811,11 +2811,11 @@ async function seedOrg() {
   // Without this NOBODY in the seed belongs to more than one studio, and the
   // scope switcher can only be half tested: `TeamSwitcher` renders its studios
   // list only for a login that is in more than one (its own rule — "it hides
-  // itself, but only when it knows"), so the control showed an Organisations
+  // itself, but only when it knows"), so the control showed an Organizations
   // group and nothing to switch BETWEEN. Franco hit exactly that trying to
   // verify it (2026-08-27).
   //
-  // Rafael already owns Titan Combat Sports and administers the organisation;
+  // Rafael already owns Titan Combat Sports and administers the organization;
   // making him a MANAGER of Iron Circle Gym as well is the persona the whole
   // scope model was designed around — the org admin who also runs a studio and
   // moves between the two all day (docs/org-navigation.md). It also exercises
@@ -2904,7 +2904,7 @@ async function seedDocuments(
 <h3>1. Membership</h3>
 <p>Your membership is personal and non-transferable. Access to classes requires a valid subscription or a valid drop-in pass.</p>
 <h3>2. Cancellation</h3>
-<p>Monthly subscriptions can be cancelled at any time with 30 days' notice. Annual plans are non-refundable once the commitment period begins.</p>
+<p>Monthly subscriptions can be canceled at any time with 30 days' notice. Annual plans are non-refundable once the commitment period begins.</p>
 <h3>3. Conduct</h3>
 <p>All members are expected to maintain respectful conduct during classes and open-mat sessions. The Studio reserves the right to revoke access for repeated violations.</p>
 <h3>4. Liability</h3>

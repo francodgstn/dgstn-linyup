@@ -51,7 +51,7 @@ describe('class fill rates', () => {
     assert.strictEqual(rows[0].avg_booked, 9)
   })
 
-  it('leaves out cancelled sessions and appointments', () => {
+  it('leaves out canceled sessions and appointments', () => {
     const rows = computeClassFill(
       [
         session({ start: THU, booked: 10 }),

@@ -1,12 +1,12 @@
 /**
- * Organisation billing: the ORG pays Linyup for its member studios.
+ * Organization billing: the ORG pays Linyup for its member studios.
  *
- *   member studio → its own Billing page says the organisation pays, in the
+ *   member studio → its own Billing page says the organization pays, in the
  *                   studio's language, and offers no checkout of its own
  *   org, unpaid   → offered "Talk to us" (the tier is sales-led), never a
  *                   self-serve checkout
  *
- * Nothing in an organisation sells to MEMBERS (events carry a free-text fee,
+ * Nothing in an organization sells to MEMBERS (events carry a free-text fee,
  * affiliations are labels), so there is no member-side org payment to test.
  */
 import { test, expect } from '@playwright/test'
@@ -14,11 +14,11 @@ import { db, staffContext, watchErrors } from './lib'
 
 const ORG = 'seed-org'
 
-test('member studio: billing is the organisation\'s, said in the studio\'s language', async ({ browser }) => {
+test('member studio: billing is the organization\'s, said in the studio\'s language', async ({ browser }) => {
   const ctx = await staffContext(browser, 'studio@linyup.com')
   const page = await ctx.newPage()
   await page.goto('/settings/billing', { waitUntil: 'domcontentloaded' })
-  await expect(page.getByText('Billing managed by your organisation')).toBeVisible({ timeout: 60_000 })
+  await expect(page.getByText('Billing managed by your organization')).toBeVisible({ timeout: 60_000 })
   await expect(page.getByRole('button', { name: 'Select' })).toHaveCount(0)
   await page.goto('/de/settings/billing', { waitUntil: 'domcontentloaded' })
   await expect(page.getByText('Die Abrechnung läuft über Ihre Organisation')).toBeVisible({ timeout: 60_000 })
@@ -28,15 +28,15 @@ test('member studio: billing is the organisation\'s, said in the studio\'s langu
   await db.doc('users/seed-studio-uid').set({ locale: 'en' }, { merge: true })
 })
 
-// SALES-LED (decided 2026-09-25). The organisation tier has no live self-serve
+// SALES-LED (decided 2026-09-25). The organization tier has no live self-serve
 // price (`linyup_organization_monthly` is archived; scripts/stripe-sync.ts
 // treats the tier as quoted), so the "Subscribe" this page used to offer always
-// failed at Stripe. An organisation without a paid plan is offered "Talk to us",
-// the same door as the Organisation card on a studio's plan picker, and nothing
+// failed at Stripe. An organization without a paid plan is offered "Talk to us",
+// the same door as the Organization card on a studio's plan picker, and nothing
 // reaches Stripe.
 test('org without a paid plan: "Talk to us", never a checkout', async ({ browser }) => {
   // The seed marks the org active with no Stripe subscription behind it; show
-  // the page what a new, unpaid organisation looks like, and put it back after.
+  // the page what a new, unpaid organization looks like, and put it back after.
   const subRef = db.doc(`saas_subscriptions/${ORG}`)
   const before = (await subRef.get()).data()
   await subRef.set({ status: 'trialing', gateway_type: null, gateway_data: null }, { merge: true })

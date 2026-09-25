@@ -58,7 +58,7 @@
  * every caller, because its Cloud Run service has NO INVOKER. Two staging
  * callables (`inviteOrgMember`, `getOrgMemberInvitation`) had an empty IAM
  * policy: Cloud Run answered 403 before the code ran, the client SDK reported a
- * bare `permission-denied`, and inviting somebody to an organisation was simply
+ * bare `permission-denied`, and inviting somebody to an organization was simply
  * broken there behind green deploys. How they lost the binding was never
  * established — a deploy that creates a function and then fails to set its IAM
  * is the likely cause — and it was found by accident (scripts/router-spike.mjs

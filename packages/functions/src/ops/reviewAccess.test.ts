@@ -32,7 +32,7 @@ describe('decideReviewCode — the fixed-code bypass, and every way it stays shu
 
   it('returns null for every other address', () => {
     const a = access()
-    // The neighbouring cases that matter: a different person, and a near-miss.
+    // The neighboring cases that matter: a different person, and a near-miss.
     for (const other of ['someone.else@example.com', 'app.review@example.org', 'app.review+x@example.com']) {
       assert.equal(decideReviewCode(a, other, NOW), null, `${other} must not match`)
     }
@@ -66,7 +66,7 @@ describe('decideReviewCode — the fixed-code bypass, and every way it stays shu
     assert.equal(decideReviewCode(null, EMAIL, NOW), null)
   })
 
-  it('normalises the stored address, so casing and stray spaces still match', () => {
+  it('normalizes the stored address, so casing and stray spaces still match', () => {
     const a = access({ email: '  App.Review@Example.com ' })
     assert.equal(decideReviewCode(a, EMAIL, NOW), '135790')
   })
@@ -85,7 +85,7 @@ describe('decideReviewCode — a bounded list of addresses', () => {
     assert.equal(decideReviewCode(a, T2, NOW), '135790')
   })
 
-  it('still honours a LEGACY single `email`, and both together', () => {
+  it('still honors a LEGACY single `email`, and both together', () => {
     // A half-migrated document must behave as the sum of what it says.
     assert.equal(decideReviewCode(access(), EMAIL, NOW), '135790')
     const both = access({ emails: [T1] })
@@ -98,12 +98,12 @@ describe('decideReviewCode — a bounded list of addresses', () => {
     assert.equal(decideReviewCode(a, 'tester03@example.com', NOW), null)
   })
 
-  it('normalises every entry, not just the first', () => {
+  it('normalizes every entry, not just the first', () => {
     const a = access({ email: undefined, emails: ['  TESTER01@Example.com ', T2] })
     assert.equal(decideReviewCode(a, T1, NOW), '135790')
   })
 
-  it('FAILS CLOSED on an over-long list rather than honouring a prefix', () => {
+  it('FAILS CLOSED on an over-long list rather than honoring a prefix', () => {
     // Truncating would silently apply a different configuration than the one
     // stored — the opposite of what an auth bypass should do when confused.
     const many = Array.from({ length: REVIEW_ACCESS_MAX_EMAILS + 1 }, (_, i) => `t${i}@example.com`)
@@ -133,7 +133,7 @@ describe('decideReviewCode — a bounded list of addresses', () => {
 })
 
 describe('reviewAccessAddresses', () => {
-  it('unions legacy and list, normalised and de-duplicated', () => {
+  it('unions legacy and list, normalized and de-duplicated', () => {
     const a = access({ emails: ['  APP.REVIEW@example.com', 'tester01@example.com', 'tester01@example.com'] })
     assert.deepEqual(reviewAccessAddresses(a).sort(), ['app.review@example.com', 'tester01@example.com'])
   })

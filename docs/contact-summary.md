@@ -31,7 +31,7 @@ the numbers on the screen.
 | The prompt's facts and the reply's cleanup (pure) | `packages/functions/src/contacts/aiSummaryDossier.ts` + `aiSummary.test.ts` |
 | The card | `apps/web/src/app/[locale]/(auth)/contacts/[id]/InsightsCard.tsx` |
 | Client write denied | `firestore.rules` (contacts update guard) + `coaching/goalDenormAccess.rules-test.ts` |
-| Wiped on anonymisation | `CONTACT_IDENTIFYING_FIELDS` in `packages/shared/src/utils/contactDeletion.ts` |
+| Wiped on anonymization | `CONTACT_IDENTIFYING_FIELDS` in `packages/shared/src/utils/contactDeletion.ts` |
 
 ## The header, since 2026-09-12
 
@@ -42,7 +42,7 @@ gradient avatar overlapping the top edge with a soft glow behind it, the name,
 chips, the contact lines in a quiet panel, groups, and four captioned action
 tiles pinned to the bottom edge. Right, two thirds: the insights card — the
 summary block on top (absent, not empty, while the experiment is off), four
-figures under it (the three counters and the engagement band as a coloured dot
+figures under it (the three counters and the engagement band as a colored dot
 with its name), and on the bottom edge the attendance chart, starting where the
 relationship did (the join or the first attended week, at least twelve weeks and
 at most a year). Attendance only: plan periods were briefly drawn behind it as
@@ -60,7 +60,7 @@ briefing, a member recap and a team reading were three things a studio chooses
 between. A team that had the experiment on reads as off and installs the
 plugin. The card mounts the block only while the module is installed, and the
 callable re-checks it through `pluginIsActive`, which also sees an install made
-at the organisation — so a client cannot spend model calls on a module that is
+at the organization — so a client cannot spend model calls on a module that is
 off.
 
 Beyond the switch: signed in, member of the team, the contact in that team,
@@ -74,7 +74,7 @@ shared `utils/rateLimit.ts`.
 `buildContactDossier` is the ONE place the facts are assembled, and its test
 sets every identifying field to something conspicuous and asserts none of it
 appears. In: first name, time with the studio, journey stage, external flag,
-plans held (names, status, and the end date when one is cancelling), the last
+plans held (names, status, and the end date when one is canceling), the last
 12 membership periods (renewals, gaps, how the last one ended), credit
 balances, affiliation, total sessions, last session, streak, sessions per week
 over the last 26 weeks, the last 30 bookings (activity name, date, status),
@@ -87,7 +87,7 @@ Then the **computed signals**, from `deriveSignals` (pure, tested): the
 attendance trend — mean sessions per week over the last 4 weeks against the
 weeks before, called rising, steady or slipping, or "too little history" under
 four earlier weeks; active weeks, the longest gap and the trailing gap;
-booking outcomes (kept, no-show with a rate once three are decided, cancelled,
+booking outcomes (kept, no-show with a rate once three are decided, canceled,
 upcoming, and the next upcoming booking — a confirmed booking in the future is
 the strongest forward signal there is); the usual rhythm (top weekdays and time
 of day in the studio's clock, Europe/Zurich, and the activity mix); tenure; and
@@ -179,4 +179,4 @@ record exists so the two triggers can be told apart afterwards.
 - No "why" on the card: the model's input is not shown. `buildContactDossier`
   is the answer for anyone who needs to know.
 - No per-contact opt-out. The switch is per studio; a studio that wants some
-  contacts summarised and others not is a case nobody has asked for.
+  contacts summarized and others not is a case nobody has asked for.

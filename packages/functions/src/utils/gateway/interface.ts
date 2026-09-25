@@ -20,7 +20,7 @@ export interface WebhookEvent {
   /**
    * The subscription is scheduled to end rather than renew — true for BOTH ways
    * a gateway can express that (a boolean flag, or a scheduled end instant). The
-   * adapter normalises; nobody downstream should have to know which it was.
+   * adapter normalizes; nobody downstream should have to know which it was.
    */
   cancelAtPeriodEnd?: boolean
   /** WHEN it ends, when the gateway said so explicitly. */
@@ -36,7 +36,7 @@ export interface WebhookEvent {
    * where it is what a reactivation uses to erase a dead reason. On
    * `subscription.cancelled` the handler clears nothing — a `deleted` payload
    * that states no reason must not erase the one an earlier `updated` recorded.
-   * Both behaviours are pinned in connect/dahliaReads.test.ts.
+   * Both behaviors are pinned in connect/dahliaReads.test.ts.
    */
   cancellationDetails?: SubscriptionCancellationDetails | null
   amount?: number           // smallest currency unit (cents / rappen)

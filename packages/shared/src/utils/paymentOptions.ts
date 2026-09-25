@@ -149,7 +149,7 @@ export interface CourseBlockTarget {
    *  make one `accessRule.type` mean two things and would hand a scheduled
    *  course the LMS's `purchases` subcollection as its entitlement. */
   kind: 'course_block'
-  /** Major units, team currency. Null means free: an enrolment costs nothing,
+  /** Major units, team currency. Null means free: an enrollment costs nothing,
    *  which is a real offer (a free open-water meet-up, a taster week). */
   priceAmount: number | null
   /** The plans that get this course free. Read ADDITIVELY with `benefit`, and
@@ -465,7 +465,7 @@ function resolveClassCoverage(
   }
   // 2) IDENTITY IS STILL REQUIRED WHENEVER A PLAN COULD MATTER. Being covered
   //    means holding something, and a not-yet-joined contact holds nothing the
-  //    gate will honour. Only a class where nothing about the person matters (no
+  //    gate will honor. Only a class where nothing about the person matters (no
   //    plan includes it) needs no identity at all.
   if (allowed.length > 0) {
     if (!snapshot.authenticated) return { options: [], denial: 'guest' }
@@ -895,7 +895,7 @@ function priceParty(
 // benefit is a MEMBER RATE, price-modifying effects only.
 //
 // EXPORTED BECAUSE THE EDITOR MUST ASK. These sets decide which effects the
-// resolver will HONOUR, and an editor keeping its own list offered `included`
+// resolver will HONOR, and an editor keeping its own list offered `included`
 // on a class: the studio ticked "members get it included", the resolver ignored
 // it (coverage is the access rule's job), and the member paid the full drop-in
 // price. Two controls that looked like two ways to say "free", one of them
@@ -910,7 +910,7 @@ export const COURSE_EFFECTS: ReadonlySet<BenefitEffect> = new Set([
 // A scheduled COURSE, same reasoning as the LMS course above: a plan can include
 // it or discount it, and `spend_credits` is excluded because the webhook has no
 // grant+spend story for one. "Thirteen credits for thirteen lessons" is a real
-// ask and a real feature, needing a debit inside the enrolment transaction and a
+// ask and a real feature, needing a debit inside the enrollment transaction and a
 // refund path on withdrawal; it is not this.
 export const COURSE_BLOCK_EFFECTS: ReadonlySet<BenefitEffect> = new Set([
   'included',

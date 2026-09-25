@@ -1,6 +1,6 @@
 /**
- * Is this session cancelled? A cancelled session is either stored as
- * `status: 'cancelled'` or is a cancelled EXCEPTION of a series — both count.
+ * Is this session canceled? A canceled session is either stored as
+ * `status: 'cancelled'` or is a canceled EXCEPTION of a series — both count.
  *
  * Moved here from `functions/src/booking/waitlist/constants.ts` (which
  * re-exports it) so the public API's session projection answers the same

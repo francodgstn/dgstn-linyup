@@ -1,7 +1,7 @@
 /**
  * SELF-SERVICE ACCOUNT DELETION for a contact, and the 30-day window before it.
  *
- * ── IT ANONYMISES, IT DOES NOT ERASE ─────────────────────────────────────────
+ * ── IT ANONYMIZES, IT DOES NOT ERASE ─────────────────────────────────────────
  *
  * A contact is not a personal account in the usual sense — the studio holds
  * records about them that it is obliged to keep. Finance rows underpin
@@ -45,7 +45,7 @@ export type ContactDeletionState =
   | 'scheduled'
   /** Past its date and waiting for the sweep. */
   | 'due'
-  /** Already anonymised. Terminal: there is nothing left to identify. */
+  /** Already anonymized. Terminal: there is nothing left to identify. */
   | 'anonymized'
 
 /**
@@ -72,10 +72,10 @@ export function contactDeletionState(
  *
  * `login_emails` is the one that bites. It is the per-contact allow-list that
  * lets a PARENT sign in as their child; leaving it behind means the account is
- * anonymised and still reachable, which is worse than not deleting it at all
+ * anonymized and still reachable, which is worse than not deleting it at all
  * because it looks done.
  *
- * `email` is set to null rather than to a placeholder: an anonymised contact
+ * `email` is set to null rather than to a placeholder: an anonymized contact
  * must not collide with, or be matched by, `resolveSingleContact`.
  */
 export const CONTACT_IDENTIFYING_FIELDS = [
@@ -86,7 +86,7 @@ export const CONTACT_IDENTIFYING_FIELDS = [
   'phone',
   // THE ONE THAT BITES. `login_emails` is the per-contact allow-list that lets a
   // PARENT sign in as their child. Leaving it behind means the account is
-  // anonymised and still reachable — worse than not deleting it, because it
+  // anonymized and still reachable — worse than not deleting it, because it
   // looks done.
   'login_emails',
   // Who they are.
@@ -132,7 +132,7 @@ export const CONTACT_IDENTIFYING_FIELDS = [
 export const CONTACT_PLUGIN_RECORDS = ['tarif595_contacts'] as const
 
 /**
- * The patch that anonymises a contact. Values are `null` (not `undefined`) so
+ * The patch that anonymizes a contact. Values are `null` (not `undefined`) so
  * the write is explicit — a merge that omits a key leaves it standing, which is
  * exactly the bug this list exists to prevent.
  */

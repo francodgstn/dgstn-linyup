@@ -59,7 +59,7 @@ export default function ContactUpdateForm({ slug, contactId, from }: Props) {
   const t = useTranslations('PublicContactUpdate')
   const tSurfaces = useTranslations('PublicSurfaceLinks')
   // Where 'back' goes: the surface named by `?from=`, else whatever default the
-  // studio chose (bio-link, website, shop, …). Labelled to match, and resolved
+  // studio chose (bio-link, website, shop, …). Labeled to match, and resolved
   // here rather than by bouncing through the team root's client redirect.
   const backTo = returnHref(team, slug, from)
   const teamName = team.name || slug

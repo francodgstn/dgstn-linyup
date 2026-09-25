@@ -791,7 +791,7 @@ describe('the LATE WEBHOOK, both ways round — and the cap that survives it', (
   })
 
   it('TWO concurrent redemptions at max_uses 1: the second is refused, in either order', () => {
-    // Serialisation does the work — both transactions read and write promoRef,
+    // Serialization does the work — both transactions read and write promoRef,
     // so the loser re-reads and sees the winner's entry. This pins the predicate
     // that decides it, which is the half a fixture can reach.
     const first = decidePromoReservation({
@@ -1388,7 +1388,7 @@ describe('decideAppointmentCheckoutRollback — a losing racer never cancels the
   it('THE LOSING RACER: the slot transaction refused us, so the hold is not ours to cancel', () => {
     // `apt_{providerId}_{startMs}` is deterministic and SHARED. When
     // runAppointmentSlotTransaction throws "this time was just taken", the
-    // document at that id is the WINNER's live pending_payment hold — cancelling
+    // document at that id is the WINNER's live pending_payment hold — canceling
     // it here would take a slot away from somebody who successfully booked it.
     assert.deepEqual(
       decideAppointmentCheckoutRollback({ holdAcquired: false, promoReserved: true }),
@@ -1554,7 +1554,7 @@ describe('the idempotency key names the ATTEMPT, not just the code', () => {
     assert.equal(keyFor(t), keyFor(t))
   })
 
-  it('instruments are appended last, never reordered, each normalised once', () => {
+  it('instruments are appended last, never reordered, each normalized once', () => {
     assert.deepEqual(
       instrumentKeyParts(ticket({ instanceId: 'inst_7' }), gift(' gc-abcd ', 'hold_1')),
       ['promo=AUTUMN25', 'try=inst_7', 'gift=GC-ABCD', 'hold=hold_1']
@@ -1582,7 +1582,7 @@ describe('the idempotency key names the ATTEMPT, not just the code', () => {
   })
 
   /**
-   * A tiny Stripe stand-in with the two behaviours that matter: ONE session per
+   * A tiny Stripe stand-in with the two behaviors that matter: ONE session per
    * idempotency key, and a REJECTION when a key comes back carrying different
    * parameters. `expire` is what our own pre-flight close does to the session a
    * slot was backing.

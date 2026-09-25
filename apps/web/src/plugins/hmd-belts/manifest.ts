@@ -10,7 +10,7 @@ import type { PluginManifest } from '@linyup/shared'
  * `functions/src/plugins/seeds.ts`).
  *
  * ── WHY A PLUGIN AND NOT A LINE IN THE MIGRATION ────────────────────────────
- * The migration runs once, against one organisation, and is finished. These
+ * The migration runs once, against one organization, and is finished. These
  * rules have to survive a re-install, converge when the ladder is corrected, and
  * step aside the moment the federation edits them — none of which a one-shot
  * script does. Installing is also the honest place for it: the rules exist
@@ -39,8 +39,8 @@ export const hmdBeltsManifest: PluginManifest = {
   status: 'available',
   iconName: 'Award',
   hasOwnerConfig: false,
-  // Defence in depth, exactly as on `hmd-fighting-cup`: a member is already
-  // hidden from every catalogue by `pluginIsInstallable`, and this is what keeps
+  // Defense in depth, exactly as on `hmd-fighting-cup`: a member is already
+  // hidden from every catalog by `pluginIsInstallable`, and this is what keeps
   // a customer's name out of every other tenant's marketplace if it were ever
   // taken out of the bundle. See PluginAudience in @linyup/shared.
   audience: { orgIds: ['hmd'] },

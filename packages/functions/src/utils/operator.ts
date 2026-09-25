@@ -6,7 +6,7 @@
  * privileged operator action lived in the console's own server actions, running
  * with the Admin SDK behind `require-operator.ts`.
  *
- * The rule is deliberately IDENTICAL to the console's, because they authorise
+ * The rule is deliberately IDENTICAL to the console's, because they authorize
  * the same person:
  *   1. the `saas_operator` custom claim (the durable mechanism), or
  *   2. a VERIFIED email on the `OPERATOR_EMAILS` allowlist (bootstrap).
@@ -33,7 +33,7 @@ import { defineString } from 'firebase-functions/params'
  * own empty default.
  *
  * The value MIRRORS `apps/admin`'s `OPERATOR_EMAILS`: the console and these
- * callables authorise the same person, so a value here that disagrees with the
+ * callables authorize the same person, so a value here that disagrees with the
  * console's is a button that renders and then refuses.
  */
 const operatorEmails = defineString('OPERATOR_EMAILS', {

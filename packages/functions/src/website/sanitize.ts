@@ -115,7 +115,7 @@ function columnsOf(v: unknown): 2 | 3 | 4 {
   return columns === 2 || columns === 4 ? columns : 3
 }
 
-// ─── colours ──────────────────────────────────────────────────────────────────
+// ─── colors ──────────────────────────────────────────────────────────────────
 // These reach a `style` attribute on a public page. A length check alone let any
 // CSS value through; a background is where an attacker would put `url(…)` to
 // make every visitor's browser fetch a third-party resource.
@@ -126,7 +126,7 @@ export function safeHex(v: unknown): string | undefined {
   return typeof v === 'string' && HEX_COLOUR.test(v.trim()) ? v.trim() : undefined
 }
 
-/** A hex colour or a CSS gradient. The gradient charset has no `:` `/` `;` `{`
+/** A hex color or a CSS gradient. The gradient charset has no `:` `/` `;` `{`
  *  `}` or quotes, so it cannot express `url(…)`, a second declaration, or a way
  *  out of the attribute. */
 const CSS_GRADIENT = /^(?:repeating-)?(?:linear|radial|conic)-gradient\([#%.,()\sa-zA-Z0-9-]*\)$/
@@ -769,7 +769,7 @@ export function dedupeSectionIds<T extends { id: string }>(lists: readonly T[][]
  * would mean this function had to run after `enrichSectionsWithPlaces`.
  *
  * Tenant-agnostic: it bounds depth and breadth and validates a target's shape,
- * none of which differs between a studio and an organisation.
+ * none of which differs between a studio and an organization.
  */
 const MENU_MAX_PER_LEVEL = 24
 
@@ -916,7 +916,7 @@ export function sanitizeMeta(raw: unknown, fallbackTitle: string): SiteMeta {
   const headerCtaAction0 = oneOf(header.ctaAction, ['booking', 'signup', 'membership', 'url', 'page', 'appointment'] as const, 'booking')
   const headerCtaPageId = headerCtaAction0 === 'page' ? optStr(header.ctaPageId, 64) : undefined
   const headerCtaActivityId = headerCtaAction0 === 'appointment' ? optStr(header.ctaActivityId, 64) : undefined
-  // The legacy alias is normalised, and a page or appointment button that
+  // The legacy alias is normalized, and a page or appointment button that
   // names no destination falls back to booking rather than publishing a button
   // that goes nowhere.
   const headerCtaAction =

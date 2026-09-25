@@ -2,13 +2,13 @@
 //
 // A theme is DATA, not a renderer. It names a combination of brand settings the
 // site builder already has (typeface, capitals, button and card shape, button
-// colour, theme preset) plus the style each section type should start in (a CTA
+// color, theme preset) plus the style each section type should start in (a CTA
 // as a full-width band, a video as a lightbox…). Applying one writes those
 // values into the site like a studio's own edits — every value stays editable,
 // and nothing about a theme survives except the settings it wrote and the
 // `SiteMeta.appliedTheme` note saying where they came from.
 //
-// What a theme deliberately does NOT carry: content (logo, colours that are the
+// What a theme deliberately does NOT carry: content (logo, colors that are the
 // studio's identity, copy, footer links). Those are the studio's; a theme is the
 // look they are shown in. So `accentColor` is left alone unless a theme is a
 // look that only works with its own accent.
@@ -72,7 +72,7 @@ export const SITE_THEMES: readonly SiteThemeDef[] = [
   {
     // Bold and athletic — a box, a performance gym: one strong sans in capitals,
     // black pill buttons, square cards, full-width calls to action, films that
-    // open over the page. The accent stays the studio's own colour.
+    // open over the page. The accent stays the studio's own color.
     id: 'box',
     nameKey: 'themeBox',
     descriptionKey: 'themeBoxDesc',

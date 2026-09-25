@@ -2,7 +2,7 @@
  * THE ONE PERMUTATION behind every drag-to-reorder list that stores `order`.
  *
  * Three surfaces order the same two collections — the activities list, the
- * subscription-types manager, and now the catalogue's rail — and all three write
+ * subscription-types manager, and now the catalog's rail — and all three write
  * `order = index` over the whole list. What they must agree about is not the
  * write but the ARITHMETIC: which positions a move actually changes.
  *

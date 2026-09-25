@@ -15,7 +15,7 @@ the mechanism; this page is what the modules do. The card carries the **beta**
 badge — the model's output is still what is being tuned.
 
 Owner installs it on Studio and up (the default client-install tier). An
-organisation can also install it at org level; `pluginIsActive` sees that install
+organization can also install it at org level; `pluginIsActive` sees that install
 too, and the module switches then render on the org plugins page.
 
 ## The modules

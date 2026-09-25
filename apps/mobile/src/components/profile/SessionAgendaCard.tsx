@@ -74,7 +74,7 @@ export const SessionAgendaCard: React.FC<SessionAgendaCardProps> = ({ sessions, 
   };
 
   const handleCancel = async (session: SessionWithStatus) => {
-    // The bin only renders when the server said this booking is cancellable
+    // The bin only renders when the server said this booking is cancelable
     // and handed back its token (BookedSession), so no token means the row is
     // stale — reload instead of pressing on.
     const token = session.cancelToken;

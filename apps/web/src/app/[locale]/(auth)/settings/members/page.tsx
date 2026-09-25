@@ -66,7 +66,7 @@ import { callFunction } from '@/lib/callFunction'
 // ----- types ----------------------------------------------------------------
 
 // MemberDoc is shaped by the listTeamMembers callable response.
-// `joined` is an ISO string (or null) — the callable serialises Timestamps.
+// `joined` is an ISO string (or null) — the callable serializes Timestamps.
 interface MemberDoc {
   id: string
   userId: string
@@ -572,7 +572,7 @@ export default function TeamMembersPage() {
         )}
       </div>
 
-      {/* A BEHAVIOUR REMOVAL, so it speaks in the ONE shape UX-42 standardised:
+      {/* A BEHAVIOR REMOVAL, so it speaks in the ONE shape UX-42 standardized:
           it names the tier and carries the control that changes the answer. The
           lock button it replaces did neither — it opened the upgrade modal
           without ever saying which plan, which is a refusal the reader cannot

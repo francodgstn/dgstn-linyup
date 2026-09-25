@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { previousZurichDay } from './mailMetrics'
 
 // The window is the reason these figures mean anything: get the offset wrong and
-// a day's sends land in its neighbour, twice a year, with nothing to notice it.
+// a day's sends land in its neighbor, twice a year, with nothing to notice it.
 describe('previousZurichDay', () => {
   const iso = (d: Date) => d.toISOString()
 

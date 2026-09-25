@@ -13,7 +13,7 @@ import {
 
 // Security-rules tests for the event program. This is a MULTI-TENANT boundary:
 // program items carry denormalised teamId/orgId/scope precisely so the rules can
-// authorise them without a get() on the parent event, and these tests are what
+// authorize them without a get() on the parent event, and these tests are what
 // keep that contract honest.
 //
 // Needs the Firestore emulator, so it is NOT part of the default `test` script:
@@ -285,12 +285,12 @@ describe('firestore.rules — event program items', function () {
     })
   })
 
-  // The organisation ROOT document carries `ranking_systems`, `affiliation_term`
+  // The organization ROOT document carries `ranking_systems`, `affiliation_term`
   // and `lock_affiliation` — settings a member studio's own screens must read to
   // render a belt or name the affiliation. Every org SUBcollection already
   // admits `currentTeamInOrg`; the root did not, so those reads were denied and
   // an org-managed studio resolved to NO ranking systems at all.
-  describe('the organisation root document', () => {
+  describe('the organization root document', () => {
     const orgRef = (db: ReturnType<typeof asManagerA>) => doc(db, 'organizations', ORG)
 
     it('a member studio can read the org settings its own screens depend on', async () => {
@@ -334,7 +334,7 @@ describe('firestore.rules — event program items', function () {
     })
   })
 
-  it('the denormalised tenant fields are what authorise an item', async () => {
+  it('the denormalised tenant fields are what authorize an item', async () => {
     // An item with no tenant stamp at all must be refused — this is the
     // invariant the whole no-get() design rests on.
     await assertFails(
@@ -347,7 +347,7 @@ describe('firestore.rules — event program items', function () {
   // ── the check-in row's tenant stamp ───────────────────────────────────────
   // `checkins/{id}.teamId` decides who can read, update and delete the row, and
   // `tenantData.ts` matches the whole collection by it. The update rule used to
-  // authorise the caller and then let them write ANY field, so a manager could
+  // authorize the caller and then let them write ANY field, so a manager could
   // move one of their own rows into another studio by rewriting that one field —
   // and the checkins trigger would follow it there, writing an activity-log
   // entry into a tenant they have no access to. Rewriting `event.id` was the

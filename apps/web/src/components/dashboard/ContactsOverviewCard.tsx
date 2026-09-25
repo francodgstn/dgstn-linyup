@@ -21,7 +21,7 @@
  * ONE GROUPED `Select`, NOT TABS. Seven options is too many for a tab strip at
  * the ~330px a third of the dashboard gives this card, and a two-tab strip over
  * a nested dropdown would be two controls where the merge exists to have one.
- * The grab-bag objection is answered instead by LABELLED GROUPS — the two old
+ * The grab-bag objection is answered instead by LABELED GROUPS — the two old
  * card titles, reused verbatim as the group labels, so the dropdown still says
  * which question each option answers.
  */
@@ -53,7 +53,7 @@ const STAGE_CONFIG = [
 ] as const
 
 // Engagement band is also exclusive (each contact lands in exactly one), so it's
-// a donut too. Colours mirror the contact-page meter.
+// a donut too. Colors mirror the contact-page meter.
 const ENGAGEMENT_COLOR: Record<EngagementBand, string> = {
   active: '#10B981', // Regular
   low: '#F59E0B', // Slipping
@@ -223,7 +223,7 @@ export function ContactsOverviewCard({
   contacts: Contact[]
   thresholds?: EngagementThresholds
   rankingSystems?: RankingSystem[]
-  /** Which families of views the picker offers. Both ⇒ labelled groups. */
+  /** Which families of views the picker offers. Both ⇒ labeled groups. */
   groups?: ContactsOverviewGroup[]
   /** Omit when a section band carries the title instead. */
   title?: string

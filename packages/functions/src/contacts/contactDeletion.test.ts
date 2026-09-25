@@ -47,7 +47,7 @@ describe('anonymizedContactPatch — what actually stops identifying somebody', 
   })
 
   it('CLEARS login_emails — the parent-access allow-list', () => {
-    // The one that bites: leave it and the account is anonymised but still
+    // The one that bites: leave it and the account is anonymized but still
     // reachable by whoever controls one of those inboxes, which is worse than
     // not deleting it because it looks done.
     assert.equal(patch.login_emails, null)

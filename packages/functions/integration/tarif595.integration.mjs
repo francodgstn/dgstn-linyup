@@ -270,7 +270,7 @@ async function main() {
   check('a contact session holds no manager role (void refused)', !!asManager.error, JSON.stringify(asManager.result))
   token = managerToken
 
-  // 7d. ANONYMISATION: Carla asked for deletion and the window passed → the
+  // 7d. ANONYMIZATION: Carla asked for deletion and the window passed → the
   // sweep clears the identity AND deletes the insurer row; receipts are kept.
   await teamRef.collection('tarif595_contacts').doc(CONTACT3).set({ ahv_number: '7569217076985', insurer_name: 'CSS' })
   await db.collection('contacts').doc(CONTACT3).update({ deletion_requested_at: Timestamp.now(), deletion_scheduled_for: Timestamp.fromMillis(Date.now() - 1000) })
@@ -278,7 +278,7 @@ async function main() {
   const swept = await anonymizeScheduledContacts()
   const carla = (await db.collection('contacts').doc(CONTACT3).get()).data()
   const carlaRow = await teamRef.collection('tarif595_contacts').doc(CONTACT3).get()
-  check('the sweep anonymises the contact and deletes the tarif595_contacts row', swept.anonymized >= 1 && carla?.firstname === 'Deleted' && !!carla?.anonymized_at && !carlaRow.exists, JSON.stringify({ swept, firstname: carla?.firstname, rowExists: carlaRow.exists }))
+  check('the sweep anonymizes the contact and deletes the tarif595_contacts row', swept.anonymized >= 1 && carla?.firstname === 'Deleted' && !!carla?.anonymized_at && !carlaRow.exists, JSON.stringify({ swept, firstname: carla?.firstname, rowExists: carlaRow.exists }))
   check('…and Bruno’s receipt is untouched', (await teamRef.collection('tarif595_receipts').doc(brunoReceipts.docs[0]?.id ?? 'x').get()).data()?.status === 'issued')
 
   // 8. the AHV gate: blank it → preview refuses

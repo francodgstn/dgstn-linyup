@@ -12,12 +12,12 @@ import { usePublicContactAuth } from './PublicContactAuthProvider'
 // minimal contact that rides on the persisted session.
 //
 // WHY IT IS NOT THE SESSION'S CONTACT. `PublicContactAuthProvider` restores a
-// contact that was serialised into localStorage when the session was minted and
+// contact that was serialized into localStorage when the session was minted and
 // is never refreshed for the SEVEN DAYS the token is good for. That copy carries
 // the plan types held at sign-in (`held_plan_type_ids`), frozen there. Anything that only
 // names the member is fine with it; anything that PRICES them is not, because
 // the divergence points the unsafe way — a lapsed or changed subscription still
-// reads as held, and the screen quotes a benefit the server will not honour.
+// reads as held, and the screen quotes a benefit the server will not honor.
 //
 // Reading `contacts/{contactId}` from a public surface is the `isSelfContact`
 // get: the one exception to "public routes read `public_profile` only", allowed

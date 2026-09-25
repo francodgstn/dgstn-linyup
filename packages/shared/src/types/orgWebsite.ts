@@ -105,7 +105,7 @@ export interface CoachesSection extends OrgSectionBase {
 /** The org site section union: reused presentational sections + org aggregates.
  *
  *  NO pricing / activities / schedule / places — those are team-scoped commerce
- *  and an organisation has nothing to put in them.
+ *  and an organization has nothing to put in them.
  *
  *  Features, CTA banner, FAQ and testimonials are NOT commerce, and their
  *  absence here was an oversight rather than a decision: they were added to the
@@ -124,7 +124,7 @@ export type OrgSiteSection =
   | FaqSection
   | TestimonialsSection
   | VideoSection
-  // The newest posts of the site's blog — organisations write news too.
+  // The newest posts of the site's blog — organizations write news too.
   | PostsSection
   | ClubsSection
   | LocationsSection
@@ -149,7 +149,7 @@ export interface OrgSiteDraft {
    *  (`SitePageRef`); each page's sections live in `pages/{pageId}` under this
    *  doc. Absent ⇒ a one-page site, which is every org site before pages. */
   pages?: SitePageRef[]
-  /** Old URLs of a site the organisation moved here — see SiteRedirect. */
+  /** Old URLs of a site the organization moved here — see SiteRedirect. */
   redirects?: SiteRedirect[]
   updated_at?: Timestamp
   updatedBy?: string

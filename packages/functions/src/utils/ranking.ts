@@ -1,12 +1,12 @@
 // Server-side resolution of a team's effective ranking systems.
 //
-// The RULE (an organisation's systems override its studios', when it has any)
+// The RULE (an organization's systems override its studios', when it has any)
 // lives in @linyup/shared so the client hook, the automation builder and this
 // cannot disagree. Only the READ is here.
 //
 // It exists because the automation engine used to consult
 // `teamData.ranking_systems` alone. For a tenant whose systems live on the
-// ORGANISATION — which is how the whole org tier is meant to be used, and how
+// ORGANIZATION — which is how the whole org tier is meant to be used, and how
 // HMD is set up — that list is empty, so every `update_field` on a rank was
 // dropped with a "not in allowlist" log and no rank automation could ever fire.
 import * as admin from 'firebase-admin'
@@ -19,7 +19,7 @@ import {
 /**
  * The ranking systems that apply to the team whose document is `teamData`.
  *
- * Reads the organisation only when the team belongs to one, so a standalone
+ * Reads the organization only when the team belongs to one, so a standalone
  * studio pays nothing for the org tier existing.
  */
 export async function resolveRankingSystems(

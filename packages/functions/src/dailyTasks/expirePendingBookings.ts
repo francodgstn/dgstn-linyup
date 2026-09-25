@@ -15,7 +15,7 @@
 //    session doc would still say 'pending_payment' with a stale hold_expires_at).
 //    Doing the session first means the SAME recount instead sees 'cancelled' and
 //    preserves it (trackBookings early-returns on 'pending_payment' but not on
-//    'cancelled', so the delete's recount runs and correctly keeps it cancelled).
+//    'cancelled', so the delete's recount runs and correctly keeps it canceled).
 //
 // Paid bookings are flipped to 'confirmed' by the Connect webhook (which also
 // clears payment_status: 'required'), so they're excluded from both sweeps here.
@@ -65,7 +65,7 @@ async function cancelExpiredAppointmentHolds(): Promise<number> {
 }
 
 /** Step 2 — delete every still-unpaid hold booking (drop-in AND appointment
- *  alike; appointment sessions were already cancelled above by this point). */
+ *  alike; appointment sessions were already canceled above by this point). */
 async function releaseExpiredBookingHolds(): Promise<number> {
   const db = admin.firestore()
   const now = admin.firestore.Timestamp.now()

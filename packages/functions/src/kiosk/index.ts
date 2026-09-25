@@ -7,11 +7,11 @@
 // `kioskTeam`, `kioskEpoch`) — never a `contactId` claim.
 //
 // The public booking callables (`bookSession`, `bookAppointment`) DO read
-// `request.auth`, to honour a signed-in contact session. A kiosk token can never
+// `request.auth`, to honor a signed-in contact session. A kiosk token can never
 // be mistaken for one: `optionalContactSessionFromRequest` requires both a
 // `contactId` and a `teamId` claim, and this token deliberately carries neither
 // (its team is namespaced as `kioskTeam`). So a kiosk-signed-in caller still
-// books exactly like an anonymous walk-in guest — the intended behaviour. Keep
+// books exactly like an anonymous walk-in guest — the intended behavior. Keep
 // it that way: never add `contactId`/`teamId` claims to this token.
 import * as admin from 'firebase-admin'
 import { onCall, HttpsError } from 'firebase-functions/v2/https'

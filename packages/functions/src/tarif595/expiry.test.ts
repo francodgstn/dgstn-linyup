@@ -63,7 +63,7 @@ describe('suggestTarif595Mappings — asOf, how a replacement is proposed', () =
     assert.equal(clampAsOf(undefined, '2026-09-18'), '2026-09-18')
   })
 
-  it('the catalogue AND the parser both run on the clamped day, so this year’s codes are refused in a replacement', () => {
+  it('the catalog AND the parser both run on the clamped day, so this year’s codes are refused in a replacement', () => {
     const src = readFileSync(join(__dirname, 'suggest.ts'), 'utf8').replace(/\r\n/g, '\n')
     assert.match(src, /const today = clampAsOf\(data\.asOf, nowIso\)/)
     assert.match(src, /tarif595PositionsOn\(today\)/)

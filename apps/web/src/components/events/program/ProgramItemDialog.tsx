@@ -123,7 +123,7 @@ export function ProgramItemDialog({
   const allDay = watch('allDay')
 
   async function submit(values: FormValues) {
-    // Normalise empties to absent rather than writing empty strings, matching
+    // Normalize empties to absent rather than writing empty strings, matching
     // how the event edit dialog nulls out unset optional fields.
     const draft: ProgramItemDraft = {
       dayId: values.dayId,

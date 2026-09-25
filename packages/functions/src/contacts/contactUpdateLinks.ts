@@ -288,7 +288,7 @@ export const resolveContactUpdateLink = onCall(async (request) => {
 
   const birthdate = contactSnap.get('birthdate') as Timestamp | undefined
 
-  // ONLY what the form renders. A grant to edit details is not a licence to
+  // ONLY what the form renders. A grant to edit details is not a license to
   // read the person's bookings, notes, plan or payment history, so none of it
   // is returned — not even to a caller holding a valid token.
   return {

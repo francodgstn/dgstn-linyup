@@ -1,5 +1,5 @@
 /**
- * Tear down ONE ORGANISATION and its member studios — and nothing else.
+ * Tear down ONE ORGANIZATION and its member studios — and nothing else.
  *
  * Built for the HMD refresh: staging carries the federation's migrated data
  * ALONGSIDE the seeded demo tenants that testers are signed into, so
@@ -11,7 +11,7 @@
  *   pnpm reset:org --org hmd --target staging
  *
  * ── IT IS AN ALLOW-LIST, AND THE SANDBOX RESET IS A DENY-LIST ───────────────
- * `reset-sandbox-db.ts` deletes everything EXCEPT the tenants it recognises, so
+ * `reset-sandbox-db.ts` deletes everything EXCEPT the tenants it recognizes, so
  * a collection nobody classified gets WIPED — the safe default when the whole
  * project is disposable. This script runs against an environment other people
  * are using, so it inverts that: a document is deleted only if it can be shown
@@ -125,7 +125,7 @@ const DOCID_COLLECTIONS = TENANT_COLLECTIONS.flatMap((c) =>
   c.match.by === 'docId' ? [c.collection] : []
 )
 
-/** Fields a top-level document uses to name its organisation. */
+/** Fields a top-level document uses to name its organization. */
 const ORG_FIELDS = ['orgId', 'org_id', 'organizationId'] as const
 
 /**
@@ -211,7 +211,7 @@ async function plan(teamIds: string[]): Promise<Group[]> {
   }
   if (orgKeyed.length) groups.push({ label: 'org-keyed documents', refs: orgKeyed })
 
-  // 4. The studios themselves, and then the organisation. LAST, because the
+  // 4. The studios themselves, and then the organization. LAST, because the
   //    roster inside it is how step 1 found them: delete it first and a failed
   //    run cannot be resumed.
   const teamRefs = teamIds.map((id) => db.collection('teams').doc(id))

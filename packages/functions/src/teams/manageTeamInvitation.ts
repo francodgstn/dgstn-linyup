@@ -60,7 +60,7 @@ export const manageTeamInvitation = onCall(
           cancelledAt: FieldValue.serverTimestamp(),
           cancelledBy: callerId,
         })
-        return { success: true, message: 'Invitation cancelled successfully' }
+        return { success: true, message: 'Invitation canceled successfully' }
       }
 
       case 'resend': {

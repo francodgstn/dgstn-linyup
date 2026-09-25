@@ -46,7 +46,7 @@ function dayEnd(date: string): Timestamp {
 /**
  * What an external event says on the page.
  *
- * `Event` carries no "externally organised" field, and adding one that only this
+ * `Event` carries no "externally organized" field, and adding one that only this
  * script writes would be a flag nothing reads — the shape `docs/open-defects.md`
  * already records as a mistake once (`EventTypeConfig.contact_requirements`). The
  * fact belongs where a person will see it, so it goes in the description.
@@ -61,7 +61,7 @@ function dayEnd(date: string): Timestamp {
  */
 function describe(e: SeasonEvent): string | null {
   const parts: string[] = []
-  if (e.external) parts.push('Not organised by HMD — members attend, HMD does not run it.')
+  if (e.external) parts.push('Not organized by HMD — members attend, HMD does not run it.')
   if (e.note) parts.push(e.note)
   return parts.length ? parts.join(' ') : null
 }

@@ -303,18 +303,18 @@ export default function ShopHome({
   const [courseFocusHandled, setCourseFocusHandled] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  // Distinct from `error` (a checkout failure): this one means the CATALOGUE
+  // Distinct from `error` (a checkout failure): this one means the CATALOG
   // itself did not load, and it must never be shown as "this studio sells
   // nothing" — the shape that hid the Space entitlements 403 for months.
   // …and it is kept SEPARATE from the entitlements failure below, because the two
   // say different things and the page owes a different answer to each:
   //
   //   catalogueLoadError  the shop's own contents did not load → the page failed.
-  //   entitlementsError   the catalogue is fine; we just don't know what the
+  //   entitlementsError   the catalog is fine; we just don't know what the
   //                       visitor already owns, so an owned course may read
   //                       "Buy" → a caveat over a real page, not a failed page.
   //
-  // One shared slot made an EMPTY catalogue plus a failed entitlements read
+  // One shared slot made an EMPTY catalog plus a failed entitlements read
   // render as "we couldn't load what this studio sells", which is false. Each is
   // also cleared where its own success is stored, so a transient failure cannot
   // pin a stale banner over data that has since loaded correctly.
@@ -358,7 +358,7 @@ export default function ShopHome({
     // Memberships + products live on the team's single public_profile doc; courses are
     // world-readable per-course public_profile summaries (same collection-group query
     // the Space uses). The shop is the courses' home, so it lists EVERY tier — only
-    // courses the studio explicitly hid from the catalogue are dropped.
+    // courses the studio explicitly hid from the catalog are dropped.
     const profileP = getDoc(doc(db, TEAMS_COLLECTION, teamId, PUBLIC_PROFILE_SUBCOLLECTION, teamId))
     const coursesP = getDocs(
       query(
@@ -370,7 +370,7 @@ export default function ShopHome({
     // Scheduled courses, from the same kind of world-readable mirror. A
     // PUBLISHED one has a mirror and a draft does not, so the query is the whole
     // visibility rule: `syncCourseBlockPublicProfile` deletes it for a draft and
-    // for a cancelled course.
+    // for a canceled course.
     const courseBlocksP = getDocs(
       query(
         collectionGroup(db, PUBLIC_PROFILE_SUBCOLLECTION),
@@ -526,7 +526,7 @@ export default function ShopHome({
         // A failure here re-sells a course the contact already owns — the button
         // says "Buy" for something they paid for. Loud in the log, and the
         // partial banner tells them the page is not showing the whole truth. It
-        // does NOT claim the catalogue failed: the catalogue is right here.
+        // does NOT claim the catalog failed: the catalog is right here.
         // `entitlementsFor` is deliberately NOT advanced, so the derived
         // `entitlementsResolved` stays false: a card the visitor clicks
         // themselves is their own decision, but nothing may OPEN a checkout on
@@ -576,17 +576,17 @@ export default function ShopHome({
   const hasGiftCards = giftCardAmounts.length > 0 && paymentsEnabled
   const catalogueIsEmpty =
     !hasSubscriptions && !hasProducts && !hasCourses && !hasCourseBlocks && !hasGiftCards
-  // The full-page error is reserved for the case where the CATALOGUE query is the
+  // The full-page error is reserved for the case where the CATALOG query is the
   // thing that failed — which, here, always means NOTHING loaded: the three reads
   // are one `Promise.all`, so a single rejection skips the whole `then`, and the
-  // catch empties every list. There is no partial catalogue to preserve, so
+  // catch empties every list. There is no partial catalog to preserve, so
   // `&& catalogueIsEmpty` only ever restated `catalogueLoadError != null` and is
   // gone. (Should the load ever become per-query and keep what succeeded, this is
   // the line that has to grow the distinction back.)
   const showCatalogueError = catalogueLoadError != null
   // The caveat banner is for the OTHER failure, which is not a failure of the
-  // page: the catalogue is right here and correct, we just don't know what the
-  // visitor already owns. An EMPTY catalogue is a legitimate answer and keeps
+  // page: the catalog is right here and correct, we just don't know what the
+  // visitor already owns. An EMPTY catalog is a legitimate answer and keeps
   // this banner over it — "nothing for sale" stays true, "and we know what you
   // own" does not.
   const showPartialWarning = !showCatalogueError && entitlementsError != null
@@ -664,7 +664,7 @@ export default function ShopHome({
       // In flight: come back when it lands (this effect re-runs on it).
       if (entitlementsError == null) return
       // Refused, and it will not answer itself. Give the deep link up rather
-      // than leave it armed: the catalogue is on screen with its caveat banner,
+      // than leave it armed: the catalog is on screen with its caveat banner,
       // and a Buy the visitor presses there is a decision they made knowing the
       // page told them it may be incomplete.
       setCourseFocusHandled(true)
@@ -805,7 +805,7 @@ export default function ShopHome({
 
   // Same resolver the server uses (@linyup/shared) for course access — pure
   // function of the course's accessRule + the visitor's optimistic snapshot.
-  // `promo` is threaded rather than assumed: the CATALOGUE cards resolve without
+  // `promo` is threaded rather than assumed: the CATALOG cards resolve without
   // one (no code has been typed yet at card level) and the checkout MODAL
   // resolves with it. One function, two inputs — never two independent
   // computations of the same number.
@@ -837,7 +837,7 @@ export default function ShopHome({
     return { amount: pay.amount, base: pay.appliedBenefit.baseAmount }
   }
 
-  // What the catalogue card offers for a course, given the visitor's session:
+  // What the catalog card offers for a course, given the visitor's session:
   //  'open'      → can read it now → link to the player
   //  'buy'       → purchase-tier, not owned → checkout
   //  'signin'    → registered/subscription course, needs a login first
@@ -1262,7 +1262,7 @@ export default function ShopHome({
         {/* Something the page needed didn't load — most often the entitlements
             query, which decides whether an owned course reads "Open" or "Buy".
             Say so rather than letting the page present a partial truth as the
-            truth. Shown over an empty catalogue too: "nothing for sale" is then
+            truth. Shown over an empty catalog too: "nothing for sale" is then
             still true, but "and we know what you own" is not. */}
         {!loading && showPartialWarning && (
           <div
@@ -1345,7 +1345,7 @@ export default function ShopHome({
             <Loader2 className="h-6 w-6 animate-spin" style={{ color: textMuted }} />
           </div>
         ) : showCatalogueError ? (
-          // The CATALOGUE query is the one that failed, and nothing loaded.
+          // The CATALOG query is the one that failed, and nothing loaded.
           // "This studio sells nothing" would be a lie told confidently — say the
           // page failed and offer the retry. Painted in the studio's own theme:
           // app tokens go near-black on a dark bio-link theme, i.e. invisible in
@@ -1357,7 +1357,7 @@ export default function ShopHome({
             theme={{ textMain, textMuted, accent, border: cardBorder }}
           />
         ) : catalogueIsEmpty ? (
-          // The catalogue loaded and is genuinely empty. True regardless of what
+          // The catalog loaded and is genuinely empty. True regardless of what
           // else failed — the banner above carries that part. Said differently
           // without a till, where "nothing to buy" would be the wrong half of
           // the truth: there is nothing to buy HERE either way, and what is
@@ -1439,7 +1439,7 @@ export default function ShopHome({
                         )}
                       </div>
                       {/* UNRENDERED, not disabled, when there is no till: a
-                          greyed-out Buy is a door that still looks like a door.
+                          grayed-out Buy is a door that still looks like a door.
                           The price beside it is the whole point of the page. */}
                       {!priceListMode && (
                         <button

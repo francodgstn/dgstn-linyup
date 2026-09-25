@@ -41,7 +41,7 @@ export interface WriteManualPaymentInput {
   occurredAtMs?: number
   /** Studio-configured mode label (free text), e.g. "Cash". */
   paymentMode?: string | null
-  /** Structured "what was bought" — raw, normalised internally. */
+  /** Structured "what was bought" — raw, normalized internally. */
   lineItem?: unknown
   comment?: string | null
   /** Stable dedupe key; falls back to a fresh doc id (no dedup) when omitted. */
@@ -81,7 +81,7 @@ export async function writeManualPaymentEvent(
   // The key becomes half a DOCUMENT ID, so it is stripped to characters that
   // cannot change the path — a '/' here would silently address a different
   // subcollection. It is also the receipt's tender ref (UX-80), which makes the
-  // sanitising load-bearing rather than merely defensive.
+  // sanitizing load-bearing rather than merely defensive.
   const ref =
     (input.idempotencyKey ?? '').trim().replace(/[^A-Za-z0-9_.-]/g, '').slice(0, 120) ||
     eventsCol.doc().id

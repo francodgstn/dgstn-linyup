@@ -72,7 +72,7 @@ export function SettingRows({ children, className }: { children: ReactNode; clas
 
 /**
  * ONE SETTING. Label and hint on the left, its control on the right — a
- * `Switch`, a checkbox, a colour swatch, a short input — and, when the
+ * `Switch`, a checkbox, a color swatch, a short input — and, when the
  * control reveals more (a price once the trial is on), that goes UNDER the
  * row as `children`, so the row keeps its shape whether it is on or off.
  *

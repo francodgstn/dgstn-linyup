@@ -32,7 +32,7 @@ import type { PluginId } from './plugin'
  *     to this grading" stop having one answer.
  *
  *  3. UNINSTALL LEAVES EVERYTHING. There is deliberately no teardown. A seeded
- *     rule that has been in use for a year is the organisation's, not the
+ *     rule that has been in use for a year is the organization's, not the
  *     plugin's, and deleting one would strand every grading recorded against it.
  *     Re-installing therefore finds its own documents and converges on
  *     `seed_version` rather than starting again.
@@ -78,7 +78,7 @@ export interface PluginSeedBundle {
  * Cup, tournament and competition are ONE bucket to HMD.
  *
  * Declared once and referenced by each band, because `eventTypes` is already a
- * list — core needs no notion of "synonym" for the organisation to say that its
+ * list — core needs no notion of "synonym" for the organization to say that its
  * own cup counts as a tournament.
  */
 const TOURNAMENT_TYPES = ['competition', 'hmd_fighting_cup']
@@ -89,7 +89,7 @@ const TOURNAMENT_TYPES = ['competition', 'hmd_fighting_cup']
  *
  * `roles` is deliberately ABSENT on all three: turning up as support — staff,
  * coach, volunteer — counts exactly as competing does. That is the
- * organisation's rule, and omitting the field is how it is written.
+ * organization's rule, and omitting the field is how it is written.
  */
 const ONE_ONE_ONE = [
   { eventTypes: TOURNAMENT_TYPES, min: 1 },
@@ -98,14 +98,14 @@ const ONE_ONE_ONE = [
 ]
 
 /**
- * HMD's rules, as the organisation actually grades.
+ * HMD's rules, as the organization actually grades.
  *
- * ── COLOUR BELTS HAVE NO ENTRY, AND THAT IS THE RULE ────────────────────────
+ * ── COLOR BELTS HAVE NO ENTRY, AND THAT IS THE RULE ────────────────────────
  * Everything up to and including Red/Black is graded at the instructor's
  * discretion. There is no band for those levels, so the engine answers
  * `not_configured` — which is a different answer from "not eligible" and the UI
  * must not render it as a refusal. Writing a permissive band instead would be a
- * claim the organisation never made.
+ * claim the organization never made.
  *
  * ── THE CLOCK RUNS FROM THE PREVIOUS EXAM ───────────────────────────────────
  * Not the promotion, and not the calendar year. A dan belt is conferred a year
@@ -131,9 +131,9 @@ const ONE_ONE_ONE = [
  * or reordering a belt moves nothing here, which is the whole point of the
  * change from the numbers these used to be.
  *
- * Seed `version` was bumped to 2 with that change so every organisation on
+ * Seed `version` was bumped to 2 with that change so every organization on
  * version 1 is re-seeded with ids. The one hazard the reconciler cannot fix:
- * an organisation whose progression a HUMAN edited (`updated_by` set) is never
+ * an organization whose progression a HUMAN edited (`updated_by` set) is never
  * rewritten, and keeps its old numeric bands. Those still evaluate — the
  * matcher resolves a legacy number by `value` while `value` exists — but the
  * Phase 2 data flip must report them so they are converted by hand.
@@ -209,7 +209,7 @@ const HMD_BELT_RULES: RankProgressionSeed = {
       // → Master. FOUR years by the same arithmetic (years = the grade being
       // taken), and it is here rather than omitted so the ladder does not end
       // in `not_configured` at its top step — which would read as "no rule"
-      // where the organisation does in fact have one.
+      // where the organization does in fact have one.
       {
         from: 'master',
         to: 'master',

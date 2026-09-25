@@ -5,7 +5,7 @@
 // ── IT HAS TO SURVIVE A PRINTER, AND THAT CONSTRAINS ITS FORM ──────────────
 // `globals.css` forces `.manifest-session` backgrounds transparent for the day
 // sheet, and most browsers drop background graphics by default anyway — so a
-// coloured PILL prints as invisible text. The meaning therefore rides on a
+// colored PILL prints as invisible text. The meaning therefore rides on a
 // STROKE (the lucide glyph, an SVG path) and on the word beside it, never on a
 // fill. The tick box on the same sheet already solves the identical problem the
 // same way (`bg-foreground print:bg-transparent`, so the border carries it).

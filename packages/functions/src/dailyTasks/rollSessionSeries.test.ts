@@ -41,7 +41,7 @@ interface FakeSnap {
 interface FakeQuery {
   where(field: string, op: string, value: unknown): FakeQuery
   limit(n: number): FakeQuery
-  /** Projection. Modelled because the dedupe read asks for `instanceDate` only;
+  /** Projection. Modeled because the dedupe read asks for `instanceDate` only;
    *  the rows it returns are read through `doc.get(field)`, not `data()`. */
   select(...fields: string[]): FakeQuery
   doc(id?: string): FakeRef
@@ -234,7 +234,7 @@ describe('rollSessionSeries — idempotency', () => {
     assert.equal(db.lookups, 1)
   })
 
-  it('finishes a series that was only half-materialised', async () => {
+  it('finishes a series that was only half-materialized', async () => {
     const db = makeDb({ s1: weeklySeries() })
     await rollSessionSeries(asFirestore(db), NOW)
     const all = db.docs('sessions')

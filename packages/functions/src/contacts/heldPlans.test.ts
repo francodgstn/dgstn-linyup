@@ -118,7 +118,7 @@ describe('buildHeldPlans — Stripe subscriptions', () => {
     assert.equal(e.ref, 'sub_1')
   })
 
-  it('a cancelling subscription says when it ends and does not charge again', () => {
+  it('a canceling subscription says when it ends and does not charge again', () => {
     const [e] = build({ memberSubscriptions: [stripe({ cancel_at_period_end: true })] }).held_plans
     assert.equal(e.status, 'cancelling')
     assert.equal(e.ends_at_ms, NOW + 20 * DAY)
@@ -131,7 +131,7 @@ describe('buildHeldPlans — Stripe subscriptions', () => {
     assert.equal(e.next_charge_at_ms, null)
   })
 
-  it('a cancelled, duplicate or untyped subscription is not held', () => {
+  it('a canceled, duplicate or untyped subscription is not held', () => {
     const m = build({
       memberSubscriptions: [
         stripe({ subscriptionId: 'c', status: 'canceled' }),

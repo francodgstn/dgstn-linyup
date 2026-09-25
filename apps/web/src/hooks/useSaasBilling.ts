@@ -22,7 +22,7 @@
 //    a successful cancel toasted and left the badge saying "active".
 //  • `scope` — the two messages that NAME the payer ("Only the team owner…",
 //    "…for this team") are wrong one floor up, where the payer is an
-//    organisation and its admin.
+//    organization and its admin.
 // The org's own checkout is a different callable with different arguments
 // (`createOrgCheckoutSession`), so it gets its own mutation below — sharing the
 // error mapper, which is the part that was worth sharing.
@@ -58,7 +58,7 @@ const SUPPORT_MAILTO = 'mailto:hello@linyup.com?subject=Billing%20help'
 
 type SaasBillingAction = 'checkout' | 'cancel' | 'reactivate' | 'portal'
 
-/** Who is paying — a team (Settings → Billing) or an organisation
+/** Who is paying — a team (Settings → Billing) or an organization
  *  (org/{orgId}/billing). Only the copy that NAMES the payer differs. */
 export type SaasBillingScope = 'team' | 'org'
 
@@ -137,7 +137,7 @@ export function useSaasBillingErrorToast(
     }
 
     // The two refusals that name the PAYER read differently one floor up: an org
-    // admin is not a team owner, and the missing doc belongs to an organisation.
+    // admin is not a team owner, and the missing doc belongs to an organization.
     const org = scope === 'org'
     const key =
       code === 'permission-denied'
@@ -242,7 +242,7 @@ export function useReactivateSaasSubscription(options: SaasBillingOptions = {}) 
 }
 
 /**
- * Organisation plan checkout — a DIFFERENT callable from
+ * Organization plan checkout — a DIFFERENT callable from
  * `useCreateSaasCheckoutSession` (no plan: an org has exactly one; `orgId`, not
  * `teamId`; and it takes the caller's `origin` so a local dev checkout returns to
  * localhost). Shares the error mapper and the not-Stripe URL guard, which is the

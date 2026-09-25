@@ -166,7 +166,7 @@ function setErrorAtPath(target: Record<string, unknown>, path: string, error: { 
 // An UNMAPPED row starts with its unit already derived from the offering's
 // own facts (`suggestTarif595Unit`: a monthly price bills per month, a credit
 // pack per entry, a class per lesson) — the half of a mapping that needs no
-// judgement. The position stays empty until the manager picks one or accepts
+// judgment. The position stays empty until the manager picks one or accepts
 // a suggestion; `rowsToOfferings` skips a row without a position, so a
 // derived unit alone never reaches the saved config.
 function rowFrom(

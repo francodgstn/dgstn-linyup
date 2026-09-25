@@ -7,7 +7,7 @@ import { getSecret } from '../utils/secrets'
 import { timingSafeEqualStr } from '../utils/secureCompare'
 import { addSuppression } from './suppression'
 
-// Normalise Brevo's event names (payloads use snake_case; the create-webhook API
+// Normalize Brevo's event names (payloads use snake_case; the create-webhook API
 // uses camelCase) onto our suppression reasons. Only events that mean "stop
 // sending to this address" produce a suppression.
 const SUPPRESSION_EVENTS: Record<string, MailSuppressionReason> = {

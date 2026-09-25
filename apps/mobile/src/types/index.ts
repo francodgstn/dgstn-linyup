@@ -120,7 +120,7 @@ export interface HydratedSession {
 }
 
 /** A session the contact holds a booking on, with what `getMyBookings` says
- *  about cancelling it. `cancellable` is resolved SERVER-SIDE against the same
+ *  about canceling it. `cancellable` is resolved SERVER-SIDE against the same
  *  rules `cancelBooking` applies (`memberCanCancel`,
  *  packages/functions/src/booking/myBookings.ts). The app never re-derives it
  *  from the booking's status — it got that wrong once: a fresh booking on an
@@ -129,7 +129,7 @@ export interface HydratedSession {
  *  the bin (PrimeTestLab report 7107, M-02). */
 export interface BookedSession extends HydratedSession {
   cancellable: boolean;
-  /** The `booking_token` for `cancelBooking`, or null when not cancellable. */
+  /** The `booking_token` for `cancelBooking`, or null when not cancelable. */
   cancelToken: string | null;
 }
 

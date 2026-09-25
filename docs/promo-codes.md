@@ -70,11 +70,11 @@ typed `SUMMER26` puts a code on the flyer that nobody can redeem. So
 `createPromoCode` uses `.create()` and reports `ALREADY_EXISTS` as a user-facing
 refusal, with no retry loop.
 
-**Codes normalise the same way gift cards do**, and that is enforced rather than
+**Codes normalize the same way gift cards do**, and that is enforced rather than
 matched: `normalizeRedemptionCode` (`packages/shared/src/utils/codes.ts`) is the
 one trim-and-uppercase, and `giftCards.ts` delegates to it. It deliberately does
 **not** fold hyphens — that would collide `SUMMER-26` and `SUMMER26` onto one
-document. Format after normalisation is `PROMO_CODE_FORMAT_RE`
+document. Format after normalization is `PROMO_CODE_FORMAT_RE`
 (3–24 chars, uppercase alphanumerics and hyphens, no leading hyphen), and a code
 matching `looksLikeGiftCardCode` (`/^GC-/`) is refused at creation and reported
 distinctly by the preview — a visitor pasting a gift card into the promo field is
@@ -182,7 +182,7 @@ priced merchandise outside `resolvePaymentOptions` entirely, and a promo on
 merchandise cannot exist without fixing that. The arm never covers and never
 denies — its effect set excludes `included` and `spend_credits`, there is no free
 product tier and no product denial — so it returns exactly one `pay` option,
-always, which is a falsifiable invariant rather than a behaviour to remember. It
+always, which is a falsifiable invariant rather than a behavior to remember. It
 resolves with `GUEST_SNAPSHOT`: the arm is snapshot-*invariant* by construction,
 so loading the buyer's subscription facts would be reads that cannot change the
 answer. Two fixtures pin the invariance, so if `Product` ever gains a benefit the
@@ -286,7 +286,7 @@ floor are a configuration error and THROW; arithmetic-derived prices CLAMP UP an
 are never free.** `requireChargeableAmountFromMajor` is the throwing half;
 `Math.max(MIN_CHARGE_MAJOR, …)` inside the resolver is the clamping half.
 
-| Case | Behaviour |
+| Case | Behavior |
 |---|---|
 | 25% off 40.00 | `30.00` |
 | 95% off a CHF 8 drop-in (→ 0.40) | **clamps** to 0.50; the breakdown shows it |
@@ -545,7 +545,7 @@ client thought the code applied and the server says it did not.
 The reason is that off the promo path **the client's number is not a quote**. The
 public surfaces price from an optimistic snapshot documented as partial — the
 contact session carries only the *primary* `subscription_type_id`, every held id
-is reported unmetered, `joined` is assumed, and the shop fetches its catalogue
+is reported unmetered, `joined` is assumed, and the shop fetches its catalog
 once with no listener — while the server loads the real thing. The two are two
 implementations of one resolver and are **allowed to disagree**. Enforcing the
 quote everywhere turned those divergences into refused sales, and not transiently:
@@ -579,7 +579,7 @@ the real price. So the throw carries the server's own `amount`,
 reader of it, and every mount stores it as `acceptedPrice`, which becomes **both**
 
 - what the surface renders from then on — the discount rows and the struck-through
-  base drop, because the server has just declined to honour them, and leaving them
+  base drop, because the server has just declined to honor them, and leaving them
   over a higher total is the same broken promise the guard refuses; **and**
 - what the next submit sends back as `quotedAmount`.
 
@@ -697,9 +697,9 @@ resurrects every expired key the transaction just dropped, so cleanup would neve
 persist. The gift card documents this trap in three places.
 
 **The promo document is a hot document while a campaign runs**, and that is
-correct behaviour rather than a bottleneck — a promo code is not a flash sale. If
+correct behavior rather than a bottleneck — a promo code is not a flash sale. If
 a tenant ever runs a code across a burst larger than a few writes per second, the
-remedy is more codes, not a sharded counter. Recorded so nobody optimises it
+remedy is more codes, not a sharded counter. Recorded so nobody optimizes it
 speculatively.
 
 ### The commit — one writer, at the confirm point
@@ -796,7 +796,7 @@ that reports a breach is not a cap, and Q9 asked for a cap.
 stated here rather than discovered in a support ticket:** the buyer has already
 paid the discounted price when this fires. The gate does **not** refund them and
 does not undo the sale — they keep the booking, the course, the goods, and the
-studio keeps the money. What is refused is the *bookkeeping*. Honour-and-don't-
+studio keeps the money. What is refused is the *bookkeeping*. Honor-and-don't-
 count is chosen over refunding because a system-initiated refund of a completed,
 wanted purchase is a worse surprise for both sides than a discount given one extra
 time; and the ERROR log is what lets a studio reconcile it if it ever cares.
@@ -807,7 +807,7 @@ time; and the ERROR log is what lets a studio reconcile it if it ever cares.
 
 - **the counters.** No commit ever pushes `usage_count` past `max_uses`, or
   `PromoRedemption.count` past `max_uses_per_contact`, by the gate above — no
-  timing argument required, so no future change to windows or delivery behaviour
+  timing argument required, so no future change to windows or delivery behavior
   can erode it. (The *authoring* side is not part of that claim and does not need
   to be: `updatePromoCode` will happily set `max_uses` below a count already
   reached, which leaves a code reading past its own cap and refusing every
@@ -847,8 +847,8 @@ charged than `max_uses` allows:
    `PROMO_MAX_LIVE_RESERVATIONS` (25) and by nothing else; the lever may be pulled
    again. This is a lever a manager reaches for *because* the code is contested,
    i.e. exactly when N is largest. It is
-   nonetheless the right trade (the alternative is cancelling live carts to tidy a
-   counter) and it is a deliberate human action rather than a system behaviour,
+   nonetheless the right trade (the alternative is canceling live carts to tidy a
+   counter) and it is a deliberate human action rather than a system behavior,
    which is why it is documented and not closed.
 
 **Three things about residual 1 — the late webhook — that are easy to overstate,
@@ -895,7 +895,7 @@ Session completes exactly once. The full-cover path runs synchronously inside a
 callable whose booking write already refuses a second attempt.
 
 **Every commit is best-effort and wrapped in `try/catch`**, like its gift-card
-neighbour. A commit that throws must not stop the booking confirming: the customer
+neighbor. A commit that throws must not stop the booking confirming: the customer
 paid and owning the seat matters more than the count. The cost is a reservation
 that lapses instead of committing — the count under-reports by one, which is the
 safe direction.
@@ -940,7 +940,7 @@ Q9-required direction — over-hold, never over-issue — and
 `resolveCheckoutHoldWindow` (`connect/checkout.ts`) owns the derivation and both
 constants. Every rail calls it once and reads `expiresAtEpochSeconds`,
 `holdMinutes` and `promoHoldMinutes`, so all three are **copies of one instant**,
-never separate computations. Gift-card behaviour is preserved exactly where it was
+never separate computations. Gift-card behavior is preserved exactly where it was
 already right: `31 + 4 === 35 === DEFAULT_HOLD_MINUTES`.
 
 | Rail | Before | With a promo and/or a gift card |
@@ -1043,7 +1043,7 @@ whatever the timers do.
 | Changing the code or the card inside the same minute | the Stripe idempotency key carries the applied instruments — see below |
 | Redelivered `checkout.session.completed` | `connect_webhook_events/{eventId}` claimed with `.create()` before dispatch |
 | Late webhook delivery (Stripe retries over hours) | the reservation outlives the session by an hour, so the slot is normally still standing; `fallbackAmountMajor` and `promoIdentity` come from checkout metadata; and if it is later than that AND the slot was re-handed, the **cap gate** refuses the second count |
-| Two concurrent claims of the last use | serialised on `promoRef`; one wins, the other gets `promo_exhausted` |
+| Two concurrent claims of the last use | serialized on `promoRef`; one wins, the other gets `promo_exhausted` |
 | Manager double-submitting the create form | `.create()` → `already-exists`, `reason: 'code_taken'`, no retry loop |
 
 **The Stripe idempotency key had to learn about instruments — and about
@@ -1268,7 +1268,7 @@ rail:
   every reader of it is unreachable.
 
 **The drop-in rail passes its OWN query results in**, and that is not an
-optimisation. `createDropInCheckout` mints a provisional contact for an unmatched
+optimization. `createDropInCheckout` mints a provisional contact for an unmatched
 guest *before* the promo loads, so a query issued at the promo site would see that
 brand-new document too, come back with two matches, and — under a
 single-match-only rule — the gate would fall open precisely where it matters. The
@@ -1305,7 +1305,7 @@ still `drop_in`), **no reclass pair**, **no CSV column**, no chart-template brea
 no monthly-report change.
 
 The reclass pair (`buildGiftCardReclassTxns`) exists for exactly one reason: a
-gift card's revenue was **already recognised** at sale time in a different bucket,
+gift card's revenue was **already recognized** at sale time in a different bucket,
 so redeeming it is an *attribution change* and the only permitted write is a
 signed pair summing to zero. A promo has no prior recognition to move. A "discount
 given" row would be inventing a negative money event, and it would either break
@@ -1372,7 +1372,7 @@ for substantial à-la-carte modules, and a promo code is a thin pricing lever.
   - **The entity allow-lists are authored here, and they are the second half of
     the scope.** `applies_to` says which RAILS; `activity_ids` / `course_ids` /
     `product_ids` say which entities on them, and the resolver has always
-    honoured both — so "20% off, that one course only" is expressible. Each
+    honored both — so "20% off, that one course only" is expressible. Each
     picker appears only while its rail is ticked, and **nothing ticked means
     everything of that kind**: the same meaning a null allow-list has on disk, so
     there is deliberately no "all" option to choose (two ways to say one thing
@@ -1441,7 +1441,7 @@ cannot silently fall behind a new mount.
 |---|---|---|
 | Booking form, drop-in step | above `GiftCardRedeemField`, gated **`willCharge && !isPricedTrial`** | modifier above tender, in the UI as in the maths |
 | Shop buy modal | above `GiftCardRedeemField` | products **and** courses; the `checkoutKey` reset effect clears the code when the item changes |
-| Appointment picker | the **guest** screen and the **member** screen, input + chip on both | the second mount exists so a pay-time reserve refusal on the member screen can be *removed*: without it the visitor pressed a button that could not succeed, and the sale was lost to a discount that no longer existed. **An applied code does NOT survive an identity change** — `previewPromoCode` resolves ITS caller from a contact session and nothing else, so a code quoted anonymously on the guest screen and carried onto a member screen is re-priced by the client for an audience the server judges differently, and an audience-restricted code shows as applied on a screen whose checkout is obliged to refuse it. The picker's one identity rule retires the code with the identity that applied it and says so (`AppointmentBooking.identityChangedPromo`). Because nothing can be carried, the member screen shows the input to every recognised caller rather than a chip-only variant: whatever is there was applied by that caller, under the same advisory-preview contract the guest screen has always had, recovered at pay time by `promoCheckoutErrorMessage` / `priceChangedMessage` |
+| Appointment picker | the **guest** screen and the **member** screen, input + chip on both | the second mount exists so a pay-time reserve refusal on the member screen can be *removed*: without it the visitor pressed a button that could not succeed, and the sale was lost to a discount that no longer existed. **An applied code does NOT survive an identity change** — `previewPromoCode` resolves ITS caller from a contact session and nothing else, so a code quoted anonymously on the guest screen and carried onto a member screen is re-priced by the client for an audience the server judges differently, and an audience-restricted code shows as applied on a screen whose checkout is obliged to refuse it. The picker's one identity rule retires the code with the identity that applied it and says so (`AppointmentBooking.identityChangedPromo`). Because nothing can be carried, the member screen shows the input to every recognized caller rather than a chip-only variant: whatever is there was applied by that caller, under the same advisory-preview contract the guest screen has always had, recovered at pay time by `promoCheckoutErrorMessage` / `priceChangedMessage` |
 | **Not**: waitlist claim | — | see "The waitlist claim takes no code" |
 | **Not**: priced trial door | — | `willCharge` is literally `(dropInAvailable && guestPath !== 'trial') \|\| isPricedTrial`, so it is TRUE on the trial door — the one door a promo is guaranteed to fail on. Rendering the field there would show a newcomer a code box that must fail, on the acquisition surface, while the same person taking the *dearer* drop-in door gets the discount |
 | **Not**: trial booking, kiosk walk-in, Space | — | `bookSession` (no charge path) and entitlement display |
@@ -1575,7 +1575,7 @@ match /promo_codes/{code} {
 }
 ```
 
-Client authoring was rejected in favour of manager callables, and the reason is
+Client authoring was rejected in favor of manager callables, and the reason is
 not uniformity: a promo carries `usage_count`, a `max_uses` cap and a plan-tiered
 creation gate, and a client write bypasses all three. "These fields yes, that
 field no" rules are exactly the fragile surface this codebase has avoided on every
@@ -1750,7 +1750,7 @@ reading and changes nothing about what shipped.)
   it while consuming exactly one use. Closing that would mean expiring the
   superseded session at Stripe from inside the retry path — an outbound network
   call that can fail, on the most common interaction in the feature, that still
-  cannot help once a session is already paid. It would be defence in depth over a
+  cannot help once a session is already paid. It would be defense in depth over a
   rule that is already deterministic, so it was not built.
   - **The residual this replaces** was written up here as "ownership narrows the
     release hole; it does not close it completely… at most one sale can come of
@@ -1795,7 +1795,7 @@ reading and changes nothing about what shipped.)
   stale, which is exactly how the two drifted unnoticed. Fixed here because the
   promo reservation faces the identical ordering constraint: its key must also be
   caller-minted.
-- **The code-normalisation rule was re-typed in six places** outside
+- **The code-normalization rule was re-typed in six places** outside
   `normalizeCode` — two `paymentRef` builders, two `metadata.giftCardCode` stamps,
   the drop-in's metadata stamp, and `buildGiftCardReclassTxns`'s `sourceRef`. The
   reclass `sourceRef` and the callables' `paymentRef` must agree character for
@@ -1804,7 +1804,7 @@ reading and changes nothing about what shipped.)
   session it was guarding** — 35 minutes against a 120-minute claim window — so the
   held value became available again and another purchase could spend it. Phase 2
   introduced it by making the Stripe expiry variable while the hold stayed a
-  constant. `resolveCheckoutHoldWindow` is the generalisation that closes it.
+  constant. `resolveCheckoutHoldWindow` is the generalization that closes it.
 - **`createDropInCheckout` had FOUR resolver call sites**, not one: the brand-new
   guest branch, plus the waitlist claim, the signed-in contact and the matched
   existing contact, all going through a wrapper. Threading the promo context into
@@ -1829,7 +1829,7 @@ reading and changes nothing about what shipped.)
   slot guarding a still-payable session, which is how a "refuse, never
   over-issue" cap gets exceeded. (c) Bringing `runAppointmentSlotTransaction`
   inside the guard — correct in itself — made the hold-release path reachable
-  when the hold had never been acquired, so a losing racer's catch cancelled the
+  when the hold had never been acquired, so a losing racer's catch canceled the
   **winner's** live appointment. The lesson worth keeping: a deterministic,
   shared identifier makes "undo what is above me" ambiguous, and the fix is
   always an ownership marker compared inside the transaction, never a unique key
@@ -1841,7 +1841,7 @@ reading and changes nothing about what shipped.)
   contactId` lets one contact's second attempt rewrite its own live hold, so
   attempt A could still cancel the session attempt B was about to be paid for. "We
   acquired it" is not "it is still ours". That was site 1. Site 2
-  (`createStaffAppointment`'s payment-link catch) cancelled on **presence** under a
+  (`createStaffAppointment`'s payment-link catch) canceled on **presence** under a
   comment claiming it followed site 1's pattern — a false cross-reference standing
   in for the fix. Site 3 (`handleCheckoutExpired`) did the same, and was the
   dangerous one: the promo pre-flight **expires the superseded Checkout Session at
@@ -2001,7 +2001,7 @@ reading and changes nothing about what shipped.)
   checkout now calls the helper, which returns the buyer's contact document (the
   audience gate's input) and the validated `listMajor` so nothing has to
   re-narrow `accessRule.priceAmount`.
-- **The entity allow-lists were in the model, honoured by the resolver, and
+- **The entity allow-lists were in the model, honored by the resolver, and
   unauthorable.** Three fields the reserve path checked on every purchase, that no
   studio could ever set. A narrowing axis with no control is not a smaller
   feature — it is a dead branch that reads as working code.

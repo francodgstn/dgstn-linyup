@@ -8,7 +8,7 @@
  * ── HOW TO EDIT ─────────────────────────────────────────────────────────────
  *  • Dates are `'YYYY-MM-DD'`, wall-clock at the venue. A one-day event has the
  *    same `start` and `end`.
- *  • `external: true` means HMD does not organise it. It still belongs on the
+ *  • `external: true` means HMD does not organize it. It still belongs on the
  *    calendar — members compete at these — but nobody at HMD runs the door.
  *  • `id` is the Firestore document id. NEVER change one after a run: check-ins,
  *    invitations and program items all hang off it, and a changed id creates a
@@ -35,7 +35,7 @@
  * `other` was added to the built-in types for exactly this shape of event;
  * `BuiltinEventType` in `packages/shared/src/types/event.ts` says why a
  * catch-all had to be one. Both already counted toward nothing, so this is a
- * LABELLING correction and moves no belt requirement.
+ * LABELING correction and moves no belt requirement.
  *
  * Escursione Pre Pasqua IS a `camp`, and that one does change the rules. It is
  * a new one-day format REPLACING the Easter camp — and the Easter camp counted.
@@ -71,7 +71,7 @@ export interface SeasonEvent {
   start: string
   /** 'YYYY-MM-DD'. Same as `start` for a one-day event. */
   end: string
-  /** Not organised by HMD. Members still attend; HMD does not run it. */
+  /** Not organized by HMD. Members still attend; HMD does not run it. */
   external?: boolean
   location?: string
   /**

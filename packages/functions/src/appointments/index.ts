@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 // Appointments (1:1 slots) are ACTIVITY-BOUND and AVAILABILITY-ONLY: a coach
-// publishes an `Availability` doc (the *when*), and a Session is materialised
+// publishes an `Availability` doc (the *when*), and a Session is materialized
 // lazily — overlap-safe — only when a client books via `bookAppointment`
 // (see ./window.ts). Nothing is pre-generated; there is no daily/on-write
 // slot-generation job any more.

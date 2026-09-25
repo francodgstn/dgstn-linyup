@@ -56,7 +56,7 @@ function toDate(ts: unknown): Date | undefined {
   return typeof t.toDate === 'function' ? t.toDate() : undefined
 }
 
-/** The mood as a coloured word. Semantic colours, never the brand accent. */
+/** The mood as a colored word. Semantic colors, never the brand accent. */
 const MOOD_CLASS: Record<TeamSentimentMood, string> = {
   positive:
     'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300',

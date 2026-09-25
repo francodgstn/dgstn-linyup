@@ -12,7 +12,7 @@ import {
 // Function `requireCapability` guard and the Firestore rules. Mirrors the shape of
 // usePlan(): derive from AuthContext, expose a small `can(...)` predicate. Use this
 // instead of comparing `teamRole` directly so all permission logic reads from one
-// capability catalogue (packages/shared/src/types/capabilities.ts).
+// capability catalog (packages/shared/src/types/capabilities.ts).
 //
 // `scope` says whether the member's SCOPED capabilities (contacts.*, schedule.*)
 // apply to all team records ('all') or only their own ('own', i.e. a coach). The

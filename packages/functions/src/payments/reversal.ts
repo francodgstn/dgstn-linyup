@@ -268,7 +268,7 @@ export function reversalPlanFor(input: ReversalPlanInput): ReversalPlan {
   // product | drop_in | appointment | gift_card | other | unlinked.
   //
   // Nothing to reverse — which is NOT the same as "nothing happened". A drop-in
-  // or appointment refund leaves the booking standing on purpose: cancelling
+  // or appointment refund leaves the booking standing on purpose: canceling
   // somebody's class is a scheduling decision with its own notification, not a
   // side effect of a money movement. A gift-card purchase is handled by the
   // refund callable itself (voidUntouchedGiftCard), which is money, not access.

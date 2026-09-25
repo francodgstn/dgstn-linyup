@@ -18,24 +18,24 @@
  * ── WHAT IT WRITES, AND WHY EACH PIECE ──────────────────────────────────────
  *
  * The course OWNS a `session_series` whose sessions are its lessons, so this
- * writes the series too. The series is `status: 'fixed'` (materialised in full,
+ * writes the series too. The series is `status: 'fixed'` (materialized in full,
  * nothing to roll) and carries `course_block_id`, which is what
  * `buildSeriesSessionDoc` stamps onto every lesson and what the public mirror
  * reads to publish a lesson that is visible but not separately bookable.
  *
- * The enrolments are the truth and the per-lesson bookings are a projection of
+ * The enrollments are the truth and the per-lesson bookings are a projection of
  * them, exactly as `syncCourseBlockRoster` treats them: one booking per live
- * enrolment per FUTURE lesson, and none on the past ones, because a converger
+ * enrollment per FUTURE lesson, and none on the past ones, because a converger
  * never puts somebody on the register of a lesson that already happened.
  *
  * ── MONEY: TOGETHER OR NOT AT ALL ───────────────────────────────────────────
  *
- * One enrolment is PAID and is seeded with its `member_payments` row in the
+ * One enrollment is PAID and is seeded with its `member_payments` row in the
  * same call; the rest are studio-granted (`payment_status: 'not_required'`),
  * which is what `enrolCourseBlockContact` writes when a studio puts somebody on
  * a course by hand. The rule is the one `scripts/lib/appointments.ts` states:
  * a paid thing and its ledger row are seeded together or not at all. What must
- * never appear is an enrolment stamped as paid with no money behind it.
+ * never appear is an enrollment stamped as paid with no money behind it.
  *
  * Path/type constants mirror @linyup/shared (the seed scripts compile under
  * tsconfig.scripts.json, which does not resolve the workspace import — same
@@ -63,7 +63,7 @@ const tsOf = (d: Date) => admin.firestore.Timestamp.fromDate(d)
  * (`seedCoursePurchase`) already writes `pi_seed_{contact}_course` for the same
  * contact, and the two collided on one document. The row that survived was
  * whichever seeder ran last, so a course sale silently became an online-course
- * sale, with the enrolment still pointing at it. That is what `idSuffix` is for.
+ * sale, with the enrollment still pointing at it. That is what `idSuffix` is for.
  */
 const COURSE_BLOCK_PI = (contactId: string) => `pi_seed_${contactId}_course_block`
 
@@ -127,7 +127,7 @@ export async function seedCourseBlock(spec: SeedCourseBlockSpec): Promise<{
   const nowMs = Date.now()
 
   // ── the series the course owns ────────────────────────────────────────────
-  // `status: 'fixed'` means MATERIALISED IN FULL, NOTHING TO ROLL: the daily
+  // `status: 'fixed'` means MATERIALIZED IN FULL, NOTHING TO ROLL: the daily
   // roller queries `status == 'active'`, so it never reads this one and cannot
   // generate a fourteenth lesson onto a course sold as thirteen.
   await db
@@ -348,7 +348,7 @@ export async function seedCourseBlock(spec: SeedCourseBlockSpec): Promise<{
       })
   }
 
-  // ── the money, with the enrolment that claims it ──────────────────────────
+  // ── the money, with the enrollment that claims it ──────────────────────────
   if (payerId && spec.priceAmount) {
     const payer = live[0]
     await seedMemberPayment(teamId, {

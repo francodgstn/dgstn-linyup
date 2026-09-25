@@ -8,7 +8,7 @@
 // opens — this module knows ids, defaults and storage, and nothing about a
 // contact.
 //
-// A stored choice is normalised on every read: unknown ids are dropped, repeats
+// A stored choice is normalized on every read: unknown ids are dropped, repeats
 // removed, and the gaps filled from the defaults. An id retired from the list
 // therefore falls back quietly instead of leaving a hole in the card.
 

@@ -84,7 +84,7 @@ export function subscriptionListShape(defaultLimit: number, maxLimit: number) {
     state: z
       .enum(MEMBERSHIP_STATES)
       .default('live')
-      .describe('live = every running membership; cancelling = running but will not renew; past_due; trialing; ended'),
+      .describe('live = every running membership; canceling = running but will not renew; past_due; trialing; ended'),
     limit: limit(defaultLimit, maxLimit),
   }
 }

@@ -11,10 +11,10 @@ import { usePathname } from '@/i18n/navigation'
 import { useLocale } from 'next-intl'
 
 /**
- * The organisation's own word for an affiliation — "Affiliation", "Lizenz",
+ * The organization's own word for an affiliation — "Affiliation", "Lizenz",
  * "Club membership" — for the current locale, defaulting to "Affiliation".
  *
- * ── WHICH ORGANISATION, WHICH IS THE WHOLE PROBLEM ──────────────────────────
+ * ── WHICH ORGANIZATION, WHICH IS THE WHOLE PROBLEM ──────────────────────────
  * There are two ways to be looking at one, and they disagree:
  *
  *   inside `OrgProvider`  — an org page's children. `useOrg()` has the answer.
@@ -23,15 +23,15 @@ import { useLocale } from 'next-intl'
  *                           and `useOrg()` returns the module default.
  *
  * The second case used to fall back to the CURRENT TEAM's `org_id`, and on an
- * `/org/{X}` route where X is not that team's organisation the sidebar quietly
- * rendered a DIFFERENT organisation's word — no error, no empty state, just the
+ * `/org/{X}` route where X is not that team's organization the sidebar quietly
+ * rendered a DIFFERENT organization's word — no error, no empty state, just the
  * wrong noun (recorded 2026-08-27, fixed 2026-08-28).
  *
  * The fix is not to widen `OrgProvider`. The scope is already resolved from the
  * URL, so this reads the ROUTE's org id and only falls back to the team's when
- * the URL names no organisation at all. Order matters: the route is the more
+ * the URL names no organization at all. Order matters: the route is the more
  * specific fact, and the team's `org_id` is a default for pages that are not
- * about an organisation.
+ * about an organization.
  */
 export function useAffiliationTerm(): string {
   const { org, affiliationTerm: orgContextTerm } = useOrg()

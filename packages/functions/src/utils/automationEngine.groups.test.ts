@@ -3,7 +3,7 @@
 // Tests cover the two testable layers:
 //   1. groupActionUpdate() — pure helper that returns the Firestore update payload;
 //      verifies arrayUnion/arrayRemove sentinel selection and the no-op guard.
-//   2. hasResolvableActions() — verifies the two new types are recognised as
+//   2. hasResolvableActions() — verifies the two new types are recognized as
 //      self-contained (core) actions and don't fall through to the plugin path.
 //
 // These tests run without a Firestore connection.  The actual write path
@@ -90,7 +90,7 @@ describe('groupActionUpdate — Firestore payload', () => {
 })
 
 // ---------------------------------------------------------------------------
-// 6. hasResolvableActions — new types are recognised as core (not plugin path)
+// 6. hasResolvableActions — new types are recognized as core (not plugin path)
 // ---------------------------------------------------------------------------
 
 describe('hasResolvableActions — add_to_group / remove_from_group', () => {

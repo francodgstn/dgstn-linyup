@@ -17,7 +17,7 @@ import { join } from 'node:path'
 // and the same content deletes run under `saas-billing/purgeTeam.ts` for a real
 // customer.
 //
-// Source-reading rather than behavioural because the failure is one call shape,
+// Source-reading rather than behavioral because the failure is one call shape,
 // the fix is one call shape, and a reviewer changing it back would otherwise get
 // a green suite. Precedent: connect/commitSites.test.ts.
 //

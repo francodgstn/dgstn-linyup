@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * THE ORGANISATION IS A SCOPE, NOT A SECTION — so this layout is thin.
+ * THE ORGANIZATION IS A SCOPE, NOT A SECTION — so this layout is thin.
  *
  * It used to render eleven destinations in one horizontal tab strip with no
  * wrap and no scroll: about 1100–1400px of tabs in the ~1000px a 1280 viewport
@@ -13,10 +13,10 @@
  * destinations are SIDEBAR ROWS (the shell renders them when the URL is in org
  * scope), and everything configurational is behind the RAIL below. The
  * strip and the "← Back to dashboard" link are gone — the second because it
- * framed the organisation as a modal detour rather than a place you work, which
+ * framed the organization as a modal detour rather than a place you work, which
  * is exactly the framing this design rejects.
  *
- * Full reasoning: docs/org-navigation.md. The catalogue: lib/org-nav.ts.
+ * Full reasoning: docs/org-navigation.md. The catalog: lib/org-nav.ts.
  */
 
 import { useParams } from 'next/navigation'
@@ -31,7 +31,7 @@ import { ORG_MANAGE_PATH, isOrgManageRoot, orgHref, orgRailSegment } from '@/lib
 /*
  * ── THE LAYOUT NO LONGER TITLES THE PAGE, AND MUST NOT AGAIN ────────────────
  *
- * It used to, via an `OrgPageHeading` that read the catalogue and printed the
+ * It used to, via an `OrgPageHeading` that read the catalog and printed the
  * destination's label unless the entry carried `ownsHeader: true`. The flag was
  * the bug: it had to be REMEMBERED for every page that titled itself, it was set
  * on five entries, and thirteen of the fourteen org pages title themselves. So
@@ -53,7 +53,7 @@ function OrgShell({ orgId, children }: { orgId: string; children: React.ReactNod
   // A MEMBER STUDIO HAS NO RAIL.
   //
   // Whether to render the management shell was decided from the PATHNAME alone,
-  // so somebody with no seat in the organisation — arriving at `/org/{id}/ranking`
+  // so somebody with no seat in the organization — arriving at `/org/{id}/ranking`
   // from Settings → Team, which is a legitimate link — was handed the rail and
   // with it every destination `ORG_STUDIO_NAV_ITEMS` deliberately withholds
   // (Franco, 2026-08-28). `OrgRail` filters `adminOnly`, which separates an

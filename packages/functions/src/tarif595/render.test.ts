@@ -32,8 +32,8 @@ describe('tarif595 render — the three-sheet PDF', function () {
     // THE DETERMINISTIC GUARD for the race above, and the reason it is worth a
     // second test: the repeat check SAMPLES the race, so a regression comes
     // back as a flake rather than a failure. This pins the CAUSE. The fix is
-    // one option (`rendererOpts: { colorType: 2 }`) travelling through
-    // qrcode → pngjs → PDFKit; if any link in that chain stops honouring it the
+    // one option (`rendererOpts: { colorType: 2 }`) traveling through
+    // qrcode → pngjs → PDFKit; if any link in that chain stops honoring it the
     // alpha channel returns, PDFKit goes back to embedding each image through an
     // async `splitAlphaChannel` decode, and the object order races again.
     //

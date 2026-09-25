@@ -63,10 +63,10 @@ export function resolveCourseSchedule(input: CourseScheduleInput): ResolvedSched
     throw new HttpsError('invalid-argument', 'A course needs a schedule.')
   }
 
-  // NORMALISE THE WIRE SHAPES ONCE, here, so nothing downstream has to know
+  // NORMALIZE THE WIRE SHAPES ONCE, here, so nothing downstream has to know
   // that a callable's payload is JSON: the generator reads real Dates, and what
   // gets STORED as the pattern is real Timestamps rather than the plain maps a
-  // client Timestamp serialises into.
+  // client Timestamp serializes into.
   const recurrence =
     input.kind === 'repeating' ? normaliseRecurrence(input.recurrence) : null
 
@@ -186,14 +186,14 @@ function fromDates(entries: Array<{ startMs: number; durationMinutes: number }>)
  * An instant, from any of the shapes one arrives in here.
  *
  * A CALLABLE'S PAYLOAD IS JSON. The web form builds a client `Timestamp` and
- * hands it to `callFunction`, but the callable protocol serialises it, so what
+ * hands it to `callFunction`, but the callable protocol serializes it, so what
  * reaches this file is a PLAIN OBJECT with no `toDate` on it: `{seconds,
  * nanoseconds}` from the client SDK, or `{_seconds, _nanoseconds}` from the
  * admin one. Reading only `toDate` returned null for every date the form sent,
  * and the course refused to save with "needs a first lesson date" while the
  * studio was looking at one.
  *
- * So every shape is accepted, and `resolveCourseSchedule` normalises the whole
+ * So every shape is accepted, and `resolveCourseSchedule` normalizes the whole
  * recurrence through here before anything reads it, which is also what makes
  * the stored pattern real Timestamps rather than the wire's plain maps.
  */

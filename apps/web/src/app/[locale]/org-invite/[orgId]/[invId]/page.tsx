@@ -242,7 +242,7 @@ export default function OrgInvitePage() {
 
                   {/* WHAT ACCEPTING CHANGES — stated at the point of decision.
                       Accepting hands `isOrgAdminOfTeam` read over the chosen
-                      team's contacts to every admin of the organisation and
+                      team's contacts to every admin of the organization and
                       moves that team onto the org plan (`org_id` IS the grant,
                       UX-35), and only an org admin can unlink it afterwards
                       (`removeTeamFromOrg` asserts org admin; there is no

@@ -3,7 +3,7 @@
  *
  * "Live" means **not deleted and not archived**, and both halves matter:
  *
- *   `deleted_at`  the contact is in the bin, awaiting anonymisation.
+ *   `deleted_at`  the contact is in the bin, awaiting anonymization.
  *   `archived_at` the person left. The record is kept deliberately — history,
  *                 an old subscription, a competition result — and it must not
  *                 be counted as somebody the studio looks after today.
@@ -17,7 +17,7 @@
  * one direction a wrong number is least likely to be questioned.
  *
  * `useActiveContacts` had both clauses and was right; every org-side count
- * written against it later had only `deleted_at`, so an organisation's
+ * written against it later had only `deleted_at`, so an organization's
  * dashboard and its studios list both counted people who had left (Franco,
  * 2026-09-08: "in the org dashboard, I see too high counts"). Naming the pair
  * is what stops the next reader writing one of them.

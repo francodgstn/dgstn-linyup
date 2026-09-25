@@ -18,7 +18,7 @@ import { PLUGIN_BUNDLES, bundleMembers, isBundleContainer } from '@linyup/shared
 // This file re-derives that split FROM THE SOURCE rather than trusting prose,
 // for the reason connect/commitSites.test.ts gives at length: a list written in
 // a comment has no gate behind it, and this one spans the functions/web
-// boundary — which is exactly where a correction stops travelling.
+// boundary — which is exactly where a correction stops traveling.
 //
 // Run with: pnpm --filter @linyup/functions test
 
@@ -122,7 +122,7 @@ describe('the bundle map is well formed', () => {
 // 2. THE CENSUS — every surface that offers an install hides bundle members
 // ---------------------------------------------------------------------------
 
-describe('the catalogue census', () => {
+describe('the catalog census', () => {
   // Files that OFFER an install. Each must go through installableManifests(),
   // which is the only thing that hides a member.
   const CATALOGUE = [
@@ -193,7 +193,7 @@ describe('the catalogue census', () => {
       assert.ok(
         !/PLUGIN_REGISTRY\s*[.[]/.test(code(source)),
         `${rel} still reaches into PLUGIN_REGISTRY directly; the filtered view is the only ` +
-          'list a catalogue may iterate',
+          'list a catalog may iterate',
       )
     }
   })
@@ -228,7 +228,7 @@ describe('the reconciler is the only writer of a member install doc', () => {
       /CONTAINER_PLUGIN_ID\s*=\s*'hmd'/.test(setup),
       'the migration must install the hmd container. Pins the VALUE, not just the identifier: ' +
         'the previous form matched the declaration name alone and failed on a rename that ' +
-        'changed nothing about the behaviour it is guarding.',
+        'changed nothing about the behavior it is guarding.',
     )
     for (const member of bundleMembers('hmd')) {
       assert.ok(
@@ -307,7 +307,7 @@ describe('pluginIsActive sees an org-level install', () => {
       assert.ok(
         code(read(rel)).includes(sym),
         `${rel} must resolve install state through utils/plugins.ts. Its own copy could not ` +
-          'see an ORG-level install, so a studio whose organisation bought the plugin was refused.',
+          'see an ORG-level install, so a studio whose organization bought the plugin was refused.',
       )
     }
   })

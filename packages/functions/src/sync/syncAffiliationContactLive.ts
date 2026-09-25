@@ -3,10 +3,10 @@
 //
 // ── WHY A CONTACT TRIGGER WRITES INTO AN AFFILIATION ────────────────────────
 //
-// The organisation's status breakdown counts affiliation ROWS, scoped by
+// The organization's status breakdown counts affiliation ROWS, scoped by
 // `org_id` — the one shape `firestore.rules` can prove for an org admin. A
 // collection group cannot reach the parent document, so `archived_at` is
-// invisible to it, and an ex-member's licence stayed in the federation's queue
+// invisible to it, and an ex-member's license stayed in the federation's queue
 // for ever ("34 records" on a page whose headcount was 31, #249).
 //
 // #249 moved that count onto the CONTACT instead, where liveness is native.
@@ -45,8 +45,8 @@ import {
  * `isLiveContact` FROM SHARED, not a hand-rolled pair. This started as
  * `!deleted_at && !archived_at`, which is what `liveContactConstraints()`
  * queries — and it silently missed the third way a contact stops counting:
- * `anonymized_at`. A GDPR-anonymised person would have kept `contact_live:
- * true` and gone on being counted in the organisation's status breakdown for
+ * `anonymized_at`. A GDPR-anonymized person would have kept `contact_live:
+ * true` and gone on being counted in the organization's status breakdown for
  * ever, which is the one direction a wrong number is least likely to be
  * questioned.
  *
@@ -54,9 +54,9 @@ import {
  * matters. `isRosterContact` additionally drops EXTERNALS (a partner-app
  * drop-in, somebody who trains here without being looked after), which is right
  * for a studio's headcount and wrong here: an external who holds this
- * organisation's licence is on its books, and the federation counts its own
+ * organization's license is on its books, and the federation counts its own
  * members whether or not the studio looks after them day to day. The
- * organisation's question is "is this person still real", not "is this person
+ * organization's question is "is this person still real", not "is this person
  * yours".
  */
 function contactIsLive(data: admin.firestore.DocumentData | undefined): boolean {
@@ -89,7 +89,7 @@ export const syncAffiliationContactLive = onDocumentWritten(
     if (affiliations.empty) return
 
     // One batch. A person holds a handful of affiliations — a club membership, a
-    // federation licence, a grading — never a number that needs chunking, and
+    // federation license, a grading — never a number that needs chunking, and
     // Firestore's 500-write limit is orders of magnitude above it.
     const batch = db.batch()
     for (const affiliation of affiliations.docs) {

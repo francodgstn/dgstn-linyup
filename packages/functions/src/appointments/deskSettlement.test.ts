@@ -90,11 +90,11 @@ describe('appointmentChargeIsDuplicate', () => {
 // Same technique and same reasoning as connect/dahliaReads.test.ts and
 // connect/commitSites.test.ts: the properties below are about ORDER inside two
 // handlers that take the Admin SDK, a live Stripe client and firebase-functions,
-// and reversing either is invisible to every behavioural test in this package.
+// and reversing either is invisible to every behavioral test in this package.
 
 const SRC = join(__dirname, '..')
 
-/** LF-normalised: CRLF on Windows, LF on CI, and these patterns span lines. */
+/** LF-normalized: CRLF on Windows, LF on CI, and these patterns span lines. */
 function read(rel: string): string {
   return readFileSync(join(SRC, rel), 'utf8').replace(/\r\n/g, '\n')
 }

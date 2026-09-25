@@ -1,7 +1,7 @@
 'use client'
 
-// The organisation site builder's per-type editor forms — the sections only an
-// ORGANISATION has (clubs / locations / coaches) and its own call-to-action.
+// The organization site builder's per-type editor forms — the sections only an
+// ORGANIZATION has (clubs / locations / coaches) and its own call-to-action.
 //
 // The four types both builders share — hero, content, gallery, contact — come
 // from `components/website/SiteSectionFields`, which is also where the image box
@@ -42,7 +42,7 @@ import {
 
 // ─── small field helper ─────────────────────────────────────────────────────
 
-// ─── the organisation's CTA, and the sections only an org has ──────────────
+// ─── the organization's CTA, and the sections only an org has ──────────────
 //
 // The four section types both builders share — hero, content, gallery, contact —
 // and their field helpers live in `components/website/SiteSectionFields`. This
@@ -51,16 +51,16 @@ import {
 // the image-size limit was a bare constant where the team's went through the
 // operator-override seam.
 //
-// WHAT STAYS IS WHAT AN ORGANISATION CAN DO AND A STUDIO CANNOT: the three
+// WHAT STAYS IS WHAT AN ORGANIZATION CAN DO AND A STUDIO CANNOT: the three
 // aggregate sections below, and a call-to-action that is a plain URL. A studio's
-// CTA can name its booking page or its signup form; an organisation has neither
+// CTA can name its booking page or its signup form; an organization has neither
 // surface, so offering those actions would render a button pointing nowhere.
 
 type Patch = Record<string, unknown>
 
 /**
  * An org button's destination — a page of the org's own site, or an external
- * link. Never booking, signup or an appointment: an organisation has none of
+ * link. Never booking, signup or an appointment: an organization has none of
  * those surfaces, and the publish sanitizer drops such a button anyway.
  */
 function OrgCtaEditor({

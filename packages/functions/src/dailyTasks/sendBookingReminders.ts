@@ -178,7 +178,7 @@ export async function sendBookingRemindersForTeam(teamId: string): Promise<Remin
     const sessionId = sessionDoc.id
     const sessionData = sessionDoc.data()
 
-    // Cancelled sessions (appointment status or exception flag) get no reminders.
+    // Canceled sessions (appointment status or exception flag) get no reminders.
     if (sessionData.status === 'cancelled') {
       skipped++
       continue

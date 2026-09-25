@@ -7,7 +7,7 @@ import type { StripeGatewayConfig } from '@linyup/shared'
 // WHY THIS IS WORTH A FIXTURE: the failure it guards is not a wrong field, it is
 // a REJECTED REQUEST. `subscriptions.update` refuses to accept both cancellation
 // parameters at once, so a reactivate that sends both does not partly work — it
-// throws, every time, and the studio stays cancelled. Verified against a live
+// throws, every time, and the studio stays canceled. Verified against a live
 // Stripe test account on 2026-04-22.dahlia:
 //
 //   update{cancel_at_period_end:false, cancel_at:''}

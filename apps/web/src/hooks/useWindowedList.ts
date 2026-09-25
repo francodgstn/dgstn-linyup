@@ -15,7 +15,7 @@
 //
 // BELOW THE THRESHOLD IT DOES NOTHING. A list of eighty rows renders exactly
 // as before — same DOM, no spacers, no measurement — so the common case has no
-// new behaviour to get wrong, and `last:` border tricks keep working.
+// new behavior to get wrong, and `last:` border tricks keep working.
 //
 // HOW TO MOUNT IT. `listRef` goes on the element that CONTAINS the rows (a
 // `<div>`, or a `<tbody>`), and nothing else may sit inside it: the spacers

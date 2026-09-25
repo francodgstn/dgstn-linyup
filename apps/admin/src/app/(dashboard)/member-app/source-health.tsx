@@ -6,7 +6,7 @@ import type { StoreSourceStatus } from '@linyup/shared'
 // ── THE POINT OF THIS COMPONENT ────────────────────────────────────────────
 // The member app is pre-launch, so nearly every panel on this page is empty.
 // An empty panel looks exactly like a broken integration, and an operator who
-// learns to ignore one grey card will ignore the one that matters later.
+// learns to ignore one gray card will ignore the one that matters later.
 //
 // So the four states never collapse into "no data":
 //   ok              we asked and got an answer
@@ -23,7 +23,7 @@ const LABELS: Record<StoreSourceStatus, string> = {
 
 const VARIANTS: Record<StoreSourceStatus, 'success' | 'secondary' | 'outline' | 'destructive'> = {
   ok: 'success',
-  // Grey, deliberately — a missing credential is a to-do, not an incident.
+  // Gray, deliberately — a missing credential is a to-do, not an incident.
   not_configured: 'secondary',
   unavailable: 'outline',
   error: 'destructive',

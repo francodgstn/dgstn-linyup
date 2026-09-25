@@ -3,7 +3,7 @@
 // ══ WHY THIS MODULE EXISTS ═══════════════════════════════════════════════════
 // `bookSession` used to answer that question with `data.source === 'kiosk'` — a
 // string off the request body, sent by an unauthenticated public caller. The
-// answer then selected a SECURITY behaviour, and anyone could buy it by adding
+// answer then selected a SECURITY behavior, and anyone could buy it by adding
 // one field to a public payload.
 //
 // A source string is ATTRIBUTION. It is fine for "where did this booking come
@@ -14,7 +14,7 @@
 // `{ kiosk: true, kioskTeam, kioskEpoch }` (packages/functions/src/kiosk/index.ts).
 //
 // ══ WHAT IT DECIDES NOW, AND WHY THAT IS STILL WORTH A TOKEN ════════════════
-// The behaviour it used to select was the kiosk's WAIVER DEFERRAL — the one rail
+// The behavior it used to select was the kiosk's WAIVER DEFERRAL — the one rail
 // that admitted a walk-in with a guardian requirement outstanding and emailed a
 // parent afterwards. That machinery is gone; the kiosk refuses like every other
 // rail, because the consent step is completable by the person at the desk.
@@ -80,7 +80,7 @@ export function kioskClaimForTeam(
 }
 
 /**
- * THE check a rail makes before it grants a kiosk-only behaviour.
+ * THE check a rail makes before it grants a kiosk-only behavior.
  *
  * Costs ONE document read, and only for a caller who actually presents a kiosk
  * claim for this team — an ordinary public booking pays nothing. The read is what

@@ -71,7 +71,7 @@ export async function touchTeamForSurfaceRecompute(teamId: string): Promise<void
 
 /**
  * The resolved ACTIVE install of `pluginId` for `teamId` — the team's own, or
- * the one its organisation installed on its behalf. Null when neither is active.
+ * the one its organization installed on its behalf. Null when neither is active.
  *
  * ── ORG_ID IS THE GRANT ──────────────────────────────────────────────────────
  * This is `useInstalledPlugins`' doctrine (see its header) applied server-side.
@@ -89,7 +89,7 @@ export async function touchTeamForSurfaceRecompute(teamId: string): Promise<void
  * client is the specification: `useInstalledPlugins` filters to
  * `status === 'active'` FIRST and only then lets a team entry take precedence
  * over an org one. A veto here would refuse exactly what the studio can see.
- * Precedence between two ACTIVE documents still favours the team's, which is
+ * Precedence between two ACTIVE documents still favors the team's, which is
  * why its config is returned in preference.
  */
 export async function resolveActivePluginInstall(
@@ -214,7 +214,7 @@ export async function unpublishSiteForTeam(teamId: string): Promise<void> {
 }
 
 /**
- * The organisation-level counterpart: removes `org_site_published/{orgId}` and
+ * The organization-level counterpart: removes `org_site_published/{orgId}` and
  * flags the org draft disabled. Mirrors the core of the unpublishOrgWebsite
  * callable (orgWebsite/index.ts) without its auth guard.
  *

@@ -30,7 +30,7 @@
  * matches an explicit null and NOT a missing field (CLAUDE.md). Every seeder
  * writes `deleted_at: null` and `archived_at: null` on its contacts, which is
  * what makes this safe — and if one ever stopped, this would undercount in
- * exactly the way the live system already does, which is the behaviour to want
+ * exactly the way the live system already does, which is the behavior to want
  * here.
  */
 import type { Firestore } from 'firebase-admin/firestore'

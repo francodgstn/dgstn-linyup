@@ -32,7 +32,7 @@
 // public shop, login-first) calls the guard. `createMembershipPayment` (a
 // manager selling to a member) and `recordManualPayment` (a manager recording
 // cash) deliberately do NOT — a studio selling the same offer a second time is
-// exercising judgement, and the app does not overrule it. Both still RECORD the
+// exercising judgment, and the app does not overrule it. Both still RECORD the
 // purchase, so the member cannot then take the offer again herself.
 //
 // ── A REFUND DOES NOT GIVE THE ALLOWANCE BACK ───────────────────────────────
@@ -69,7 +69,7 @@ type Db = firestore.Firestore
  *
  * THE ONE PLACE that decides a cap applies. A cap stored on a recurring price
  * (only reachable by hand-edited or seeded data — the editor offers the control
- * on one-time prices alone) is ignored rather than honoured, so a stray value
+ * on one-time prices alone) is ignored rather than honored, so a stray value
  * can never lock a member out of a subscription she is entitled to renew.
  */
 export function resolvePlanPurchaseCap(

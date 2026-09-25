@@ -1,4 +1,4 @@
-// ─── CANCELLING A WHOLE COURSE ──────────────────────────────────────────────
+// ─── CANCELING A WHOLE COURSE ──────────────────────────────────────────────
 //
 // A course is called off. Three things have to happen, in this order, and the
 // order is the whole design:
@@ -30,12 +30,12 @@
 // is the one shape this repo consistently refuses. So the studio is handed the
 // list and refunds from the payments page, by hand, deliberately.
 //
-// ── THE ENROLMENTS STAY ─────────────────────────────────────────────────────
+// ── THE ENROLLMENTS STAY ─────────────────────────────────────────────────────
 //
-// Nobody is withdrawn. Who was on a cancelled course is the studio's record,
-// and it is what the refund list is reconciled against. A cancelled course
+// Nobody is withdrawn. Who was on a canceled course is the studio's record,
+// and it is what the refund list is reconciled against. A canceled course
 // holds places that mean nothing, which is correct: `placeFreedEdge` refuses a
-// cancelled course by name, so no waiting list promotes into it.
+// canceled course by name, so no waiting list promotes into it.
 import * as admin from 'firebase-admin'
 import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 import { HttpsError, onCall } from 'firebase-functions/v2/https'
@@ -132,10 +132,10 @@ export function refundableRows(docs: readonly PaymentRowLike[]): CourseRefundCan
 /**
  * What the studio may owe back.
  *
- * Read from the payments ledger rather than from the enrolments, because the
+ * Read from the payments ledger rather than from the enrollments, because the
  * ledger is what a refund acts on and it is the only place that knows what was
  * actually charged after a plan benefit or a promo code had its say. An
- * enrolment the studio granted by hand produces no row here, which is right:
+ * enrollment the studio granted by hand produces no row here, which is right:
  * nothing was taken, so nothing is owed.
  *
  * Voided rows are skipped. A void says the money never arrived, so refunding it
@@ -164,7 +164,7 @@ export async function courseRefundCandidates(
   return refundableRows(snap.docs)
 }
 
-/** The one mail a cancelled course sends. Plain, because there is no good
+/** The one mail a canceled course sends. Plain, because there is no good
  *  version of this news: what was called off, and what happens about the money. */
 export function buildCourseCancellationEmail(params: {
   firstname: string
@@ -172,7 +172,7 @@ export function buildCourseCancellationEmail(params: {
   courseName: string
   paid: boolean
 }): { subject: string; html: string; text: string } {
-  const subject = `Course cancelled: ${params.courseName}`
+  const subject = `Course canceled: ${params.courseName}`
   // Deliberately does NOT promise a refund. Whether money comes back, and in
   // what shape, is the studio's decision and its policy; a mail that guarantees
   // one on the studio's behalf is a commitment this code is not entitled to
@@ -181,16 +181,16 @@ export function buildCourseCancellationEmail(params: {
     ? `<p>You paid for this course, so ${params.teamName} will be in touch about it.</p>`
     : ''
   const { html } = buildEmailTemplate({
-    title: 'Course cancelled',
+    title: 'Course canceled',
     body:
       `<p>Hi ${params.firstname},</p>` +
-      `<p><strong>${params.courseName}</strong> has been cancelled by ${params.teamName}, ` +
+      `<p><strong>${params.courseName}</strong> has been canceled by ${params.teamName}, ` +
       `and its remaining lessons have been taken off the calendar.</p>` +
       moneyLine +
       `<p>We are sorry for the inconvenience.</p>`,
   })
   const text =
-    `Hi ${params.firstname},\n\n${params.courseName} has been cancelled by ${params.teamName}, ` +
+    `Hi ${params.firstname},\n\n${params.courseName} has been canceled by ${params.teamName}, ` +
     `and its remaining lessons have been taken off the calendar.\n` +
     (params.paid ? `You paid for this course, so ${params.teamName} will be in touch about it.\n` : '') +
     `\nWe are sorry for the inconvenience.`
@@ -203,7 +203,7 @@ export function buildCourseCancellationEmail(params: {
  * The toggle rule is the one `cancelSingleSession` already applies and is not
  * re-decided here: a free place loses only news when the studio switches
  * cancellation mail off, while a PAID one loses the only warning that the thing
- * they were charged for is not happening. So a paid enrolment is mailed
+ * they were charged for is not happening. So a paid enrollment is mailed
  * whatever the toggle says.
  */
 async function notifyCourseRoster(

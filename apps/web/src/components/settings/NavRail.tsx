@@ -3,7 +3,7 @@
 /**
  * THE GROUPED, SEARCHABLE VERTICAL TAB LIST — presentation only.
  *
- * Extracted from `SettingsRail` when the organisation area was given the same
+ * Extracted from `SettingsRail` when the organization area was given the same
  * shape (docs/org-navigation.md). The point of that design is that an org looks
  * and behaves like a studio, so the two rails have to LOOK identical; keeping
  * one set of markup is what makes that true by construction rather than by
@@ -20,7 +20,7 @@
  *   • the org rail resolves labels from `Org`, substitutes the tenant's own word
  *     for Affiliations, gates on org role, and matches the path segment.
  *
- * Fusing those would mean a component that takes six behavioural flags. So this
+ * Fusing those would mean a component that takes six behavioral flags. So this
  * takes rows that are already decided, and only draws them.
  */
 

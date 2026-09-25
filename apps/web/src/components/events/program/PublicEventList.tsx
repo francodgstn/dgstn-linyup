@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import type { PublicEventSummary } from './usePublicEvents'
 
 // Shared list rendering for the public event surfaces (a studio's page and an
-// organisation's), so both read identically.
+// organization's), so both read identically.
 
 function formatRange(event: PublicEventSummary): string {
   const start = (event.start as unknown as { toDate?: () => Date } | null)?.toDate?.()

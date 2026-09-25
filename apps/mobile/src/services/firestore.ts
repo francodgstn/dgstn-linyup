@@ -210,7 +210,7 @@ export const FirestoreService = {
       return {
         id: contactSnap.id,
         ...data,
-        // Normalise legacy contacts: teacher field is the old name for teamId
+        // Normalize legacy contacts: teacher field is the old name for teamId
         teamId: data.teamId || data.teacher || undefined,
       } as Contact;
     } catch (error) {
@@ -242,7 +242,7 @@ export const FirestoreService = {
 
   /**
    * The ranking systems that apply to a team — already the EFFECTIVE list
-   * (the organisation's when it has any, otherwise the team's own), computed
+   * (the organization's when it has any, otherwise the team's own), computed
    * server-side by `syncTeamPublicProfile` and mirrored onto `public_profile`.
    * No client-side org lookup needed or possible (a contact session cannot
    * read `organizations/{id}`).
@@ -688,12 +688,12 @@ export const FirestoreService = {
 
   // Cancel a booking (class or appointment) via its `booking_token` —
   // `getMyBookings` / `getUpcomingAppointments` already hand back a
-  // `cancelToken` for every cancellable row, so this never needs a lookup.
+  // `cancelToken` for every cancelable row, so this never needs a lookup.
   // THE ONE cancel call in the app. A by-session variant used to read the
   // booking doc and refuse any status but `pending` — but a fresh booking on
   // an auto-confirm class is `confirmed`, so it refused every cancellation a
   // member tried while the row still showed the bin (report 7107, M-02).
-  // Whether a booking is cancellable is the SERVER's answer (`cancellable` +
+  // Whether a booking is cancelable is the SERVER's answer (`cancellable` +
   // `cancelToken` on the row, BookedSession), never re-derived here.
   async cancelBookingByToken(token: string): Promise<{ success: boolean; message?: string }> {
     const cancelBookingFn = callFunction('cancelBooking');

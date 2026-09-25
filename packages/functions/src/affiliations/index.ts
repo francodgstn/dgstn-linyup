@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 // Affiliation callables — the belonging axis for contacts.
-// Generalises the old single-valued org-membership into a multi-valued set.
+// Generalizes the old single-valued org-membership into a multi-valued set.
 // Each affiliation is a doc under contacts/{contactId}/affiliations/{id}.
 
 import * as admin from 'firebase-admin'

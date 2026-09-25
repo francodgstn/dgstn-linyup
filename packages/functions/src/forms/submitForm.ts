@@ -322,7 +322,7 @@ export const submitForm = onCall({ enforceAppCheck: APP_CHECK_ENFORCE }, async (
   return { success: true, submissionId: submissionRef.id }
 })
 
-// Best-effort first-name guess from a short_text field labelled like a name.
+// Best-effort first-name guess from a short_text field labeled like a name.
 function guessFirstName(fields: FormField[], answers: Record<string, unknown>): string {
   const nameField = fields.find(
     (f) => f.type === 'short_text' && /name|nom|vorname/i.test(f.label)

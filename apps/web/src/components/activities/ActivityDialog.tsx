@@ -68,10 +68,10 @@ import { ImageIcon, X } from 'lucide-react'
  * THE ACTIVITY EDITOR, as a component rather than a page fixture.
  *
  * It lived inside `offer/activities/page.tsx`, which meant the ONLY way to edit
- * an activity was to be on that page — the catalogue, which is where a studio
+ * an activity was to be on that page — the catalog, which is where a studio
  * actually reasons about what it sells, could offer nothing but a link away
  * (Franco, 2026-08-31: "move activities/subscriptions popup modals into the
- * catalogue page, so catalogue now becomes the core offer editing").
+ * catalog page, so catalog now becomes the core offer editing").
  *
  * NOTHING ABOUT THE FORM CHANGED in the move. Its schema, its duration helpers
  * and its slug are here with it because nothing else used them; the activities
@@ -123,7 +123,7 @@ function createActivitySchema(t: ReturnType<typeof useTranslations>, creating: b
     faq: z.string().max(2000).optional(),
     cancellationPolicy: z.string().max(2000).optional(),
     // Book-form questions (shared FormField schema). Validated loosely here —
-    // the editor constrains type/count, and blank-labelled rows are dropped on
+    // the editor constrains type/count, and blank-labeled rows are dropped on
     // save rather than blocking it.
     bookingQuestions: z.array(z.any()),
     contactFields: z.array(z.object({ key: z.string(), required: z.boolean().optional() })),
@@ -143,7 +143,7 @@ function createActivitySchema(t: ReturnType<typeof useTranslations>, creating: b
     // CLASS-ONLY: independent of accessTier — a gated class still takes a
     // newcomer's trial booking when this is on.
     // CLASS-ONLY: reduced trial price, kept as a string in form state ('' = free
-    // trial, today's behaviour). A number reduces the trial to that price
+    // trial, today's behavior). A number reduces the trial to that price
     // instead of the class's normal price.
     // CLASS-ONLY: a full session offers a queue instead of a dead end. This is
     // the ONLY place the flag lives — sessions carry no copy of it, so turning
@@ -240,7 +240,7 @@ export function ActivityDialog({
    * Called with the new id after a CREATE, before `onClose`.
    *
    * A brand-new activity has no price, no tier and no plans, and this form no
-   * longer asks for any of them — so the host selects it in the catalogue,
+   * longer asks for any of them — so the host selects it in the catalog,
    * where those controls now live. Without this the studio would save a class
    * and then have to go and find it to finish the job (Franco, 2026-09-01).
    */
@@ -248,8 +248,8 @@ export function ActivityDialog({
   /**
    * Render the FORM ONLY, with no dialog around it.
    *
-   * The catalogue's pane shows this under a "Details" tab beside the pricing
-   * one, because a pane full of editable fields plus a button labelled "Edit"
+   * The catalog's pane shows this under a "Details" tab beside the pricing
+   * one, because a pane full of editable fields plus a button labeled "Edit"
    * told a studio the visible fields were not editing — which was false, and
    * the button gave no hint of what it hid (Franco, 2026-09-02).
    *
@@ -374,7 +374,7 @@ export function ActivityDialog({
           bookingQuestions: seed.bookingQuestions ?? [],
           contactFields: seed.contactFields ?? [],
           type: (seed.type ?? 'class') as ActivityType,
-          // NORMALISED on the way IN, not just on the way out. A stored array
+          // NORMALIZED on the way IN, not just on the way out. A stored array
           // longer than the cap (a seed, an older client, a future cap change)
           // would otherwise fail the schema on every submit — and a form whose
           // Save silently does nothing, with the offending field nowhere on
@@ -413,7 +413,7 @@ export function ActivityDialog({
   // Can a 'benefit_only' length actually be opened by anything? Only an
   // INCLUDED benefit is a way in — a percentage off a price that does not exist
   // opens nothing (the resolver refuses it; see the appointment arm).
-  // Read from the SAVED activity, not the form: the rule moved to the catalogue,
+  // Read from the SAVED activity, not the form: the rule moved to the catalog,
   // so this dialog can only report what is stored. A duration whose only way in
   // is a benefit therefore answers against the same document the resolver will.
   const benefitOpensDoor = (minutes: number) => !!seed && benefitOpensDoorAt(seed, minutes)
@@ -464,7 +464,7 @@ export function ActivityDialog({
       whatsNotIncluded: data.whatsNotIncluded ?? '',
       faq: data.faq ?? '',
       cancellationPolicy: data.cancellationPolicy ?? '',
-      // Through the shared normaliser, which drops half-written rows and — the
+      // Through the shared normalizer, which drops half-written rows and — the
       // part that was a live crash — writes each key out instead of spreading
       // the editor's object, whose `options` can be an own key holding
       // `undefined`. Firestore refuses that value and the whole save dies.
@@ -520,7 +520,7 @@ export function ActivityDialog({
     //
     // `accessRule`, `dropIn`, `trialEnabled`, `trialPriceAmount` and
     // `memberBenefit` belong to ActivityPricingForm and the plan matcher, both
-    // in the catalogue. An EDIT here names none of them — that is the whole
+    // in the catalog. An EDIT here names none of them — that is the whole
     // point of the split, and naming one would clobber a decision made on the
     // other screen (the course settings form did exactly that, and un-linked
     // plans for a week).
@@ -553,7 +553,7 @@ export function ActivityDialog({
 
   async function onSubmit(data: ActivityFormData): Promise<boolean> {
     // The "gated to subscriptions with nobody on the list" check that used to
-    // sit here is gone with the tier control. It is not lost: the catalogue
+    // sit here is gone with the tier control. It is not lost: the catalog
     // reports it as `gated_empty_allowlist`, continuously and beside the
     // matcher that fixes it, rather than only at the moment of a save.
     if (editing) {
@@ -675,9 +675,9 @@ export function ActivityDialog({
    * word shown to somebody about to book all lived under "Details" (Franco,
    * 2026-09-02). So:
    *
-   *   Access & pricing  who may book and what it costs — in the catalogue pane
+   *   Access & pricing  who may book and what it costs — in the catalog pane
    *   Details           what the thing IS: name, kind, session lengths, cover,
-   *                     description, colour, tags
+   *                     description, color, tags
    *   Booking           everything that happens AROUND a booking — whether it
    *                     confirms itself, whether a full session queues, and the
    *                     prose and questions a visitor meets on the way in
@@ -909,7 +909,7 @@ export function ActivityDialog({
           their spacing — see components/offer/FormLayout.tsx for the rule.
 
           WHAT IS LEFT AFTER THE MONEY MOVED OUT. The access tier, the
-          newcomer trial and the drop-in price live in the catalogue beside
+          newcomer trial and the drop-in price live in the catalog beside
           the plan matcher that reprices them — see
           components/activities/ActivityPricingForm.tsx for why. What stays
           here is not about money: whether a booking confirms itself, whether
@@ -1320,7 +1320,7 @@ export function ActivityDialog({
 // ─── activity card ────────────────────────────────────────────────────────────
 
 // The money chips this list adds are derived in `lib/activityTerms.ts`
-// (`activityMoneyChipLabels`) — the catalogue's detail pane shows the same facts
+// (`activityMoneyChipLabels`) — the catalog's detail pane shows the same facts
 // and reads the same function, so the two cannot disagree about, say, whether a
 // benefit chip names its plan. The access badges below are separate and stay
 // here: they are what a row says about who may book, not about money.

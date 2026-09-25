@@ -18,7 +18,7 @@ import type { TimelineItem } from './ProgramTimeline'
  * THE PROGRAM AS A PRINTED HANDOUT — what a member reads, on screen and on
  * paper.
  *
- * `ProgramTimeline` is the WORKING view: cards, coloured track bars, edit
+ * `ProgramTimeline` is the WORKING view: cards, colored track bars, edit
  * pencils, built for the people assembling the agenda. A member does not
  * assemble anything; they want the sheet a camp hands out at the door. So this
  * is laid out like one: black on white, a time column and a rule under each
@@ -27,7 +27,7 @@ import type { TimelineItem } from './ProgramTimeline'
  * the browser's "Save as PDF" is the PDF, which is the recorded choice over
  * jsPDF (docs/event-program.md → Publishing).
  *
- * It is PAPER IN BOTH THEMES: fixed neutral colours rather than theme tokens,
+ * It is PAPER IN BOTH THEMES: fixed neutral colors rather than theme tokens,
  * because a handout that inverts in dark mode stops looking like what will
  * come out of the printer.
  *
@@ -40,7 +40,7 @@ import type { TimelineItem } from './ProgramTimeline'
  */
 
 export interface ProgramSheetProps {
-  /** The studio or organisation the event belongs to. */
+  /** The studio or organization the event belongs to. */
   ownerName?: string | null
   title: string
   start?: Date | null

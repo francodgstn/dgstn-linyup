@@ -32,7 +32,7 @@ interface AddEventCheckinInput {
   checkinData?: Record<string, unknown>
   /**
    * For org-scoped events: the studio the contact belongs to. It is a REQUEST,
-   * validated against the organisation's member studios before it is honoured.
+   * validated against the organization's member studios before it is honored.
    * Ignored entirely for team-scoped events, which carry their own teamId.
    */
   checkinTeamId?: string

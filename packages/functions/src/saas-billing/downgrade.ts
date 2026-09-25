@@ -1,14 +1,14 @@
 // THE ONE WRITER OF "this team is now on the Free plan".
 //
-// It lives in its own module for exactly one reason: an ORGANISATION lapse has
+// It lives in its own module for exactly one reason: an ORGANIZATION lapse has
 // to move its member studios to Free too (UX-9 / UX-10), and `orgs/lifecycle.ts`
 // importing `saas-billing/index.ts` — a module whose top level REGISTERS every
 // billing function — would be a cycle. The rule it protects is more important
 // than the file it lives in: there is one downgrade path for both tiers, and an
 // org-specific copy of this teardown must never be written.
 //
-// Callers: `saas-billing/index.ts` (the trial sweep + a cancelled team
-// subscription) and `orgs/lifecycle.ts` (a lapsed organisation, per member
+// Callers: `saas-billing/index.ts` (the trial sweep + a canceled team
+// subscription) and `orgs/lifecycle.ts` (a lapsed organization, per member
 // studio). `orgTierRails.test.ts` re-derives that set from the source.
 import * as admin from 'firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
@@ -29,7 +29,7 @@ import { unpublishSiteForTeam, deleteAllCoursePublicProfiles } from '../utils/pl
  *     `courses/{id}` write only), so each course must be re-published by hand.
  *     This is what a TEAM's own lapse does: the team stopped paying.
  *   • `'keep_for_buyers'` — leave every mirror standing. A contact who bought a
- *     course keeps watching it. This is what an ORGANISATION's lapse does to its
+ *     course keeps watching it. This is what an ORGANIZATION's lapse does to its
  *     member studios (UX-16 follow-up): there, the person who stopped paying is
  *     a THIRD PARTY — neither the studio nor the member who paid for the course
  *     — and taking a bought course away from them for it is indefensible.
@@ -40,8 +40,8 @@ import { unpublishSiteForTeam, deleteAllCoursePublicProfiles } from '../utils/pl
 export type CourseMirrorDisposition = 'tear_down' | 'keep_for_buyers'
 
 /**
- * Move a team onto the Free plan (trial lapsed, paid subscription cancelled, or
- * the organisation that paid for it stopped paying).
+ * Move a team onto the Free plan (trial lapsed, paid subscription canceled, or
+ * the organization that paid for it stopped paying).
  *
  * Clears the legacy wall/purge markers and deactivates plugin installs — Free
  * has no plugin access; install config is preserved so a later upgrade can

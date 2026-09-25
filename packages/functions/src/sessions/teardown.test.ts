@@ -18,7 +18,7 @@ import { SERIES_TEARDOWN_BATCH, SERIES_TEARDOWN_CLAIM_TTL_MS } from '@linyup/sha
 //     as PROGRESS, never as an error, or a studio tidying up mid-run drives the
 //     job into `completed_with_errors` for doing nothing wrong;
 //   • a session another worker holds must be SKIPPED, because the harm from
-//     doing it twice is a second "your class is cancelled" mail to a real
+//     doing it twice is a second "your class is canceled" mail to a real
 //     member, and that cannot be taken back;
 //   • a claim must EXPIRE, or one crashed worker leaves a session nothing may
 //     ever touch — and since the drain query keeps handing that session back,
@@ -29,7 +29,7 @@ import { SERIES_TEARDOWN_BATCH, SERIES_TEARDOWN_CLAIM_TTL_MS } from '@linyup/sha
 // ─── a very small in-memory Firestore ────────────────────────────────────────
 // Supports exactly what the teardown engine uses: the scope query (three
 // equality/inequality filters, an order, a limit), doc get/update/delete, and a
-// serialised runTransaction. Modelled on the fake in
+// serialized runTransaction. Modeled on the fake in
 // dailyTasks/rollSessionSeries.test.ts — the real code is driven through it, so
 // a change to the engine fails here rather than being re-implemented.
 
@@ -94,7 +94,7 @@ function makeDb(rows: Record<string, Row>) {
   const db = {
     collection: () => query([], null),
     async runTransaction<T>(fn: (tx: unknown) => Promise<T>): Promise<T> {
-      // Serialised, which is the right model here: the engine relies on the
+      // Serialized, which is the right model here: the engine relies on the
       // transaction being atomic, not on observing contention.
       const tx = {
         async get(r: { id: string }) {

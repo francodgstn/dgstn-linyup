@@ -259,7 +259,7 @@ export default function EventTypesPage() {
   // second place a customer's name reached every other tenant. Install state is
   // deliberately NOT part of the filter: the list has always shown plugin types
   // whether or not the team installed them, and narrowing that here would be a
-  // separate behaviour change.
+  // separate behavior change.
   //
   // It keeps the WHOLE registry rather than `installableManifests()`, and asks
   // about the CONTAINER instead: a bundle member really does provide the event
@@ -317,7 +317,7 @@ export default function EventTypesPage() {
                   <p className="text-sm font-medium">{plugin.eventType!.id}</p>
                   {/* The CONTAINER's display name, not the member's id — the row
                       credits the card a tenant actually installs, and a raw id
-                      here used to be how a customer's name travelled. */}
+                      here used to be how a customer's name traveled. */}
                   <p className="text-xs text-muted-foreground">
                     {t('fromPlugins.providedBy', { pluginId: tPlugins(card.nameKey as never) })}
                   </p>

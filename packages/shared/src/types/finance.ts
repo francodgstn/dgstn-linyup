@@ -83,7 +83,7 @@ export type FinanceTxnType =
 
 /**
  * What was sold. 'gift_card' is stored value, not a service: the money event is
- * the SALE, so — cash basis — that is where the revenue is recognised, in its
+ * the SALE, so — cash basis — that is where the revenue is recognized, in its
  * own bucket rather than lumped in with no-show fees under 'other'.
  *
  * Why this cannot double-count: a redemption moves no money (no charge, no
@@ -702,7 +702,7 @@ export function buildExternalPaymentTxn(params: {
  * lifetime revenue sits: a card sold in January and spent on a course in March
  * reads `gift_card +100` in January and `course +100 / gift_card −100` in
  * March, so lifetime shows `course 100, gift_card 0`. The running `gift_card`
- * bucket is then sold-minus-redeemed — recognised-but-unconsumed stored value,
+ * bucket is then sold-minus-redeemed — recognized-but-unconsumed stored value,
  * which doubles as the cash-basis shadow of the liability this ledger is not
  * allowed to accrue (docs/accounting.md: entries mirror money events).
  *
@@ -739,7 +739,7 @@ export function buildGiftCardReclassTxns(params: {
     )
   }
   // The reclass pair's sourceRef must match the paymentRef the callables build
-  // for the same drawdown, character for character — one normaliser, no forks.
+  // for the same drawdown, character for character — one normalizer, no forks.
   const code = normalizeRedemptionCode(params.code)
   const sourceRef = `gift:${code}:${params.holdKey}`
   const suffix = params.reverse ? ':rev' : ''

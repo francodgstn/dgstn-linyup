@@ -186,7 +186,7 @@ export async function resolveApiPrincipal(
 ): Promise<PrincipalDecision> {
   const token = bearerToken(authorization)
   if (!token) return { refusal: 'missing_token' }
-  // API keys are recognisable offline; OAuth tokens are opaque and not lyp_-prefixed.
+  // API keys are recognizable offline; OAuth tokens are opaque and not lyp_-prefixed.
   if (token.startsWith('lyp_') && !parseApiKeySecret(token)) return { refusal: 'malformed_token' }
 
   const db = admin.firestore()
@@ -291,7 +291,7 @@ export function principalSeesContact(
   )
 }
 
-/** The same for a session, honouring `schedule.view.all`. */
+/** The same for a session, honoring `schedule.view.all`. */
 export function principalSeesSession(
   principal: ApiPrincipal,
   session: Pick<Session, 'providerId' | 'createdBy'>

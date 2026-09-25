@@ -7,10 +7,10 @@
 //
 // `createStaffAppointment`'s payment-link rail emails a Checkout Session that
 // stays payable for SEVEN DAYS and deliberately carries no `hold_expires_at`
-// (so the daily sweep leaves it alone). Cancelling the appointment used to be a
+// (so the daily sweep leaves it alone). Canceling the appointment used to be a
 // client-side `updateDoc(session, { status: 'cancelled' })` and nothing else:
 // the link stayed live, the client paid it days later, and
-// `handleAppointmentCheckout`'s case 3 RE-ACQUIRED the cancelled session and
+// `handleAppointmentCheckout`'s case 3 RE-ACQUIRED the canceled session and
 // confirmed the booking. The studio had called the appointment off; the client
 // had a paid confirmation for it. Somebody arrives to a locked door.
 //
@@ -34,13 +34,13 @@
 //   • What the expiry event does — cancel the session, delete the hold's
 //     booking — is exactly what this callable is about to write. The two
 //     writers COMMUTE: event first, our transaction re-reads an
-//     already-cancelled session and writes the same end state; transaction
+//     already-canceled session and writes the same end state; transaction
 //     first, `releaseAppointmentHold` returns `not_a_live_hold` and the event
 //     is inert. Nothing is undone in either order.
 //   • The hazard that does NOT commute is the PAYMENT. Cancel first and the
 //     window between the cancel write and a successful close is precisely the
 //     defect above, merely narrowed to a few hundred milliseconds: the client
-//     pays, case 3 re-acquires the cancelled slot, and the studio is never
+//     pays, case 3 re-acquires the canceled slot, and the studio is never
 //     told. Closing first means that once Stripe says `closed`, no money can
 //     arrive for a slot we are about to cancel.
 //
@@ -55,8 +55,8 @@
 //            cancellation proceeds.
 //   paid   → the client paid in the seconds before this call. THE CANCELLATION
 //            IS REFUSED: the money has moved, the webhook is confirming that
-//            booking, and cancelling here would leave a paid-for appointment
-//            cancelled with nothing said about the money. The manager is told
+//            booking, and canceling here would leave a paid-for appointment
+//            canceled with nothing said about the money. The manager is told
 //            what happened, and the refusal clears itself — once the webhook
 //            confirms the session it is no longer `payment_pending`, so a
 //            second attempt skips Stripe entirely and cancels a booking the
@@ -82,7 +82,7 @@
 //     still routes through this callable when there IS a link id, because
 //     deleting the document would otherwise throw away the only reference that
 //     could ever close it.
-//   • A CONFIRMED booking under the cancelled session is left exactly as the
+//   • A CONFIRMED booking under the canceled session is left exactly as the
 //     client-side write this replaces left it. Only an unconfirmed hold's
 //     booking is deleted, matching `releaseAppointmentHold`.
 import * as admin from 'firebase-admin'
@@ -136,12 +136,12 @@ export const cancelAppointmentSlot = onCall(async (request) => {
   const checkoutSessionId = (s.payment_checkout_session_id as string | null | undefined) ?? null
   const contactId = (s.contact_id as string | null | undefined) ?? null
 
-  // ── 1. Kill the link, BEFORE anything is cancelled (see the header). ──
+  // ── 1. Kill the link, BEFORE anything is canceled (see the header). ──
   let linkOutcome: CheckoutSessionCloseOutcome | null = null
   if (awaitingPayment && checkoutSessionId) {
     try {
       // `loadEnabledTeam` throws for a studio whose Connect was switched off
-      // since the link went out. Same judgement as `markAppointmentPaid`: that
+      // since the link went out. Same judgment as `markAppointmentPaid`: that
       // is a `failed` close, not a refusal to cancel — a manager clearing a slot
       // must never be blocked by Stripe being out of reach.
       const team = await loadEnabledTeam(teamId)
@@ -207,7 +207,7 @@ export const cancelAppointmentSlot = onCall(async (request) => {
   })
 
   console.log(
-    `[appointments] cancelAppointmentSlot: session=${sessionId} cancelled=${cancelled} ` +
+    `[appointments] cancelAppointmentSlot: session=${sessionId} canceled=${cancelled} ` +
       `link=${linkOutcome ?? 'none'}`
   )
   // `linkStillOpen` is the honest half of a three-valued close: the studio is

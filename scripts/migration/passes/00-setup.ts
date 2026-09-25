@@ -22,9 +22,9 @@ const ORG_AFFILIATION_STATUSES_SUBCOLLECTION = 'affiliation_statuses'
 // See `docs/org-contact-visibility.md`.
 const DEFAULT_ORG_AFFILIATION_STATUSES = [
   { id: 'requested',    label: 'Requested',    description: 'Member has submitted a request, awaiting review.',  color: 'yellow', order: 0, isBuiltIn: true, countsAsActive: false, isFinal: false },
-  { id: 'under_review', label: 'Under review', description: 'Documents are being reviewed by the organisation.', color: 'blue',   order: 1, isBuiltIn: true, countsAsActive: false, isFinal: false },
+  { id: 'under_review', label: 'Under review', description: 'Documents are being reviewed by the organization.', color: 'blue',   order: 1, isBuiltIn: true, countsAsActive: false, isFinal: false },
   { id: 'almost_ready', label: 'Almost ready', description: 'Review complete, awaiting final confirmation.',     color: 'purple', order: 2, isBuiltIn: true, countsAsActive: false, isFinal: false },
-  { id: 'active',       label: 'Active',       description: 'Valid membership, recognised by the federation.',    color: 'green',  order: 3, isBuiltIn: true, countsAsActive: true,  isFinal: false },
+  { id: 'active',       label: 'Active',       description: 'Valid membership, recognized by the federation.',    color: 'green',  order: 3, isBuiltIn: true, countsAsActive: true,  isFinal: false },
   { id: 'expired',      label: 'Expired',      description: 'Membership period has ended. Renewal required.',     color: 'red',    order: 4, isBuiltIn: true, countsAsActive: false, isFinal: true },
 ] as const
 
@@ -78,7 +78,7 @@ export async function pass00Setup(cfg: MigrationConfig): Promise<void> {
   // keeping it in usage, and the Connect fee waiver reads it — for the ORG — to
   // decide that no platform fee is taken on any payment at any HMD studio. That
   // last one is why it belongs here rather than on the 16 team documents: the
-  // waiver reads through to the organisation, so a 17th studio opened next year
+  // waiver reads through to the organization, so a 17th studio opened next year
   // inherits the comp by construction instead of by somebody remembering.
   //
   // Written on re-run too. The comp is not a one-time seed but a standing fact,
@@ -89,7 +89,7 @@ export async function pass00Setup(cfg: MigrationConfig): Promise<void> {
     plan_status: 'active' as const,
     flags: {
       comped:        true,
-      comped_reason: 'Founding organisation — migrated from hmd-lineup, billed nothing indefinitely',
+      comped_reason: 'Founding organization — migrated from hmd-lineup, billed nothing indefinitely',
       comped_since:  FieldValue.serverTimestamp(),
     },
   }

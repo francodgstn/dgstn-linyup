@@ -137,7 +137,7 @@ function transformSubcollectionDoc(
   if (sub === 'alert_presets') return transformAlertPreset(data)
 
   // leaderboard: rename the one per-entry field the mobile app's trial-name
-  // anonymisation reads (type → acquisition_stage) — see
+  // anonymization reads (type → acquisition_stage) — see
   // transforms/leaderboard.ts for why this is a direct consequence of the
   // doc's own write filter, not a guess.
   if (sub === 'leaderboard') return transformLeaderboardDoc(data)

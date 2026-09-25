@@ -54,7 +54,7 @@
  * global options read from the same SDK instance the bundle configured
  * (`getGlobalOptions()`). A function that sets an option to exactly the global
  * value is indistinguishable from one that inherits it, and is not listed.
- * `enforceAppCheck`, `cors` and `consumeAppCheckToken` are runtime behaviour of
+ * `enforceAppCheck`, `cors` and `consumeAppCheckToken` are runtime behavior of
  * the callable, not part of the manifest, so they are NOT visible here — the
  * ripgrep recipe in the plan doc still owns those.
  *
@@ -88,7 +88,7 @@ const TRIGGER_KEYS = [
 // ─── Pure ────────────────────────────────────────────────────────────────────
 
 /**
- * Block and line comments out, CRLF normalised. A `//` inside a string literal
+ * Block and line comments out, CRLF normalized. A `//` inside a string literal
  * would be eaten too; module specifiers never hold one. Pure.
  */
 export function stripComments(source) {

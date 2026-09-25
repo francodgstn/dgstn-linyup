@@ -105,13 +105,13 @@ const ogLocale = ({ en: 'en_US', de: 'de_DE', fr: 'fr_FR', it: 'it_IT' } as cons
           try {
             localStorage.setItem(CONSENT_KEY, v);
           } catch {
-            /* storage blocked — choice won't persist, honoured for this load only */
+            /* storage blocked — choice won't persist, honored for this load only */
           }
         };
         const showBanner = () => banner?.removeAttribute('hidden');
         const hideBanner = () => banner?.setAttribute('hidden', '');
 
-        // Load + initialise PostHog. Only ever called after explicit consent.
+        // Load + initialize PostHog. Only ever called after explicit consent.
         const loadPostHog = () => {
           if (loaded) return;
           loaded = true;
@@ -149,7 +149,7 @@ const ogLocale = ({ en: 'en_US', de: 'de_DE', fr: 'fr_FR', it: 'it_IT' } as cons
             b.addEventListener('click', () => applyConsent(b.dataset.consent === 'yes')),
           );
 
-        // First-run decision: honour a stored choice, otherwise ask.
+        // First-run decision: honor a stored choice, otherwise ask.
         const choice = readConsent();
         if (choice === 'yes') loadPostHog();
         else if (choice !== 'no') showBanner();

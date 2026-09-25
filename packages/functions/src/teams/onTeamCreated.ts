@@ -43,7 +43,7 @@ export const onTeamCreated = onDocumentCreated('teams/{teamId}', async (event) =
   //
   // GATED ON THE PLAN the team was actually created with. A new studio starts on
   // a Studio trial so this passes today, but seeds and Admin-SDK creates make
-  // any plan reachable, and an install document is honoured by
+  // any plan reachable, and an install document is honored by
   // `useInstalledPlugins` with no plan check of its own — so a Free team would
   // simply be handed a paid-tier feature.
   const plan = (snap.data()?.plan as SaasPlan | undefined) ?? 'free'

@@ -457,7 +457,7 @@ export async function resolvePromoCaller(params: {
 
   let matches = params.emailMatches ?? null
   if (!matches && held?.acquisition_stage !== 'joined') {
-    // The SAME normalisation every rail stores its contacts' emails with, so the
+    // The SAME normalization every rail stores its contacts' emails with, so the
     // equality query cannot miss a match on casing or a stray space.
     const normalized = normalizeEmail(email ?? '')
     matches = normalized
@@ -604,7 +604,7 @@ export const NO_PROMO_ATTEMPT: PromoAttempt = {
  * contact is resolved (the audience gate and the identity key both need it) and
  * BEFORE Stage A.
  *
- * The identity key prefers the caller's normalised EMAIL over their contact id,
+ * The identity key prefers the caller's normalized EMAIL over their contact id,
  * and that is the whole reason the per-person cap means anything on the guest
  * rails: `createDropInCheckout` reuses an existing contact only on an exact
  * (email, lowercased firstname, lowercased lastname) match and otherwise mints a
@@ -772,7 +772,7 @@ export function promoCheckoutOutcome(
  * a SECOND Stripe session and a second hold instead of failing outright — which
  * is precisely what already happens one second later, across the minute boundary,
  * and is bounded by the card's own balance (the second reserve refuses when there
- * is not enough left). A guaranteed dead end becomes the behaviour the same
+ * is not enough left). A guaranteed dead end becomes the behavior the same
  * request already has at t+60s.
  *
  * The alternative — keep the instance out of the key and instead not re-instance
@@ -1000,7 +1000,7 @@ export type CloseCheckoutSession = (sessionId: string) => Promise<'closed' | 'pa
  * Take (or refresh) this caller's reservation on one use of one code. THROWS an
  * HttpsError carrying `details.reason` when it cannot — and that refusal must
  * refuse the CHECKOUT, never silently re-price it: the caller was quoted a
- * discount we can no longer honour.
+ * discount we can no longer honor.
  *
  * Returns THE TICKET, which is the only proof anything was reserved. Every later
  * operation on this reservation takes it, so a caller that did not reserve
@@ -1051,11 +1051,11 @@ export type CloseCheckoutSession = (sessionId: string) => Promise<'closed' | 'pa
  * reservation that is still guarding a payable session. The refresh itself is
  * unchanged — same key, nothing consumed from either cap.
  *
- * Serialisation: every reservation for one code both reads and writes the same
+ * Serialization: every reservation for one code both reads and writes the same
  * document, and Firestore read-write transactions are serializable, so two
  * transactions cannot commit against the same snapshot — the loser re-reads and
  * sees the winner's reservation in `live`. The promo document is therefore a hot
- * document while a campaign runs; at studio scale that is correct behaviour, not
+ * document while a campaign runs; at studio scale that is correct behavior, not
  * a bottleneck. If a tenant ever needs more throughput than a few writes per
  * second on ONE code, the remedy is more codes, not a sharded counter.
  */
@@ -1316,7 +1316,7 @@ export interface PromoCommitDecision {
    * not record a use it has no room for. So the honest description of the
    * residual is "a campaign can give one more discount than it counts", never "a
    * campaign can count more uses than it has", and this fires an ERROR log so the
-   * studio's own reconciliation can see it. Honouring-and-not-counting is chosen
+   * studio's own reconciliation can see it. Honoring-and-not-counting is chosen
    * over refunding because a system-initiated refund of a completed, wanted
    * purchase is a worse surprise than a discount the studio gave one extra time.
    */
@@ -1401,7 +1401,7 @@ export function decidePromoCommit(input: {
   /** OUR OWN reservation deadline, epoch ms (the ticket's `expiresAtMs`, or the
    *  session's `promoExpires` metadata). REQUIRED — a call site that does not
    *  name it cannot compile, because omitting it silently restores the
-   *  count-whatever-happened behaviour this rule replaces. `null` means no
+   *  count-whatever-happened behavior this rule replaces. `null` means no
    *  deadline is known, which is treated as "lapsed": every session this phase
    *  creates stamps one, so it is reachable only for a payload from outside. */
   reservationExpiresMs: number | null
@@ -1524,7 +1524,7 @@ export function promoPerIdentityCapExceeded(
  * row has been read). A commit that would breach either writes NOTHING — not the
  * counter, not the ledger, not the reservations map — and logs at ERROR. The
  * buyer keeps what they paid for; the campaign does not record a use it has no
- * room for. See `PromoCommitDecision.overCap` for why honour-and-don't-count
+ * room for. See `PromoCommitDecision.overCap` for why honor-and-don't-count
  * rather than refund.
  */
 export async function commitPromoRedemption(params: {
@@ -1828,7 +1828,7 @@ export async function releasePromoReservation(params: {
  *
  * It does NOT close the sessions those slots were backing, and that is
  * deliberate: those buyers are mid-checkout for a purchase they still want, and
- * cancelling their carts to tidy a counter is the wrong trade. So this lever is
+ * canceling their carts to tidy a counter is the wrong trade. So this lever is
  * the one route by which more discounted sessions than slots can be live at
  * once — which is exactly why `commitPromoRedemption`'s CAP GATE exists and why
  * it names this lever in its ERROR line.
@@ -2349,7 +2349,7 @@ function requireAuthedManager(
   return assertManager(request.auth.uid, teamId)
 }
 
-/** Normalise + format-check the authored code. The gift-card namespace is
+/** Normalize + format-check the authored code. The gift-card namespace is
  *  refused here as well as in the preview, so a studio can never mint a promo
  *  that shadows it and turns a visitor's real gift card into "invalid code". */
 function requireAuthoredCode(raw: unknown): string {
@@ -2654,7 +2654,7 @@ export const setPromoCodeStatus = onCall(async (request) => {
  *
  * Takes `{ code, contactId }` OR `{ code, email }` and resolves the SAME
  * identity key from either, because the ledger is keyed on a hash of the
- * normalised email: a manager looking at a booking has a contact, a manager
+ * normalized email: a manager looking at a booking has a contact, a manager
  * reading a support email has an address.
  *
  * It deletes one `redemptions/{identityKey}` document and NEVER touches

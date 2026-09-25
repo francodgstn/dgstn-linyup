@@ -18,10 +18,10 @@ import {
 // here is the handful of places where reuse could go wrong.
 //
 // THE SINGLE-DEADLINE RULE is the one that costs a studio a place sold twice:
-// the offered enrolment's `expires_at`, its `claim_expires_at`, the entry's
+// the offered enrollment's `expires_at`, its `claim_expires_at`, the entry's
 // `offer_expires_at` and the Stripe session all have to be ONE instant. It is
 // asserted structurally, against the source, because the failure has no state a
-// behaviour test could sample: two timers one second apart look identical until
+// behavior test could sample: two timers one second apart look identical until
 // a real person claims in that second.
 //
 // THE NAME COLLISION is the other. A collection-group query is a global

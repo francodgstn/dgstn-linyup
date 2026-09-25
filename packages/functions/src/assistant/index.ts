@@ -45,7 +45,7 @@ export const ASSISTANT_SCOPES: readonly ApiScope[] = API_SCOPES.filter((s) => s 
 // improvement. Menu paths mirror the sidebar.
 //
 // IT GOES STALE SILENTLY, and did: this still said "Offer › Activities" and
-// "Offer › Catalogue" after both were renamed, so the assistant was confidently
+// "Offer › Catalog" after both were renamed, so the assistant was confidently
 // directing studios to a menu that no longer existed — wrong answers with no
 // error anywhere (Franco, 2026-09-02). Nothing checks this against the real
 // nav, which is exactly what the generated index above would fix. Until then:
@@ -68,7 +68,7 @@ Contact detail tabs: Profile, Appointments, Stats, Bookings, Plans & Affiliation
 
 const HELP_PROMPT = `You are Linyup's in-app assistant for studio staff (coaches, managers, owners). You have two jobs.
 
-1. Answer questions about their studio by calling your tools — who has gone quiet, how full classes were, which memberships are cancelling, what is on the schedule. Use the tools rather than guessing. Never state a number, a name or a date a tool did not return; if a tool refuses or finds nothing, say so plainly.
+1. Answer questions about their studio by calling your tools — who has gone quiet, how full classes were, which memberships are canceling, what is on the schedule. Use the tools rather than guessing. Never state a number, a name or a date a tool did not return; if a tool refuses or finds nothing, say so plainly.
 2. Help them find their way around Linyup. When relevant, tell them exactly where to go using the menu path from the app map below (e.g. "Settings › Roles"). Do not invent features that aren't in it.
 
 You can read, not act: you cannot book, cancel, message or change anything. When they ask for an action, say where in the app they can do it.
@@ -118,7 +118,7 @@ export const assistantChat = onCall(async (request) => {
 
   // …and the (unlocked) assistant plugin must be installed for this team.
   // Through the ONE resolver, so an ORG-level install counts — this was its own
-  // read, and a studio whose organisation installed the plugin was refused.
+  // read, and a studio whose organization installed the plugin was refused.
   if (!(await pluginIsActive(teamId, UNLOCK_PLUGIN_ID))) {
     throw new HttpsError('failed-precondition', 'The AI assistant is not enabled for this team.')
   }
@@ -135,7 +135,7 @@ export const assistantChat = onCall(async (request) => {
   })
   if (!allowed) throw new HttpsError('resource-exhausted', 'You have reached the hourly limit. Try again later.')
 
-  // Normalise + bound the conversation, then map to Vertex content format.
+  // Normalize + bound the conversation, then map to Vertex content format.
   const trimmed: Content[] = messages
     .slice(-MAX_MESSAGES)
     .filter((m) => m && typeof m.content === 'string' && m.content.trim())

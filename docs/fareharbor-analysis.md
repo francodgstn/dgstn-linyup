@@ -33,8 +33,8 @@ Three inputs:
 
 ### The positioning caveat that drives every verdict
 
-FareHarbor optimises for **one-off transactional bookings by tourists**, with OTA
-distribution (Viator, GetYourGuide, Booking.com) as its moat. Linyup optimises for
+FareHarbor optimizes for **one-off transactional bookings by tourists**, with OTA
+distribution (Viator, GetYourGuide, Booking.com) as its moat. Linyup optimizes for
 **recurring member relationships** — subscriptions, retention, coaching — per
 `docs/product-strategy.md` §1.
 
@@ -109,7 +109,7 @@ reason).
 | **Live Subtotal / Fees / Total** during checkout | Final wizard step shows a single number | **Port.** See §2.2 — reuse `resolvePaymentOptions`'s `appliedBenefit` | S |
 | **Locations** — map link, directions, parking, where to check in | `Place` + `placeId` on sessions (`session.ts:37`); no per-activity meeting-point copy | **Adapt.** Fold into the rich activity detail above rather than building separately | S |
 | **Search by date** — pick a day, see everything available across all activities | `BookingSettings.flowType: 'activity-first' \| 'date-first'` exists in the type (`team.ts:365`) **and** the settings UI with a visual mock (`settings/booking/page.tsx:92-104,163-174`), but `BookingForm` only implements activity-first | **Port.** This is finishing something already declared and configurable — a studio can currently select a flow that does nothing | M |
-| **Booking flows / flow pages** — categorised booking navigation | Flat activity list | **Adapt.** Only matters once catalogues grow past ~10 activities. Deferred | M |
+| **Booking flows / flow pages** — categorized booking navigation | Flat activity list | **Adapt.** Only matters once catalogs grow past ~10 activities. Deferred | M |
 | **Dark mode** for the booking frame | `bioLinkTheme: light\|dark\|auto` with `matchMedia` resolution | **Already have** | — |
 | **Visitor-currency display** ("Total in your selected currency CHF 121.30") | Single `Team.default_currency`; the accounting ledger is single-currency by design | **Reject.** A tourist feature. Linyup is single-market CH | — |
 
@@ -147,7 +147,7 @@ reason).
 | **Membership code** on the book form ("Are you a member?") | Better already — contact sign-in resolves the real price server-side | **Already have** | — |
 | **Booking source** (`online \| affiliate \| direct`) + report-by-source | `Contact.source` exists as a marketing channel; nothing per booking | **Port.** Small field, and it feeds the existing dashboard | S |
 | **Tips / gratuity** | Zero occurrences | **Reject.** Culturally out of place for CH coaching, and it muddies the subscription relationship | — |
-| **Affiliates, ASN tracking, commission, OTA distribution, FHDN** | "Affiliation" in this repo means club/federation membership — unrelated. The Referrals plugin is member-get-member | **Reject the network — but flag one adjacent idea.** There is no OTA market for yoga classes, so the distribution moat doesn't transfer. However, the guest booking form *already* collects a fitness-app field (Fitpass / ClassPass / Urban Sports Club / Gymlib / Wellhub), and `SubscriptionType.source = 'aggregator'` with `payoutPerVisit` already writes a `partner_visits` ledger. Formalising that into tracked partner links with commission reporting is a genuine strategic option. **Named, not scoped** — see §6 | XL |
+| **Affiliates, ASN tracking, commission, OTA distribution, FHDN** | "Affiliation" in this repo means club/federation membership — unrelated. The Referrals plugin is member-get-member | **Reject the network — but flag one adjacent idea.** There is no OTA market for yoga classes, so the distribution moat doesn't transfer. However, the guest booking form *already* collects a fitness-app field (Fitpass / ClassPass / Urban Sports Club / Gymlib / Wellhub), and `SubscriptionType.source = 'aggregator'` with `payoutPerVisit` already writes a `partner_visits` ledger. Formalizing that into tracked partner links with commission reporting is a genuine strategic option. **Named, not scoped** — see §6 | XL |
 | **BNPL / iDEAL / Bancontact / Vipps** | Stripe Connect with TWINT + Apple Pay / Google Pay via dynamic payment methods (`utils/connect/client.ts:229-230`) | **Already have** the CH equivalent | — |
 | **Seat maps / zones** | — | **Reject** for now. One real adjacent case exists (a spin studio letting members pick a bike); note it as a distant maybe, not a roadmap item | — |
 
@@ -157,7 +157,7 @@ reason).
 |---|---|---|---|
 | **Custom fields on the book form** — per-item, conditional, whole-booking vs per-person, and optionally private (staff-only) | **Absent.** The public booking form's only extra fields are two team-wide booleans, `showPhone` and `showFitnessAppField` (`team.ts:364-373`) | **Port.** Every piece already exists: the Forms plugin's field schema (`shared/src/types/form.ts:18-29` — text, choice, date, checkbox…), the per-type field precedent on events (`event.ts:41-63`), and contact custom fields. What's missing is **attaching a question set to an activity**, storing answers **on the booking**, and surfacing them on the roster and manifest. "Any injuries?", "shoe size", "how did you hear about us?" | M–L |
 | **Waivers** — liability release signed at booking, status visible at a glance on the manifest | **No first-class concept.** The Documents plugin covers `terms \| privacy \| regulation \| other`, wired to the *signup* consent checkbox via `signup_documents` (`team.ts:420-425`). There is **no per-booking signature, no acceptance record, and no versioned acceptance ledger** | **Port.** More relevant here than at FareHarbor — martial arts, contact sport, and kids' classes make this a genuine liability question, and it's the compliance story that closes studio leads. Shape: a `Document` of kind `waiver` + a required-on-booking flag + an acceptance record keyed by contact **and document version** + a status column on the roster. Must handle **minor / guardian consent** (`Contact` already carries guardian fields) — **BUILT, Wave 3 Phase 4 (`docs/waivers.md`).** Three corrections from the implementation: the acceptance is keyed on the EVENT, not on `(contact, version)`, or re-signing after a revocation is unrepresentable; the contact's "guardian fields" are `emergency_contacts`, which identify nobody and were never a consent mechanism; and minor consent is a **self-declaration on the consent step plus a chip on the roster**, not a verification — an emailed one-time link was built and then removed (2026-08-16) because it proved control of a mailbox rather than parenthood, at the price of a public mail-sending surface | L |
-| **Health & safety policies** shown throughout booking | — | **Adapt.** Generalise into the same policy block as cancellation notes (Theme A) rather than a separate field | S |
+| **Health & safety policies** shown throughout booking | — | **Adapt.** Generalize into the same policy block as cancellation notes (Theme A) rather than a separate field | S |
 | **Receipts** — printable branded transaction record | Stripe emails its own receipt; no branded document | **Adapt.** Ties into the manifest's print infrastructure | M |
 | **Permission groups** | Roles + capabilities (`shared/src/types/capabilities.ts`) | **Already have** | — |
 
@@ -166,7 +166,7 @@ reason).
 | FareHarbor concept | Linyup today | Verdict |
 |---|---|---|
 | **Resources & shared resources** — capacity governed by a shared physical thing (a boat, a room, an equipment pool), so concurrent activities can't overbook it | **No entity.** `PlaceRoom` is `{ id, name }` (`place.ts:12-15`); a session can carry `roomId` and the form sets it, but **nothing validates it** — no conflict check, no capacity. The only overlap check in the whole system is per-provider, for appointments (`session.ts:17-22`) | **Port in two phases.** **Phase 1:** make `roomId` an actual constraint — one session per room per time window. Cheap, and it catches the mistake studios actually make (two classes scheduled into one room). **Phase 2:** a countable `Resource` with a shared pool — 8 reformer beds drawn on by three different class types. Phase 1 alone earns its keep and is a fraction of the cost |
-| **Translations** stored per tenant | Linyup's *UI* is four-language (en/de/fr/it, all four national languages). A studio's *content* — activity names, descriptions, policies — is single-language | **Port, eventually — but decide now.** For a Swiss product this is a differentiator, not a nicety: a Basel studio serving German and French members currently has to pick one. It turns every public content field into a localised map, so it is genuinely XL. **The decision is time-sensitive**: Theme A adds several new content fields, and retrofitting them later costs more than designing them localisable now. See §6 |
+| **Translations** stored per tenant | Linyup's *UI* is four-language (en/de/fr/it, all four national languages). A studio's *content* — activity names, descriptions, policies — is single-language | **Port, eventually — but decide now.** For a Swiss product this is a differentiator, not a nicety: a Basel studio serving German and French members currently has to pick one. It turns every public content field into a localized map, so it is genuinely XL. **The decision is time-sensitive**: Theme A adds several new content fields, and retrofitting them later costs more than designing them localizable now. See §6 |
 | **Zapier / external API** | Org tier already plans API access (`docs/product-strategy.md` §2, Tier 3) | **Already planned** |
 
 ---
@@ -584,7 +584,7 @@ re-invented three times.
 4. The client price breakdown calls `planGiftCardRedemption`. Fixes bug #4.
 
 **Phase 1 — Gift cards.** First, because it is the only project *fixing existing
-production behaviour on real money* rather than adding surface. Widening
+production behavior on real money* rather than adding surface. Widening
 `FinanceCategory` is a compile-time break across all three chart templates —
 far cheaper to land now, at pre-launch data volume. Its
 `commitGiftCardDrawdown(...)` wrapper becomes the single hook that promo's commit
@@ -645,7 +645,7 @@ tightening, a new public mirror) and the smallest interaction footprint — no
 waiver arm in `resolvePaymentOptions`, so it never contends for the price
 pipeline. Its one prerequisite is Phase 2's transactional `bookSession`: the
 gate must refuse *before* contact creation and write *after* the booking commits.
-**Shipped 2026-08-15 — `docs/waivers.md` is the shipped-behaviour document.**
+**Shipped 2026-08-15 — `docs/waivers.md` is the shipped-behavior document.**
 **Correction (2026-08, from implementation):** the footprint claim held — `git
 diff` on `paymentOptions.ts` is empty for the whole phase — and the *placement*
 rule reversed on the second half. The acceptance is written **inside** the commit
@@ -767,7 +767,7 @@ product. An adults-only studio (`never`) pays zero age questions; a kids' club
 > contact at all: it is `signer_role` / `signer_name` on an acceptance event in
 > the waiver ledger, self-declared and unverified.
 
-**Documents becomes a default feature, not a plugin.** It was never monetised —
+**Documents becomes a default feature, not a plugin.** It was never monetized —
 `minPlan: 'free'`, no `addon` field, gated purely by install state — so this
 gives away no revenue and, on Coach, may free the one-plugin explore slot. It
 also removes a real defect structurally: uninstalling the plugin batch-deletes
@@ -844,7 +844,7 @@ first ten minutes. The split is not uniform, and the reasoning is the point:
 | **Promo Codes** | plan: Studio (creation only) | plugin (`commerce`); the plan gate demotes to a plan **limit** | Do **not** stack a plugin on the plan gate — a Studio-tier user asking "why can't I see this?" must have one answer. `plan.ts` already states the rule: plugin-delivered features are gated by install state, *not* feature flags (see Courses, Referrals). `PROMO_CODE_LIMITS` (0/0/20/100) stays as the ceiling |
 | **Waitlist** | plan: Coach + per-activity toggle | **team default in `Settings → Booking`** + the per-activity toggle as override | Not a plugin. It has **no nav item**, so it adds no clutter — the argument that justifies the other two does not apply. And it is not a capability a studio adopts; it is a fix for a broken state. A full class silently loses bookings, and a studio does not know it needs a queue until after the revenue is gone — behind an install step, the studios who need it most never find it. The real defect in today's shape is that per-activity is the *only* control, so 40 activities means 40 toggles |
 
-**Plugins are also a monetisation surface**, not only a simplicity lever —
+**Plugins are also a monetization surface**, not only a simplicity lever —
 `plugin-addons.ts` carries `PluginAddonPrice`. Gift Cards and Promo Codes are
 plausible paid add-ons; the waitlist is not, because nobody will pay to un-break
 a dead end. That asymmetry is a second, independent reason the split falls here.

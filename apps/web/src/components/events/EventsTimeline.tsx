@@ -93,7 +93,7 @@ const DAY_MS = 86_400_000
  *
  *   'type'   one band per event type — a row you can read along, which is why
  *            bands were asked for in the first place.
- *   'owner'  one band for the organisation's events and one for the studio's.
+ *   'owner'  one band for the organization's events and one for the studio's.
  *            Only offered where both exist; see `ownerBandsWorth`.
  *   'none'   no bands, everything packed into as few rows as it will go.
  *
@@ -104,7 +104,7 @@ export type TimelineBandMode = 'type' | 'owner' | 'none'
 
 const OWNER_BANDS = ['org', 'team'] as const
 
-/** THE ORGANISATION'S ROW COMES FIRST, deliberately: on a studio's own page its
+/** THE ORGANIZATION'S ROW COMES FIRST, deliberately: on a studio's own page its
  *  federation's dates are the FIXED ones and its own are what it arranges around
  *  them, so the constraints read above the choices. */
 function ownerBandOf(event: Event | undefined): string {
@@ -213,7 +213,7 @@ export function EventsTimeline({
   // one reader is looking at the page right now, not something a pasted link
   // should carry.
   // PACKED BY DEFAULT. Bands answer "what kind of thing is this", which the bar
-  // colour already says; what a planner opens this for is HOW FULL THE YEAR IS,
+  // color already says; what a planner opens this for is HOW FULL THE YEAR IS,
   // and one band per type spreads a dozen events down a tall, mostly-empty grid
   // to say it. Packed puts the same events in as few rows as they fit, so the
   // busy weeks are visible without scrolling. The banded views are one click
@@ -265,8 +265,8 @@ export function EventsTimeline({
         .filter((e) => e.start?.toDate)
         .map((e) => ({
           id: e.id,
-          // THE BAND IS THE EVENT TYPE. It is also what colours the bar, so a
-          // band reads as one colour without needing a gutter to name it.
+          // THE BAND IS THE EVENT TYPE. It is also what colors the bar, so a
+          // band reads as one color without needing a gutter to name it.
           group: e.type ?? '',
           start: e.start.toDate().getTime(),
           // An event with no end is a moment, not a zero-length error — the
@@ -333,9 +333,9 @@ export function EventsTimeline({
   /**
    * OWNER BANDS ARE OFFERED ONLY WHERE BOTH OWNERS EXIST — which is derived from
    * the events rather than passed in, so the mode appears exactly where it means
-   * something and cannot be misconfigured. On an organisation's own events page
+   * something and cannot be misconfigured. On an organization's own events page
    * everything is org-scoped, so it never shows; on a studio's schedule, which
-   * loads its own events AND its organisation's, it does.
+   * loads its own events AND its organization's, it does.
    */
   const ownerBandsWorth = useMemo(() => {
     let org = false
@@ -735,9 +735,9 @@ export function EventsTimeline({
                   style={{ height: b.lanes * LANE_H }}
                 >
                   <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    {/* NO DOT ON AN OWNER BAND. A type band is one colour, so a
+                    {/* NO DOT ON AN OWNER BAND. A type band is one color, so a
                         dot restates the bars beside it; an owner band holds
-                        every type at once and a single colour would name one of
+                        every type at once and a single color would name one of
                         them, which is worse than naming none. */}
                     {mode === 'type' && (
                       <span
@@ -916,11 +916,11 @@ export function EventsTimeline({
                                 // THE BAR IS A FRAME AND THE FILL IS THE
                                 // QUANTITY — see the `PARTICIPATION` note in the
                                 // module header. The frame carries the type
-                                // colour so a band still reads as one colour;
+                                // color so a band still reads as one color;
                                 // the fill inside it says how many came.
                                 // THE FRAME IS FAINT AND THE FILL IS THE INK.
                                 // At 42% an empty bar already read as a
-                                // coloured one, which left the fill almost no
+                                // colored one, which left the fill almost no
                                 // range to work in — a one-day event is an 8px
                                 // sliver and the whole quantity has to live in
                                 // 20px of height, so every bit of contrast
@@ -967,7 +967,7 @@ export function EventsTimeline({
                         being drawn underneath it. */}
                           {/* AN INSIDE LABEL GETS ITS OWN BACKING. It used to
                         be white on a solid bar; the bar is now part tint and
-                        part saturated fill, and no single text colour is
+                        part saturated fill, and no single text color is
                         readable on both — white disappears against the empty
                         top of a quiet event, dark text against the fill of a
                         busy one. A translucent chip is legible over either, and
@@ -1030,7 +1030,7 @@ export function EventsTimeline({
             jobs — it names the bands and it filters by type — and only the
             first one depends on the rows being bands. `allBands` is packed WITH
             groups whatever the toggle says, so switching banding off leaves the
-            filter, and the colours, exactly where they were. */}
+            filter, and the colors, exactly where they were. */}
         {allBands.length > 0 && (
           <ul className="flex flex-wrap gap-x-4 gap-y-1 border-t px-3 py-2">
             {allBands.map((b) => {
@@ -1118,8 +1118,8 @@ export function EventsTimeline({
                       <span className="min-w-0 flex-1 truncate text-xs font-medium">{e.title}</span>
                       {/* WHOSE EVENT IT IS, and only where that is a real
                           question — a studio's schedule carries its own events
-                          and its organisation's, an organisation's page only
-                          its own. Marked on the ORGANISATION's rows alone:
+                          and its organization's, an organization's page only
+                          its own. Marked on the ORGANIZATION's rows alone:
                           badging both is noise, and the one worth spotting is
                           the date somebody else fixed.
 

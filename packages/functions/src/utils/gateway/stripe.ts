@@ -131,7 +131,7 @@ export class StripeAdapter implements GatewayAdapter {
     //       cancel_at parameters. Please pass in only one."
     //
     // so sending both does not "clear whichever one expressed it", it fails
-    // every reactivation — the studio stays cancelled and the callable throws.
+    // every reactivation — the studio stays canceled and the callable throws.
     //
     // `cancel_at_period_end: false` alone is sufficient for BOTH expressions.
     // Verified on a live Stripe test account (2026-04-22.dahlia): from an

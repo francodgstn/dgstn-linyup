@@ -236,7 +236,7 @@ function EventList({ events }: { events: StoreEventView[] }) {
           </div>
           {/* The badge is a highlight, never a filter — every event is listed,
               and `summary` already carries Apple's own state verbatim, so a
-              state we do not recognise loses a badge and nothing else. */}
+              state we do not recognize loses a badge and nothing else. */}
           {e.needsAttention && <Badge variant="warning">Needs attention</Badge>}
         </li>
       ))}

@@ -35,7 +35,7 @@ function formatLastSeen(value: unknown, dash: string): string {
 export const TeamCard: React.FC<TeamCardProps> = ({ teamName, logoUrl, subscriptionName, subscriptionRecurrence, lastSeenAt }) => {
   const theme = useAppTheme();
   const t = useTranslations('TeamCard');
-  // The studio row carries the STUDIO's colour (the tenant accent); the other
+  // The studio row carries the STUDIO's color (the tenant accent); the other
   // rows keep their semantic tints so they never collide with it.
   const badge = (color: string) => ({ backgroundColor: withAlpha(color, theme.dark ? 0.16 : 0.09) });
 

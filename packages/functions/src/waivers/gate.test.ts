@@ -297,7 +297,7 @@ describe('THE MID-PUBLISH RACE — a version published while the visitor was rea
   })
 })
 
-describe('NO RAIL DEFERS — one behaviour on every door', () => {
+describe('NO RAIL DEFERS — one behavior on every door', () => {
   // Two rails used to COMPLETE with a waiver outstanding: the waitlist claim
   // (one offer, ever, against a 72-hour emailed guardian link) and a PIN-paired
   // kiosk (a tablet with an idle timer). Both exceptions existed for the same

@@ -5,7 +5,7 @@ import { join, relative } from 'node:path'
 // EVERY <SelectItem> MUST BE ABLE TO NAME ITSELF.
 //
 // It spans the functions/web boundary for the same reason connect/commitSites.test.ts
-// does: that boundary is where corrections stop travelling.
+// does: that boundary is where corrections stop traveling.
 // Run with: pnpm --filter @linyup/functions test
 //
 // ── WHY THIS FILE EXISTS ────────────────────────────────────────────────────
@@ -15,7 +15,7 @@ import { join, relative } from 'node:path'
 //   const label = p.label ?? p.textValue ?? (typeof p.children === "string" ? p.children : undefined)
 //
 // An item whose children are anything ELSE — `{a.code} · {a.name}`, a span with a
-// colour dot, an icon — registers nothing, and the trigger then prints the raw
+// color dot, an icon — registers nothing, and the trigger then prints the raw
 // `value`: a Firestore document id, a level number, an account code. It looks
 // like a rendering glitch and is reported as one; it was found in the wild on the
 // event program's Day picker, and a sweep turned up EIGHTEEN of them across
@@ -29,7 +29,7 @@ import { join, relative } from 'node:path'
 // ── WHICH PROP ─────────────────────────────────────────────────────────────
 //   label      — title of a TWO-LINE item; `children` become a muted sublabel.
 //   textValue  — trigger text for a row that renders its own INLINE content
-//                (colour dot, icon, tree indent), leaving the layout alone.
+//                (color dot, icon, tree indent), leaving the layout alone.
 // Using `label` where `textValue` belongs is not caught here: it type-checks and
 // registers fine, it just pushes the decoration onto a second line. That one is
 // a review question, not an assertion.

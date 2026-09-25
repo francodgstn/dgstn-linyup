@@ -16,7 +16,7 @@
 //
 // ── IT IS OUTREACH, SO IT OBEYS OUTREACH'S RULES ─────────────────────────────
 // `partitionRecipients` (outreach/recipients.ts) decides who may be mailed, so
-// the studio's marketing opt-out is honoured here exactly as in a template send;
+// the studio's marketing opt-out is honored here exactly as in a template send;
 // the idempotency key collapses a double click or a retry; the send lands in the
 // contact's email history as `outreach_email_sent`, beside template sends.
 //

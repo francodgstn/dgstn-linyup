@@ -12,12 +12,12 @@ import { join } from 'node:path'
 //    and enumerate, arbitrary contacts of the team)."
 //
 // `joinCourseBlock` and `createCourseBlockCheckout` are both on PUBLIC routers
-// and both read `contactId` out of `request.data`. Anyone could enrol anyone on
+// and both read `contactId` out of `request.data`. Anyone could enroll anyone on
 // any free or plan-covered course of any studio, start a checkout as somebody
 // else, and map which contact ids exist by watching which came back
 // `not-found`. Neither had an auth check at all.
 //
-// Nothing behavioural catches this: every call the app makes passes the RIGHT
+// Nothing behavioral catches this: every call the app makes passes the RIGHT
 // contact id, so every screen works. It is only wrong for a caller nobody wrote
 // a test for, which is the caller that matters. So it is pinned against the
 // source, structurally.
@@ -114,7 +114,7 @@ describe('a public course rail never takes its caller from the request body', ()
 describe('a tenant check never comes after the write it guards', () => {
   it('enrolCourseBlockContact verifies the course BEFORE taking a place', () => {
     // It used to check `block.teamId` on the value `takeCourseBlockPlace`
-    // returned, which is one line too late: the enrolment was already committed
+    // returned, which is one line too late: the enrollment was already committed
     // and one of the other studio's places consumed, and the refusal rolled
     // nothing back. A foreign name and email simply sat on their roster.
     const body = bodyOf('courseBlocks/enrolment.ts', 'enrolCourseBlockContact')

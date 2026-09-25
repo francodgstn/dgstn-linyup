@@ -55,7 +55,7 @@ mailbox is provisioned, OVH just forwards.
 independent record types on the same zone:
 
 - **MX** → OVH — controls who accepts mail _for_ `linyup.com`.
-- **SPF / DKIM `TXT`** → Brevo — authorises Brevo to send _as_ `linyup.com`.
+- **SPF / DKIM `TXT`** → Brevo — authorizes Brevo to send _as_ `linyup.com`.
 
 Adding OVH MX records does **not** touch the Brevo TXT records, and vice-versa. Don't
 delete the Brevo DKIM / SPF entries when enabling OVH.
@@ -97,7 +97,7 @@ existing Brevo domain authentication — no new sending auth is needed for repli
 - **DKIM** — already configured in Brevo for `linyup.com`. Replies sent through the
   relay are DKIM-signed by Brevo → DMARC-aligned, just like app mail.
 - **SPF** — the `linyup.com` SPF `TXT` already includes Brevo (`include:spf.brevo.com`),
-  which authorises the relay.
+  which authorizes the relay.
 - **OVH** — only **receives**, so it needs no SPF/DKIM of its own.
 - **DMARC** — make sure a `_dmarc.linyup.com` `TXT` record exists. Start permissive
   (`v=DMARC1; p=none; rua=mailto:hello@linyup.com`) and tighten to `quarantine` /

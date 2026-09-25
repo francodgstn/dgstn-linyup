@@ -1,6 +1,6 @@
 // Statically imported so Metro bundles all four — the app has no network at
 // first paint and a member's language must not wait on one. Four short
-// catalogues are a rounding error next to the JS bundle.
+// catalogs are a rounding error next to the JS bundle.
 import en from '../../messages/en.json'
 import de from '../../messages/de.json'
 import fr from '../../messages/fr.json'

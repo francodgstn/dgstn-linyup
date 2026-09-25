@@ -172,10 +172,10 @@ function useOrgTeams(orgId: string | undefined, enabled: boolean) {
  * That is the wrong order for a door. Getting people IN is the urgent part;
  * their belt, weight or division is paperwork that can follow. So this dialog
  * writes a BASE check-in for everyone picked — `checkinData: {}` — and each is
- * finalised individually afterwards by tapping its row, which opens the same
+ * finalized individually afterwards by tapping its row, which opens the same
  * form it always did.
  *
- * ── AND FOR SOME EVENT TYPES THERE IS NOTHING TO FINALISE ────────────────────
+ * ── AND FOR SOME EVENT TYPES THERE IS NOTHING TO FINALIZE ────────────────────
  * `is_completed` is not ours to assert: the server derives it from the SAME
  * `isCheckinCompleted(eventType, checkinData)` this file imports. With empty
  * data that is `false` for `exam`, `camp` and the plugin types — which do
@@ -200,7 +200,7 @@ function AddCheckinDialog({
   onClose,
 }: {
   teamId: string
-  /** Decides whether a base check-in leaves anything to finalise — see below. */
+  /** Decides whether a base check-in leaves anything to finalize — see below. */
   eventType: EventType
   /** True when the event type's own authored fields give it a second step that
    *  `isCheckinCompleted` cannot see. */
@@ -338,7 +338,7 @@ function AddCheckinDialog({
               uses, and for an event type that collects nothing (competition,
               seminar, workshop) that returns true — those people are simply
               done, and there is no second step to send them to. Only exam, camp
-              and the plugin types leave anything to finalise. Printing "fill in
+              and the plugin types leave anything to finalize. Printing "fill in
               their details afterwards" on a seminar would describe a screen that
               does not exist.
 
@@ -484,7 +484,7 @@ export function CheckinPanel({
   /**
    * Admit everyone picked, as BASE check-ins — `checkinData: {}`, which
    * `addEventCheckin` resolves to `is_completed: false`. They appear in the
-   * pending list and are finalised one at a time from there.
+   * pending list and are finalized one at a time from there.
    *
    * `allSettled`, not `all`: one contact failing (a permission edge on an org
    * event, a dropped request) must not discard the twenty that succeeded, and

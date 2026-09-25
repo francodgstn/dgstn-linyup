@@ -22,12 +22,12 @@
  *      short strings ("OK", "Stripe", "E-Mail") legitimately match, so this one
  *      is advice, and pretending otherwise would make the whole check ignorable.
  *
- * TWO CATALOGUES, ONE SET OF RULES. `apps/mobile` keeps its own messages rather
+ * TWO CATALOGS, ONE SET OF RULES. `apps/mobile` keeps its own messages rather
  * than sharing the web files: almost none of its copy is shared, and a phone
  * has no reason to carry the structure of several thousand admin keys. What it
  * DOES share is this checker — the member app shipped English-only for months
- * precisely because nothing was watching it, and a second catalogue guarded by
- * discipline alone would repeat that. A catalogue with no messages directory is
+ * precisely because nothing was watching it, and a second catalog guarded by
+ * discipline alone would repeat that. A catalog with no messages directory is
  * skipped, so this stays correct if one is ever removed.
  */
 
@@ -44,7 +44,7 @@ const CATALOGUES = [
   { name: 'mobile', messages: join(ROOT, 'apps/mobile/messages'), src: join(ROOT, 'apps/mobile/src') },
 ].filter((c) => existsSync(c.messages))
 
-// One catalogue at a time, so a problem names the app it belongs to.
+// One catalog at a time, so a problem names the app it belongs to.
 const errors = []
 const suspect = []
 const summary = []

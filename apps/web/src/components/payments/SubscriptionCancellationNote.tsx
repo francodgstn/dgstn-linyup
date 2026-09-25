@@ -1,6 +1,6 @@
 'use client'
 
-// The cancellation RECORD — the line that says when a subscription was cancelled
+// The cancellation RECORD — the line that says when a subscription was canceled
 // and why, beneath whichever "cancels on {date}" line the surrounding surface
 // already shows.
 //
@@ -28,7 +28,7 @@ import { subscriptionCancellation, type SubscriptionLifecycleFields } from '@lin
 
 /**
  * Reasons that mean something went WRONG rather than somebody chose to leave.
- * These get the warning colour, on the argument that "cancelled by the member" is
+ * These get the warning color, on the argument that "canceled by the member" is
  * news and "the card was declined" is a task.
  */
 const ACTIONABLE_REASONS = new Set(['payment_failed', 'payment_disputed'])

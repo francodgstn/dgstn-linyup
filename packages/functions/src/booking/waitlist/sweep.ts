@@ -92,7 +92,7 @@ export async function sweepWaitlistOffers(): Promise<WaitlistSweepStats> {
       // deleted the hold first (`expirePendingBookings` runs at 02:00 and
       // reaches a lapsed PAID claim before this hourly pass ever sees the entry;
       // an admin deleting the booking by hand lands in the same place), the
-      // booking that replaced it was cancelled or no-showed, or it was replaced
+      // booking that replaced it was canceled or no-showed, or it was replaced
       // by an unsettled hold of their own (they abandoned the claim link, opened
       // an ordinary drop-in checkout and never paid — that hold occupies the
       // seat but puts nobody in the class). Saying nothing

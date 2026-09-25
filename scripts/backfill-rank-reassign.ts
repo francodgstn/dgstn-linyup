@@ -152,7 +152,7 @@ function remapFilter(f: Record<string, unknown>): Record<string, unknown> | null
 
 async function main() {
   console.log(`Belt reassignment — ${target.projectId}${dryRun ? ' (dry run)' : ''}`)
-  console.log(`  organisation ${ORG_ID}, systems ${decision.systems.join(', ')}`)
+  console.log(`  organization ${ORG_ID}, systems ${decision.systems.join(', ')}`)
   for (const [from, to] of Object.entries(decision.map)) console.log(`  ${from} → ${to}`)
   console.log(
     decided

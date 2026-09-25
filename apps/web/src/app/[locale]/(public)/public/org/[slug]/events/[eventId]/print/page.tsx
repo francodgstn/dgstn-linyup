@@ -9,7 +9,7 @@ import { ProgramPrintFrame } from '@/components/events/program/ProgramPrintFrame
 
 export const dynamic = 'force-dynamic'
 
-// The organisation's printable handout — the twin of the studio's
+// The organization's printable handout — the twin of the studio's
 // /public/{slug}/events/{eventId}/print, for an event read from the org's own
 // public page.
 export default function PublicOrgEventProgramPrintPage() {
@@ -19,7 +19,7 @@ export default function PublicOrgEventProgramPrintPage() {
   const { loading, event } = usePublicEvent(eventId)
 
   // The mirror is world-readable by id, so confirm the event really belongs to
-  // THIS organisation before printing it under the org's name.
+  // THIS organization before printing it under the org's name.
   const belongsHere = !!event && !!org.orgId && event.orgId === org.orgId
 
   if (org.loading || loading) {

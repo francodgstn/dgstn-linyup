@@ -43,7 +43,7 @@
 // A `contactId` in the request body is deliberately NOT a proof. Trusting one
 // would turn this into an oracle over a compliance fact ("has contact X signed
 // the release?") for any anonymous caller — the same shape the July 2026 audit
-// closed on `createDropInCheckout`. It is honoured only when it agrees with the
+// closed on `createDropInCheckout`. It is honored only when it agrees with the
 // session, so an over-eager client still works.
 
 import * as admin from 'firebase-admin'
@@ -139,7 +139,7 @@ export const resolveWaiverRequirement = onCall(async (request) => {
      * refuse over exactly those and send the member HERE, which was a loop with
      * no exit.
      *
-     * Honoured only for a caller holding a contact session for this team. The
+     * Honored only for a caller holding a contact session for this team. The
      * activity-scoped titles are already in the world-readable mirror, so this
      * is a narrowing of habit rather than a security boundary — but a portal
      * answer belongs to somebody who is signed in.
@@ -157,7 +157,7 @@ export const resolveWaiverRequirement = onCall(async (request) => {
   // Three shapes deliberately cost nothing here, and each one was a lockout the
   // last time it did: a signed-in member or the studio's own paired tablet (a
   // credential of ours, checked from claims with no read at all), a returning
-  // walk-in whom the guest predicate recognises, and a caller who supplied no
+  // walk-in whom the guest predicate recognizes, and a caller who supplied no
   // identity and is therefore reading nothing but the studio's published text.
   const credential = waiverCallerCredential(request, data.teamId)
   await chargeWaiverResolve({
@@ -225,6 +225,6 @@ export const resolveWaiverRequirement = onCall(async (request) => {
 
   // NOTHING IS CHARGED HERE. The counter was spent at the top or not at all —
   // a charge that depends on what the answer turned out to contain is a charge
-  // on being recognised, and every returning walk-in at a doorway is recognised.
+  // on being recognized, and every returning walk-in at a doorway is recognized.
   return { waivers }
 })

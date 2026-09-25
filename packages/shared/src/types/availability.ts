@@ -45,14 +45,14 @@ export interface AvailabilityWindow {
 /** A provider's published free time — the *when*, and only the when.
  *
  *  The *what* lives on the linked activities (`activityIds`): they own the name,
- *  duration, capacity, price and access rule. A materialised appointment session
+ *  duration, capacity, price and access rule. A materialized appointment session
  *  inherits `activityId`/`activityName`/`accessRule`/`max_participants` from the
  *  activity the client picked, which is what makes appointments listable on the
  *  website and gateable by subscription — exactly like classes.
  *
  *  NOTE: because one availability may offer several activities of differing
  *  lengths, a start time is *indeterminate* until the client picks an activity —
- *  which is why availability can never be pre-materialised into slots. */
+ *  which is why availability can never be pre-materialized into slots. */
 export interface Availability {
   teamId: string
   /** UID of the provider whose time this availability publishes. */

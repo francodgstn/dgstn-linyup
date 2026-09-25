@@ -54,7 +54,7 @@ describe('resolveTenantTheme — one studio look → the theme', () => {
     expect(resolveTenantTheme({ presetId: 'not-a-preset', accent: 'red' }, false)).toBeNull();
   });
 
-  it('an accent alone re-colours the primary roles and keeps Linyup’s surfaces', () => {
+  it('an accent alone re-colors the primary roles and keeps Linyup’s surfaces', () => {
     const t = resolveTenantTheme({ accent: '#DC2626' }, false)!;
     expect(t.isDark).toBe(false);
     expect(t.colors.primary).toBe('#DC2626');

@@ -8,19 +8,19 @@ import { ORGANIZATIONS_COLLECTION, ORG_MEMBERS_SUBCOLLECTION } from '@linyup/sha
 import type { OrgRole } from '@linyup/shared'
 
 /**
- * WHAT THIS PERSON IS TO **THIS** ORGANISATION — and the distinction it draws
+ * WHAT THIS PERSON IS TO **THIS** ORGANIZATION — and the distinction it draws
  * is the one the org scope is built on.
  *
  * There are two ways to be in org scope and they are not the same thing:
  *
  *   an ORG MEMBER   — a person with an `org_members` row, who runs the
  *                     federation. Returns their role.
- *   a MEMBER STUDIO — somebody whose STUDIO belongs to the organisation but who
+ *   a MEMBER STUDIO — somebody whose STUDIO belongs to the organization but who
  *                     has no row of their own. Returns null.
  *
  * The second is not an error state and not a lesser admin: it is most of the
- * people who will ever open an organisation, and it is why `null` here selects
- * a different navigation catalogue rather than a permission denial.
+ * people who will ever open an organization, and it is why `null` here selects
+ * a different navigation catalog rather than a permission denial.
  *
  * ONE READ, TWO CONSUMERS. `OrgProvider` needs this for the org's own pages and
  * the app shell needs it to pick the sidebar rows, and the shell sits OUTSIDE
@@ -35,7 +35,7 @@ import type { OrgRole } from '@linyup/shared'
  *
  * Reading it is always allowed: `org_members/{memberId}` admits
  * `memberId == request.auth.uid`, so asking about yourself never denies, in any
- * organisation, whether or not you belong to it.
+ * organization, whether or not you belong to it.
  */
 export function useOrgRole(orgId: string | null | undefined) {
   const { user } = useAuth()
@@ -56,9 +56,9 @@ export function useOrgRole(orgId: string | null | undefined) {
 
   return {
     role: query.data ?? null,
-    /** Runs the organisation. */
+    /** Runs the organization. */
     isOrgAdmin: query.data === 'org_admin',
-    /** Has a seat at the organisation at all — admin or viewer. */
+    /** Has a seat at the organization at all — admin or viewer. */
     isOrgMember: query.data != null,
     /**
      * UNRESOLVED IS NOT "NO". A caller that treats a pending read as "not a

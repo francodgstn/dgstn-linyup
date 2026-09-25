@@ -5,13 +5,13 @@
 // `latest_score` chip on a goal card, each row of an evaluation history, on
 // the admin's coaching tab AND in the member Space. The admin carried its own
 // `StarDisplay` + `StarInput` pair that differed from this only in where the
-// empty-star colour came from — the identical situation `GoalProgressBar` was
+// empty-star color came from — the identical situation `GoalProgressBar` was
 // in, resolved the same way:
 //
 //   no `emptyColor` → the app's muted token. Right on the neutral admin
 //                     surface and inside the Dialogs, which are app-token
 //                     everywhere (the Space's included).
-//   `emptyColor`    → the host surface's own muted colour, for a
+//   `emptyColor`    → the host surface's own muted color, for a
 //                     tenant-themed card whose dark theme can render the app
 //                     token invisible (the same split `QueryErrorState` makes).
 //
@@ -34,7 +34,7 @@ interface Props {
   onChange?: (value: number) => void
   size?: number
   readOnly?: boolean
-  /** Colour for an unfilled star — see the module header. */
+  /** Color for an unfilled star — see the module header. */
   emptyColor?: string
 }
 

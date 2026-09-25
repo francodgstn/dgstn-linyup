@@ -5,7 +5,7 @@
 // step of the setup: a few hundred rows in insurer German, and a studio with
 // twenty offerings scrolls the list twenty times. The unit half of a mapping
 // is derived from the offering's own data (`suggestTarif595Unit`, shared) and
-// needs no model. The position half is a method judgement — "Yoga Flow" is
+// needs no model. The position half is a method judgment — "Yoga Flow" is
 // body-and-mind, "Open Gym" is the training floor — that a model reads off
 // names and descriptions well and a studio confirms in a glance. So the model
 // proposes, the row says "suggested" with the reason, and the manager who
@@ -199,7 +199,7 @@ export const suggestTarif595Mappings = onCall({ timeoutSeconds: 120, memory: '51
   const nowIso = zurichDay(new Date()) ?? new Date().toISOString().slice(0, 10)
   // THE DAY THE PROPOSAL IS VALID FOR. Today by default; a later day when the
   // page asks for a REPLACEMENT of a position that expires — as of the day
-  // after its last valid day, so the catalogue is next year's edition and the
+  // after its last valid day, so the catalog is next year's edition and the
   // parser below refuses this year's codes. Clamped: never the past (a
   // mapping for a list that no longer applies), never further than the next
   // edition.

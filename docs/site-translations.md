@@ -290,7 +290,7 @@ cache bounds re-translation to what actually changed.
 A studio embedding a widget into its own website usually knows what language
 that page is in — auto-detection inside the iframe would fight the host page.
 So the embed snippet can pin a language: `WidgetTheme.locale` is `'auto'` (or
-absent — the pre-feature behaviour, follow the visitor's Accept-Language) or
+absent — the pre-feature behavior, follow the visitor's Accept-Language) or
 one of en/de/fr/it, baked into the snippet URL the builder generates.
 
 The pin travels differently per locale, and the asymmetry is forced:

@@ -8,7 +8,7 @@ import { usePublicOrgBySlug } from '@/components/events/program/usePublicOrg'
 
 export const dynamic = 'force-dynamic'
 
-// An organisation's own published events. The same events also appear on every
+// An organization's own published events. The same events also appear on every
 // member studio's public page (see usePublicEvents) — published once, shown in
 // both places, which is the whole point for a federation.
 export default function PublicOrgEventsIndexPage() {

@@ -15,7 +15,7 @@
  * 2026-08-31). Settings → Program templates now creates and edits directly.
  *
  * ── HOW IT REUSES THE EVENT EDITOR ──────────────────────────────────────────
- * It does not reimplement the program UI. A template is materialised onto a
+ * It does not reimplement the program UI. A template is materialized onto a
  * SCRATCH ANCHOR DATE, edited as an ordinary `EventProgramConfig` + item list in
  * local state, and turned back into a template on save — so `ProgramTimeline`,
  * `ProgramItemDialog` and `ProgramStructureDialog` are the same components the

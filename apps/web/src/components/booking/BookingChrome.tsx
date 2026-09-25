@@ -11,7 +11,7 @@ import { useRouter } from '@/i18n/navigation'
 // overlay on top of the studio's website. The flow logic is identical; only the
 // frame and the meaning of "leave the flow" differ.
 //
-// This context is that seam. Its DEFAULT value is exactly the page behaviour, so
+// This context is that seam. Its DEFAULT value is exactly the page behavior, so
 // the route variants need no provider at all and are unaffected.
 
 export type ChromeKind = 'page' | 'overlay'

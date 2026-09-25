@@ -78,7 +78,7 @@ export const AlertsCard: React.FC<AlertsCardProps> = ({ alerts }) => {
   // Accent color for the alert card (clean alerts)
   const isDark = theme.dark;
 
-  // The studio's own messages, in the studio's colour (the tenant accent) —
+  // The studio's own messages, in the studio's color (the tenant accent) —
   // a "messaging" tint rather than a warning one.
   const alertColor = theme.colors.primary;
   const accentBg = withAlpha(alertColor, isDark ? 0.12 : 0.06);

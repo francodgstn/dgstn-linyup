@@ -60,12 +60,12 @@ const MAX_REASON_LEN = 200
 /**
  * What a VOID takes back. `reversalPlanFor` owns the rules and is asked as for a
  * FULL reversal (a void has no amount — half a mistake is not a thing), then the
- * one refusal a void does not honour is translated into the actions it would
+ * one refusal a void does not honor is translated into the actions it would
  * have produced for an untouched pack.
  *
  * `reduce_to: 0` is a TARGET, not a delta, and the executor clamps it up to the
  * `credits_used` it reads inside its own transaction — which is exactly the
- * "delivered classes stand" behaviour, with no second code path and no second
+ * "delivered classes stand" behavior, with no second code path and no second
  * set of numbers to keep in step.
  */
 export function voidActionsFor(

@@ -4,7 +4,7 @@
 // and delayed via Cloud Tasks (Tier 2 — Phase 3).
 //
 // All three execution paths (daily scanner, event triggers, manual callable)
-// funnel through runRule() for consistent behaviour.
+// funnel through runRule() for consistent behavior.
 
 import { randomUUID } from 'node:crypto'
 import * as admin from 'firebase-admin'
@@ -70,9 +70,9 @@ export type AutomationTriggerType =
   // callable, seed) rather than for one, and no money handler had to be touched
   // to add them.
   //
-  /** A live subscription is set to end — the member cancelled, usually in
+  /** A live subscription is set to end — the member canceled, usually in
    *  Stripe's billing portal, and the studio has until the period end to talk to
-   *  them. Fires on the transition INTO cancelling, once per subscription. */
+   *  them. Fires on the transition INTO canceling, once per subscription. */
   | 'subscription_cancel_requested'
   /** An invoice failed and the membership is now past due. Fires on the
    *  transition INTO 'past_due', never while it stays there. */
@@ -382,7 +382,7 @@ export interface AutomationLogData {
 // ---------------------------------------------------------------------------
 
 /**
- * Normalises old-format rules (trigger_type field, template_id/alert_preset_id top-level)
+ * Normalizes old-format rules (trigger_type field, template_id/alert_preset_id top-level)
  * into the new schema with trigger.type, conditions[], and actions[].
  * Old rules without a trigger field are treated as schedule_daily.
  */
@@ -391,7 +391,7 @@ export function normalizeRule(ruleId: string, ruleData: Record<string, unknown>)
   let actions: AutomationAction[] = []
   let triggerType: AutomationTriggerType = 'schedule_daily'
 
-  // Normalise conditions
+  // Normalize conditions
   if (Array.isArray(ruleData.conditions)) {
     conditions = (ruleData.conditions as AutomationCondition[]).map((c) =>
       // legacy hmd-lineup alias → canonical bio_link_booking_no_show
@@ -409,13 +409,13 @@ export function normalizeRule(ruleId: string, ruleData: Record<string, unknown>)
     ]
   }
 
-  // Normalise trigger
+  // Normalize trigger
   if (ruleData.trigger && typeof ruleData.trigger === 'object') {
     const t = ruleData.trigger as { type?: string; delayMinutes?: number }
     triggerType = (t.type as AutomationTriggerType) || 'schedule_daily'
   }
 
-  // Normalise actions — prefer explicit actions array, otherwise build from legacy fields
+  // Normalize actions — prefer explicit actions array, otherwise build from legacy fields
   if (Array.isArray(ruleData.actions) && (ruleData.actions as unknown[]).length > 0) {
     actions = ruleData.actions as AutomationAction[]
   } else {
@@ -603,7 +603,7 @@ export function evaluateContactConditions(
       case 'subscription_expires_in': {
         // THE WIN-BACK WINDOW: the member's memberships all end, and the last of
         // them ends within the window — a one-off grant ("CHF 100, 2 months
-        // included") running out, or a Stripe subscription cancelling at period
+        // included") running out, or a Stripe subscription canceling at period
         // end. Read off the plan list's own ends (`heldMemberships`), so the
         // studio can reach a member BEFORE the access she holds runs out. A
         // member who also holds a plan with no end is not losing access, and
@@ -690,7 +690,7 @@ export interface ResolvedActions {
   /**
    * Which of the rule's PLUGIN actions may run — the plugin ids among them that
    * are installed and active for this team (its own install, or its
-   * organisation's).
+   * organization's).
    *
    * IT IS RESOLVED ONCE PER RULE, HERE, and not per contact. A rule sweeps
    * every contact in the team, so an install check inside that loop would be
@@ -1017,7 +1017,7 @@ async function executeActionsForContact(
         // Rank fields ('ranks.{systemId}') — validate the system id against the
         // team's EFFECTIVE ranking systems, never write an arbitrary key.
         //
-        // "Effective" means the organisation's when it has any, which is the
+        // "Effective" means the organization's when it has any, which is the
         // whole point of the fix: this read used to be `teamData.ranking_systems`
         // alone, and an org-managed tenant keeps its systems on the ORG, so the
         // list was empty and every rank automation was silently dropped below.
@@ -1754,7 +1754,7 @@ async function runContactRule(
  * For bio_link_booking_no_show rules, `contacts` is ignored — bookings are
  * queried internally based on the condition's delay window.
  *
- * @param rule      Normalised AutomationRule
+ * @param rule      Normalized AutomationRule
  * @param contacts  Contacts to evaluate (used for contact-based rules)
  * @param teamId    Team owning the rule
  * @param teamData  Team document data (for variable substitution, language)
@@ -1871,7 +1871,7 @@ export interface DelayedRulePayload {
   /**
    * Which shape of delayed run this is. ABSENT means 'session': tasks enqueued
    * before event delays existed carry no kind, and must keep the session
-   * behaviour they were enqueued with.
+   * behavior they were enqueued with.
    */
   kind?: 'session' | 'event'
   /**
@@ -2140,7 +2140,7 @@ export async function fireEventRules(
     //
     // `subscription_cancel_requested` belongs here because it CARRIES that delta.
     // It was emitting one nothing matched on, so a rule narrowed to one plan fired
-    // when any plan was cancelled — a control that silently does nothing, which is
+    // when any plan was canceled — a control that silently does nothing, which is
     // found by a studio rather than by a test. The builder's select must agree;
     // automation/subscriptionScope.test.ts reads both files and pins it.
     if (
@@ -2177,7 +2177,7 @@ export async function fireEventRules(
 
     // Tier 2 — a rule carrying a delay is deferred to Cloud Tasks instead of
     // running now. 0 (the overwhelmingly common case) falls straight through to
-    // the inline path below, byte-for-byte the behaviour it has always had.
+    // the inline path below, byte-for-byte the behavior it has always had.
     const delayMinutes = resolveEventDelayMinutes(rule, context)
     if (delayMinutes > 0) {
       const [enqueueErr] = await to(

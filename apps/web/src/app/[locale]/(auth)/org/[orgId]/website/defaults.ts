@@ -17,7 +17,7 @@ import { DEFAULT_ACCENT } from '@/components/ui/color-picker'
 // the three org-only aggregates (clubs / locations / coaches).
 //
 // NO pricing / activities / schedule / places: those are team-scoped commerce and
-// an organisation has nothing to put in them. That was always the rule, but four
+// an organization has nothing to put in them. That was always the rule, but four
 // presentational sections were missing anyway — they were added to the team
 // library after this file was written and nobody pulled them across, so a
 // federation could not put an FAQ on its own site (Franco, 2026-09-05).
@@ -61,7 +61,7 @@ export const ORG_SECTION_LIBRARY: {
 ]
 
 /**
- * A new section, with the organisation's own details already in it where that
+ * A new section, with the organization's own details already in it where that
  * saves retyping.
  *
  * Only the CONTACT section takes them, and only as a starting value: the
@@ -164,7 +164,7 @@ export function emptyOrgDraft(org: { id: string; name: string; slug?: string }):
 
 // ─── site starters ─────────────────────────────────────────────────────────────
 //
-// An organisation site is one page, so there is no "new page" moment to offer a
+// An organization site is one page, so there is no "new page" moment to offer a
 // shape at — the moment is an EMPTY site: the first visit, or after every
 // section was removed. The sections a starter makes are ordinary sections;
 // nothing remembers which starter produced them.

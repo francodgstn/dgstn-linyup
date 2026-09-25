@@ -2,7 +2,7 @@
  * MOVED to `/manage/offer`.
  *
  * The section that held these pages was renamed from Offer to Manage, and
- * "Offer" became the catalogue PAGE — so `/offer/*` now says the opposite of
+ * "Offer" became the catalog PAGE — so `/offer/*` now says the opposite of
  * what it means. The routes were renamed to match rather than left to drift,
  * because a URL that disagrees with the nav is a thing every future reader has
  * to hold in their head (Franco, 2026-09-02).

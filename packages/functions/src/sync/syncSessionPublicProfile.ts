@@ -18,7 +18,7 @@ export const syncSessionPublicProfile = onDocumentWritten('sessions/{sessionId}'
   // Remove public profile when:
   // - session deleted
   // - regular session with allowBooking disabled
-  // - appointment session explicitly cancelled, OR a paid-booking HOLD
+  // - appointment session explicitly canceled, OR a paid-booking HOLD
   //   ('pending_payment') — holds are never published, so an abandoned/awaiting
   //   checkout never leaks onto public feeds. Once the webhook confirms it,
   //   status flips to 'full' and this write republishes it normally.

@@ -4,7 +4,7 @@
  * Each of the three is a property of the TEXT — which guard sits in front of a
  * callable, which callable the client actually calls, which field a sweep reads
  * — and two of them cross the functions/web boundary, which is where a
- * correction stops travelling. Same idiom, and for the same reason, as
+ * correction stops traveling. Same idiom, and for the same reason, as
  * `../saas-billing/billingRails.test.ts` and `../connect/commitSites.test.ts`.
  */
 import assert from 'node:assert/strict'
@@ -104,7 +104,7 @@ ${read('orgs/memberInvitations.ts')}`
     }
   })
 
-  it('an organisation can never be left with no admin', () => {
+  it('an organization can never be left with no admin', () => {
     // Both callables that can TAKE an admin away consult the guard, and the
     // guard runs inside the transaction that performs the write — otherwise two
     // admins removing each other concurrently both pass.
@@ -245,15 +245,15 @@ describe('priced doors follow the ability to be paid (UX-33)', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// UX-35 — org_id ⇒ the organisation plan
+// UX-35 — org_id ⇒ the organization plan
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('an org-affiliated team does not own its own billing (UX-35)', () => {
-  it('the trial sweep never downgrades a team an organisation bills', () => {
+  it('the trial sweep never downgrades a team an organization bills', () => {
     const billing = read('saas-billing/index.ts')
     const phase = billing
       .split('Phase 1 — lapsed trials')[1]
-      .split('Phase 2 — lapsed ORGANISATION')[0]
+      .split('Phase 2 — lapsed ORGANIZATION')[0]
     assert.ok(
       /if \(doc\.data\(\)\.org_id\)/.test(phase),
       'handleTrialLifecycle must skip org-affiliated teams — the org subscription governs them'
@@ -263,7 +263,7 @@ describe('an org-affiliated team does not own its own billing (UX-35)', () => {
   it('a studio that still pays for itself is REFUSED, not enrolled and charged twice', () => {
     // Accepting puts the studio on the org plan and does not touch its own
     // Stripe subscription, so it went on invoicing while the federation paid
-    // too. Cancelling that leftover — the correct move — then fired
+    // too. Canceling that leftover — the correct move — then fired
     // `subscription.cancelled` into `downgradeTeamToFree` on a paid-up member.
     // Refusing at the door is the chosen answer; see the callable's comment.
     const orgs = read('orgs/index.ts')
@@ -331,11 +331,11 @@ describe('an org-affiliated team does not own its own billing (UX-35)', () => {
     const billing = read('saas-billing/index.ts')
     assert.ok(
       billing.includes('const teamBilledByOrg = '),
-      'the webhook must know whether the team it is about is billed by an organisation'
+      'the webhook must know whether the team it is about is billed by an organization'
     )
     assert.ok(
       /if \(teamBilledByOrg\) \{/.test(billing),
-      'the guard comes BEFORE the cancelled branch, so the teardown is unreachable for such a team'
+      'the guard comes BEFORE the canceled branch, so the teardown is unreachable for such a team'
     )
     assert.ok(
       /entityType === 'team' &&\s*!teamBilledByOrg/.test(billing),
@@ -343,7 +343,7 @@ describe('an org-affiliated team does not own its own billing (UX-35)', () => {
     )
   })
 
-  it('joining an organisation clears the team’s own trial deadline', () => {
+  it('joining an organization clears the team’s own trial deadline', () => {
     const orgs = read('orgs/index.ts')
     const accept = orgs.split('acceptOrgInvitation = onCall(')[1].split('\n})')[0]
     assert.ok(
@@ -361,15 +361,15 @@ describe('an org-affiliated team does not own its own billing (UX-35)', () => {
 // UX-9 — an org trial must END
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('an organisation trial ends (UX-9)', () => {
+describe('an organization trial ends (UX-9)', () => {
   const billing = read('saas-billing/index.ts')
   const orgs = read('orgs/index.ts')
   const lifecycle = read('orgs/lifecycle.ts')
 
   /** The org phase of the daily sweep, sliced out of handleTrialLifecycle. */
-  const orgPhase = billing.split('Phase 2 — lapsed ORGANISATION')[1].split('Transitional sweep')[0]
+  const orgPhase = billing.split('Phase 2 — lapsed ORGANIZATION')[1].split('Transitional sweep')[0]
   /** The team phase — everything before the org phase begins. */
-  const teamPhase = billing.split('Phase 2 — lapsed ORGANISATION')[0]
+  const teamPhase = billing.split('Phase 2 — lapsed ORGANIZATION')[0]
 
   it('the daily sweep actually reads the organizations collection', () => {
     assert.ok(
@@ -432,7 +432,7 @@ describe('an organisation trial ends (UX-9)', () => {
     )
   })
 
-  it('a lapsed organisation cannot re-grant the tier by re-inviting its studios', () => {
+  it('a lapsed organization cannot re-grant the tier by re-inviting its studios', () => {
     const accept = orgs.split('acceptOrgInvitation = onCall(')[1].split('\n})')[0]
     assert.ok(
       /orgPlanStatus !== 'trial' && orgPlanStatus !== 'active'/.test(accept),
@@ -472,7 +472,7 @@ describe('an organisation trial ends (UX-9)', () => {
 // UX-10 — a lapsed org stops mounting what it no longer pays for
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('a lapsed organisation is torn down like a team (UX-10)', () => {
+describe('a lapsed organization is torn down like a team (UX-10)', () => {
   const billing = read('saas-billing/index.ts')
   const lifecycle = read('orgs/lifecycle.ts')
 
@@ -534,7 +534,7 @@ describe('a lapsed organisation is torn down like a team (UX-10)', () => {
     assert.ok(
       publish.includes('await assertOrgSubscriptionLive(orgId)'),
       'the lapse unpublishes the org site but KEEPS the draft, so publishing must ask whether the ' +
-        'organisation still pays for that surface'
+        'organization still pays for that surface'
     )
     assert.ok(
       !unpublish.includes('assertOrgSubscriptionLive'),
@@ -546,7 +546,7 @@ describe('a lapsed organisation is torn down like a team (UX-10)', () => {
     assert.ok(orgs.includes('export async function assertOrgSubscriptionLive('))
   })
 
-  it('a cancelled org subscription routes into the same wind-down', () => {
+  it('a canceled org subscription routes into the same wind-down', () => {
     assert.ok(billing.includes("lapseOrganization(entityId, { reason: 'subscription_cancelled' })"))
   })
 
@@ -559,7 +559,7 @@ describe('a lapsed organisation is torn down like a team (UX-10)', () => {
     // to be `'\n    } else {'`, which made this test a hostage to how deeply the
     // enclosing handler happened to be nested — wrapping handleStripeWebhook in
     // withErrorReporting shifted the body two spaces and the split silently ran
-    // past the org branch, failing an assertion about behaviour nobody had
+    // past the org branch, failing an assertion about behavior nobody had
     // touched. The invariant here is "past_due winds nothing down", not "this
     // file is indented four spaces".
     const branch = billing
@@ -568,7 +568,7 @@ describe('a lapsed organisation is torn down like a team (UX-10)', () => {
     const pastDue = branch.split("update.status === 'past_due'")[1]
     assert.ok(
       !pastDue.includes('lapseOrganization('),
-      'past_due must not wind an organisation down'
+      'past_due must not wind an organization down'
     )
     assert.ok(
       pastDue.includes('plan_status: update.status'),
@@ -591,7 +591,7 @@ describe('a lapsed organisation is torn down like a team (UX-10)', () => {
 // which the downgrade itself triggers, by deactivating the install — unless that
 // trigger reads the same instruction. Only the source can settle it.
 
-describe('a lapsed organisation leaves bought courses watchable (UX-16 follow-up)', () => {
+describe('a lapsed organization leaves bought courses watchable (UX-16 follow-up)', () => {
   const downgrade = read('saas-billing/downgrade.ts')
   const lifecycle = read('orgs/lifecycle.ts')
   const trigger = read('sync/onInstalledPluginStatusChange.ts')
@@ -649,7 +649,7 @@ describe('a lapsed organisation leaves bought courses watchable (UX-16 follow-up
     assert.ok(
       !/courseMirrors\?:/.test(sig) && !/courseMirrors[^,]*=/.test(sig),
       'an optional or defaulted disposition means a future caller silently inherits one of two ' +
-        'opposite behaviours — make it choose'
+        'opposite behaviors — make it choose'
     )
   })
 
@@ -684,7 +684,7 @@ describe('a lapsed organisation leaves bought courses watchable (UX-16 follow-up
   })
 
   it('the marker cannot go stale: ONE writer of an inactive team install', () => {
-    // The marker is only ever honoured on an active → inactive transition, and
+    // The marker is only ever honored on an active → inactive transition, and
     // the write that performs that transition is the write that states it. That
     // holds only while `downgradeTeamToFree` is the sole producer of an inactive
     // install: every OTHER end-of-install path deletes the document, and a

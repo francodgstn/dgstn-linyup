@@ -1,13 +1,13 @@
 'use client'
 
-// One colour picker for the whole admin. Replaces the bare `<input type="color">`
+// One color picker for the whole admin. Replaces the bare `<input type="color">`
 // that was copy-pasted across the activities, event-type, bio-link, website,
 // ranking and embed surfaces — three of which had already grown their own
 // hand-rolled swatch grid off the same palette.
 //
-// Swatches are the primary affordance on purpose: these colours land on calendar
+// Swatches are the primary affordance on purpose: these colors land on calendar
 // blocks and public cards, so a curated palette is what keeps them legible in
-// both light and dark mode. Free hex picking stays available for brand colours,
+// both light and dark mode. Free hex picking stays available for brand colors,
 // where the studio genuinely has a specific value in mind.
 
 import { useEffect, useState } from 'react'
@@ -17,7 +17,7 @@ import { Input } from './input'
 import { cn } from '@/lib/utils'
 import { COLOR_PRESETS, DEFAULT_ACCENT, HEX_RE, normalizeHex } from '@/lib/colors'
 
-// The colour constants live in `@/lib/colors` (dependency-free) so that public
+// The color constants live in `@/lib/colors` (dependency-free) so that public
 // routes needing only a hex don't pull react-colorful in via this module.
 // Re-exported here for convenience of callers that use both.
 export { COLOR_PRESETS, DEFAULT_ACCENT, normalizeHex }

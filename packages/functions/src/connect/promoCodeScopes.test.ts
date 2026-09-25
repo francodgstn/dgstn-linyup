@@ -8,7 +8,7 @@ import { join } from 'node:path'
 // noticing:
 //
 //   `PromoScopeKind`  the type          — what a scope CAN be
-//   `PROMO_TARGETS`   the resolver      — what the pricing side will honour
+//   `PROMO_TARGETS`   the resolver      — what the pricing side will honor
 //   `SCOPES`          the promo editor  — what a studio may AIM A CODE AT
 //
 // The dangerous direction is the editor running ahead of the rail. A studio
@@ -62,7 +62,7 @@ function editorScopes(): string[] {
   return [...m![1].matchAll(/'([a-z_]+)'/g)].map((x) => x[1])
 }
 
-describe('the promo editor never offers a scope its rail cannot honour', () => {
+describe('the promo editor never offers a scope its rail cannot honor', () => {
   it('every offered scope has a callable that accepts a code', () => {
     const missing = editorScopes().filter((scope) => {
       const rail = RAIL_FOR_SCOPE[scope]
@@ -88,7 +88,7 @@ describe('the promo editor never offers a scope its rail cannot honour', () => {
   })
 
   it('and the resolver is deliberately AHEAD of the editor, not behind it', () => {
-    // Ahead is safe: the pricing side honouring a scope nobody can aim at costs
+    // Ahead is safe: the pricing side honoring a scope nobody can aim at costs
     // nothing. Behind would mean a code the editor sold and the resolver
     // ignored, which is the same silent failure from the other end.
     const targets = promoTargets()

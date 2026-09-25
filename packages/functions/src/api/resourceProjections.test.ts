@@ -161,7 +161,7 @@ describe('projectBooking and projectPerson', () => {
     assert.strictEqual(out.is_trial, true)
   })
 
-  it('has no person for someone deleted or anonymised', () => {
+  it('has no person for someone deleted or anonymized', () => {
     assert.strictEqual(projectPerson(contact({ anonymized_at: ts(NOW) as never }), true), null)
     assert.strictEqual(projectPerson(contact({ deleted_at: ts(NOW) as never }), true), null)
     assert.strictEqual(projectPerson(null, true), null)
@@ -211,7 +211,7 @@ describe('projectSubscription', () => {
     assert.strictEqual(projectSubscription(sub(), { person: null, amounts: false, pii: true }).cancellation?.comment, 'Moving to Bern')
   })
 
-  it('reports a reactivated subscription as not cancelling, whatever stale record it carries', () => {
+  it('reports a reactivated subscription as not canceling, whatever stale record it carries', () => {
     const out = projectSubscription(sub({ cancel_at_period_end: false, cancel_at: null }), { person: null, amounts: false, pii: false })
     assert.strictEqual(out.cancelling, false)
     assert.strictEqual(out.cancellation, null)
@@ -219,7 +219,7 @@ describe('projectSubscription', () => {
 })
 
 describe('projectEvent', () => {
-  it('lets no excluded value out and skips deleted and organisation events', () => {
+  it('lets no excluded value out and skips deleted and organization events', () => {
     const event = {
       ...sentinels(EVENT_FIELD_CATALOG, { program: (s) => ({ days: [{ label: s }] }) }, ['deleted_at', 'scope']),
       id: 'e-1',

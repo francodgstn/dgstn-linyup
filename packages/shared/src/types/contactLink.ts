@@ -13,7 +13,7 @@
  * ── IT IS A GRANT, NOT A LOGIN ──────────────────────────────────────────────
  * This is deliberately NOT the `auth_tokens` mechanism deleted in 2026-07 — a
  * general "prove you are this contact" token whose blast radius was everything
- * a contact can do. A link authorises exactly one thing: writing a named set of
+ * a contact can do. A link authorizes exactly one thing: writing a named set of
  * fields onto one contact document. It mints no session, reads no bookings, no
  * payment history and no notes, and it cannot be exchanged for either.
  *

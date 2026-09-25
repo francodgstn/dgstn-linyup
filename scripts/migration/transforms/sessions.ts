@@ -61,7 +61,7 @@ export function transformSession(
   // calendar is the exception a studio sets on purpose (2026-09-11). A past
   // session stays closed — the public queries bound on `start`, so nothing
   // past is bookable anyway, and closing it keeps the mirror honest — and so
-  // does a cancelled one.
+  // does a canceled one.
   const startMs = toMillis(src.start)
   const cancelled = src.status === 'cancelled' || src.cancelled === true
   out.allowBooking = !cancelled && startMs != null && startMs >= Date.now()

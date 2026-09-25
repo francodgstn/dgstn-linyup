@@ -325,7 +325,7 @@ describe('extractTemplate', () => {
     assert.equal(tpl.items.length, 0)
   })
 
-  it('round-trips: extract then materialise preserves shape and times', () => {
+  it('round-trips: extract then materialize preserves shape and times', () => {
     let n = 0
     const items = [
       { dayId: 'd1', trackId: 'kids', startTime: '10:00', endTime: '11:00', title: 'Drill', order: 0 },
@@ -368,7 +368,7 @@ describe('STARTER_PROGRAM_TEMPLATES', () => {
       const trackIds = new Set(s.tracks.map((t) => t.id))
       const declaredDays = new Set(s.days.map((d) => d.dayIndex))
       const maxItemDay = s.items.reduce((m, i) => Math.max(m, i.dayIndex), 0)
-      // Track ids must be unique so materialise's remap is unambiguous.
+      // Track ids must be unique so materialize's remap is unambiguous.
       assert.equal(trackIds.size, s.tracks.length, `${s.id} has duplicate track ids`)
       for (const item of s.items) {
         assert.notEqual(parseHHMM(item.startTime), null, `${s.id}: bad startTime ${item.startTime}`)
@@ -385,7 +385,7 @@ describe('STARTER_PROGRAM_TEMPLATES', () => {
     }
   })
 
-  it('materialises each starter cleanly onto a real event', () => {
+  it('materializes each starter cleanly onto a real event', () => {
     let n = 0
     for (const s of STARTER_PROGRAM_TEMPLATES) {
       const { config, items } = materialiseTemplate(s, '2026-09-01', () => `s${++n}`)

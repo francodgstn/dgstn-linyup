@@ -34,10 +34,10 @@ export interface UseInstalledPluginsResult {
 
 /**
  * Real-time subscription to a team's installed plugins, merged with any plugins
- * installed at the org level (when the team belongs to an organisation).
+ * installed at the org level (when the team belongs to an organization).
  *
  * AN ORG INSTALL DELIBERATELY CONFERS THE FEATURE, and there is no second
- * plan check here on purpose (UX-35). The organisation is the payer: joining one
+ * plan check here on purpose (UX-35). The organization is the payer: joining one
  * sets `teams/{id}.plan = 'organization'` in the same write that sets `org_id`
  * (acceptOrgInvitation), and `pluginAccessForPlan` includes every plugin at that
  * tier — so the receiving team's own plan already says yes, and re-asking would

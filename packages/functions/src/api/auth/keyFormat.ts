@@ -1,4 +1,4 @@
-// ─── API key secrets — minting, recognising, hashing ─────────────────────────
+// ─── API key secrets — minting, recognizing, hashing ─────────────────────────
 //
 // docs/public-api.md → "API keys". A secret looks like
 //

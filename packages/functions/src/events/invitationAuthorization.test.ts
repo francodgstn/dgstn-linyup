@@ -68,7 +68,7 @@ describe('decideInvitationAuthorization', () => {
       assert.equal(!d.ok && d.code, 'invalid-argument')
     })
 
-    it('refuses a studio that is not linked to the event’s organisation', () => {
+    it('refuses a studio that is not linked to the event’s organization', () => {
       const d = decideInvitationAuthorization(orgEvent({ orgTeamLink: { exists: false } }))
       assert.equal(!d.ok && d.code, 'permission-denied')
     })

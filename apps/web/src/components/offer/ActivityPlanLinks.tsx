@@ -3,7 +3,7 @@
 // ─── THE ONE EDGE EDITOR ─────────────────────────────────────────────────────
 //
 // One component, mounted in BOTH directions. `direction` decides only what each
-// ROW is labelled by — a plan name, or an activity name. The controls, the
+// ROW is labeled by — a plan name, or an activity name. The controls, the
 // validation and the write are identical, which is what makes "same edge, from
 // either side" a property of the code rather than a claim about it. The write
 // itself is `activityPlanEdgeUpdate` in @linyup/shared, pinned by
@@ -82,7 +82,7 @@ const DEFAULT_ACCENT = '#6366f1'
 const GRID_COLS = 'grid min-w-[36rem] grid-cols-[minmax(9rem,1fr)_repeat(4,5.75rem)]'
 
 /** Effects a rate may carry, per offering — `offeringRateEffects` derives them
- *  from the sets the RESOLVER honours, so this editor can no longer offer an
+ *  from the sets the RESOLVER honors, so this editor can no longer offer an
  *  effect that would be ignored (it used to offer `included` on a class, where
  *  coverage is the access facet's job and the benefit is a price rule). */
 type RateEffect = OfferableRateEffect
@@ -104,7 +104,7 @@ type RateEffect = OfferableRateEffect
 // `included` rate effect instead. The studio never has to know which.
 type RowChoice = 'none' | RateEffect
 
-/** The options this offering can honour, in a fixed order. */
+/** The options this offering can honor, in a fixed order. */
 function rowChoicesFor(t: PlanLinkTarget): RowChoice[] {
   const facets = offeringFacets(t)
   if (!facets.access && !facets.rate) return []
@@ -120,7 +120,7 @@ function rowChoicesFor(t: PlanLinkTarget): RowChoice[] {
  *
  * THE ONE CASE THERE IS: a course that is free to everyone or open to any
  * signed-in contact. There is nothing for a plan to open or discount, so all
- * four columns are dashes — and a studio meets this in the CATALOGUE, which
+ * four columns are dashes — and a studio meets this in the CATALOG, which
  * mounts the matcher beside every course rather than only the plan-bearing
  * ones.
  *
@@ -182,7 +182,7 @@ function rateDraftOf(t: PlanLinkTarget): RateDraft {
   const c = offeringRateChoiceOf(t)
   const offerable = offeringRateEffects(t)
   return {
-    // A stored effect this offering cannot honour falls back to the first one it
+    // A stored effect this offering cannot honor falls back to the first one it
     // can. Nothing is rewritten by reading — a row is only saved once the studio
     // touches it — so this surfaces an inert rule rather than hiding it.
     effect: offerable.includes(c.effect as RateEffect)
@@ -401,7 +401,7 @@ export function ActivityPlanLinks({
 
   const setDraft = (key: string, next: RowDraft) => setDrafts((d) => ({ ...d, [key]: next }))
 
-  /** Set every row that can honour this choice to it, in one draft update. */
+  /** Set every row that can honor this choice to it, in one draft update. */
   const setColumn = (choice: RowChoice) => {
     if (!canEdit) return
     setDrafts((prev) => {
@@ -579,8 +579,8 @@ export function ActivityPlanLinks({
    *  of column headings. */
   const renderRow = ({ key, off, plan: p }: (typeof rows)[number]) => {
           const d = draftFor(key, off, p.id)
-          // Which controls this offering can actually honour. An appointment has
-          // no gate; a course honours one facet or the other depending on its
+          // Which controls this offering can actually honor. An appointment has
+          // no gate; a course honors one facet or the other depending on its
           // tier, and neither on a free or sign-in-only one.
           const facets = offeringFacets(off.target)
           const label = direction === 'from-offering' ? p.name : off.name
@@ -678,7 +678,7 @@ export function ActivityPlanLinks({
               </div>
 
               {/* One cell per column, ALWAYS four, so the grid lines up across
-                  rows of different kinds. A column this offering cannot honour
+                  rows of different kinds. A column this offering cannot honor
                   is a dash, not a disabled control: an appointment has no gate
                   (the price is the gate) and a subscription-tier course has no
                   price to discount — "not applicable here", which is a different
@@ -752,7 +752,7 @@ export function ActivityPlanLinks({
                         //
                         // Muted, not an alarm palette: "not included" is an
                         // ordinary, correct answer for most pairings, not a
-                        // fault to fix. And colour is never the only signal —
+                        // fault to fix. And color is never the only signal —
                         // the ring, the row tint and the sentence underneath all
                         // say the same thing, which is what keeps the table
                         // readable for anyone who cannot separate these hues.
@@ -1008,7 +1008,7 @@ export function ActivityPlanLinks({
             included in this plan" is a column, and setting it row by row is work
             the shape of the screen already suggests should be one click.
 
-            It only touches rows that can HONOUR the choice — an appointment has
+            It only touches rows that can HONOR the choice — an appointment has
             no gate to include, and skipping it silently is right: the
             alternative is refusing the whole gesture over a row the studio was
             not thinking about. Like every other edit here it lands as an unsaved
@@ -1210,7 +1210,7 @@ export function ActivityPlanLinks({
  * a class and one that merely discounts it.
  *
  * Muted, not an alarm palette: "not included" is an ordinary, correct answer for
- * most pairings, not a fault to fix. And colour is never the only signal — the
+ * most pairings, not a fault to fix. And color is never the only signal — the
  * ring, the row tint and the sentence underneath all say the same thing, which
  * is what keeps this readable for anyone who cannot separate these hues.
  *

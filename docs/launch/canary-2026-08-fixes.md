@@ -54,7 +54,7 @@ short it also lives beside the code; this file is where it is stated once, whole
    days → `purgeTeam`. Same shape as the contact self-deletion already in the
    tree.
 2. **Subscription divergence** — do BOTH halves: the destructive path defaults
-   to cancelling Stripe billing, AND every disagreement is surfaced.
+   to canceling Stripe billing, AND every disagreement is surfaced.
 3. **Email verification** — soft gate (banner + outbound/public surfaces held)
    and a 7-day sweep that deletes the Auth user + team **only if the team is
    untouched** (no contacts, sessions or payments).
@@ -170,7 +170,7 @@ rather than a corner and cannot collide with a page's FAB:
   existed) because it is a decision about the studio. Two controls, because one
   that did both would make the reversible answer look final.
 - **It defaults to minimized after a reload** — a panel that reopens itself on
-  every navigation is what this pattern is usually criticised for — and the pill
+  every navigation is what this pattern is usually criticized for — and the pill
   still carries the progress, so nothing is hidden, only folded.
 - **It removes itself on the last tick.** No congratulation state to close.
 - **One list, raised from three places.** The dashboard queue row and How-to's
@@ -200,7 +200,7 @@ contact-side equivalent already exists (`contacts/selfDeletion.ts`,
    the window passes, then disconnects the Connect account and deletes the
    owner's Auth user if it holds no other team.
 4. Settings → Team → Danger zone, stating plainly what is erased, what is
-   cancelled immediately, and what is kept (Stripe's own records of past
+   canceled immediately, and what is kept (Stripe's own records of past
    charges, which we cannot and must not delete).
 
 Do this AFTER C1 (Connect disconnect) — the teardown reuses it.
@@ -341,9 +341,9 @@ readable for historical payments, not delete it.
   way back.
 
 **Fix (both halves, per the decision):**
-1. **Destructive path defaults to cancelling.** `handleClear` and the reassign
+1. **Destructive path defaults to canceling.** `handleClear` and the reassign
    dialog both cancel live Stripe subscriptions by default; the radio flips to
-   "cancel billing" checked, and clearing shows what will be cancelled before it
+   "cancel billing" checked, and clearing shows what will be canceled before it
    happens.
 2. **A per-subscription "Cancel billing" action** on every row of
    `MemberSubscriptionsSection`, available in every state including `paused`,
@@ -360,7 +360,7 @@ readable for historical payments, not delete it.
 **Verified, and the answer to Franco's question is: the label is wrong, not the
 routing.** Subscription renewals DO write `member_payments` rows —
 `connect/webhook.ts:1195` stamps `kind: 'subscription'` on the `invoice.paid`
-path — and the tab those rows land in is labelled **"One-off payments"**
+path — and the tab those rows land in is labeled **"One-off payments"**
 (`messages/en.json:3723`). The money is in the right ledger; the tab name claims
 it is something it is not.
 
@@ -395,7 +395,7 @@ on every payments page view for a rare event; not worth it.)
 **Verified, one line.** `space/payments/PaymentsHome.tsx:111`:
 `const failed = p.status !== 'succeeded'`. A refunded payment carries status
 `refunded` / `partially_refunded`, so it takes the failed branch — struck
-through, labelled failed — and the `refunded` branch two lines below is
+through, labeled failed — and the `refunded` branch two lines below is
 unreachable for a full refund. The member is told a payment they were refunded
 had failed.
 
@@ -477,12 +477,12 @@ surface: `materializeOccurrences` deliberately re-throws a failing dedupe query
 - `superRefine` (`offer/activities/page.tsx:239`) demands
   `Number(dropInPrice) >= 0.5`, and `Number('10,00')` is `NaN`. A comma decimal
   separator — the default on a Swiss/German/French keyboard — silently fails the
-  check. Normalise the separator before parsing (`RefundPaymentDialog` already
+  check. Normalize the separator before parsing (`RefundPaymentDialog` already
   does exactly this: `Number(text.replace(',', '.'))`).
 - The refusal it prints, *"Enter a drop-in price of at least 0.50"*, and
   *"Pick at least one session length"* (`:243`) are **hardcoded English string
   literals**, not message keys — so they render untranslated in de/fr/it. The
-  two neighbouring refusals in the same block correctly use `t(…)`.
+  two neighboring refusals in the same block correctly use `t(…)`.
 
 **Also worth checking in the prod console while here** (unverified, prod-only by
 nature — see the emulator/index gotcha): the dedupe query filters `seriesId ==`
@@ -531,9 +531,9 @@ produces the bar. Prime suspects in `SubscriptionTypesManager.tsx`: the limit ro
 the offending child (`min-w-0` / wrap), never by clipping the body.
 
 ### E2 · Subscription form: activities inline, one writer *(item 10)* — M
-Replace the dashed "open the catalogue" block
+Replace the dashed "open the catalog" block
 (`SubscriptionTypesManager.tsx:790-808`) with the picker itself, reading and
-writing through `activityPlanEdgeUpdate` — the same writer the catalogue uses, so
+writing through `activityPlanEdgeUpdate` — the same writer the catalog uses, so
 there is still exactly one author of that edge. While in the file: delete the
 stale comment at `:388-391` that describes activity-linking code no longer there.
 
@@ -556,7 +556,7 @@ Rename the plans entry to "Subscription plans", and give the roster a home
 ### E5 · A visible shortcut beside the revenue figure *(item 15)* — XS
 The whole revenue cell IS a link to `/payments`
 (`dashboard-preview/FiguresBlock.tsx:182`) — it just does not look like one; the
-only affordance is a hover colour change. Add a persistent arrow next to the
+only affordance is a hover color change. Add a persistent arrow next to the
 caption (all figures, for consistency).
 
 ### E6 · Dividers between automation conditions *(item 22)* — XS

@@ -42,7 +42,7 @@ import { holdWriteCountDelta, replacedBookingWasCounted } from './index'
 //   (rebooked_from)              point of creation — its two origins are
 //                                indistinguishable afterwards.
 //
-//   cancelled / no_show /   NO   Every one of those transitions handed the count
+//   canceled / no_show /   NO   Every one of those transitions handed the count
 //   rebooked-away                back (cancelBooking, markNoShowBookings, the
 //                                admin bookings page, rebookSession).
 //
@@ -69,7 +69,7 @@ import { holdWriteCountDelta, replacedBookingWasCounted } from './index'
 //   settled free claim             |      yes     |   true     |      no
 //   ordinary pending booking       |      yes     |   true     |      no
 //   rebooked-in booking            |      yes     |   true     |      no
-//   cancelled / no_show / rebooked |  UNREACHABLE — 'already-exists'
+//   canceled / no_show / rebooked |  UNREACHABLE — 'already-exists'
 //   confirmed                      |  UNREACHABLE — 'already-exists'
 //
 // ─────────────────────────────────────────────────────────────────────────────
@@ -92,7 +92,7 @@ import { holdWriteCountDelta, replacedBookingWasCounted } from './index'
 //   settled free claim             |      yes     |      -1      |       0
 //   ordinary pending booking       |      yes     |      -1      |       0
 //   rebooked-in booking            |      yes     |      -1      |       0
-//   cancelled                      |      no      |       0      |      +1
+//   canceled                      |      no      |       0      |      +1
 //   no_show                        |      no      |       0      |      +1
 //   rebooked (away)                |      no      |       0      |      +1
 //   confirmed                      |  UNREACHABLE (guard) — moves nothing

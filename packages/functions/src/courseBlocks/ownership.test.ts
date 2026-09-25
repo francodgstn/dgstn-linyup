@@ -28,7 +28,7 @@ import { Timestamp } from 'firebase-admin/firestore'
 
 const SRC = join(__dirname, '..')
 
-/** Line endings normalised, the tree is LF on CI and CRLF on Windows. */
+/** Line endings normalized, the tree is LF on CI and CRLF on Windows. */
 const read = (rel: string) => readFileSync(join(SRC, rel), 'utf8').replace(/\r\n/g, '\n')
 
 const occurrence = {

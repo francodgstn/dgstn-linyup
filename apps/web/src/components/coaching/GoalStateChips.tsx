@@ -9,7 +9,7 @@
 // The WORDS come from the caller: the two surfaces translate from different
 // namespaces (`Contacts`, `SpaceCoaching`) and format dates differently
 // (ledger item 13 in docs/scalability-2026-09.md), so this owns the facts and
-// the layout, not the copy. Colour follows GoalProgressBar's split: no
+// the layout, not the copy. Color follows GoalProgressBar's split: no
 // `mutedColor` → app tokens; `mutedColor` → inline, for a tenant-themed card,
 // where the overdue chip goes inline too because a `dark:` variant would
 // follow the visitor's OS rather than the studio's theme.
@@ -29,7 +29,7 @@ export interface GoalStateChipLabels {
 interface Props {
   goal: Goal
   labels: GoalStateChipLabels
-  /** The host surface's muted colour on a tenant-themed card; absent → app tokens. */
+  /** The host surface's muted color on a tenant-themed card; absent → app tokens. */
   mutedColor?: string
   className?: string
 }

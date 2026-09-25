@@ -7,7 +7,7 @@
  * ── WHY THIS SERIES AND NOT A REVENUE OR BOOKINGS TREND ─────────────────────
  *
  * A studio's trends read `team_weekly_reports` — a per-team rollup that no
- * organisation has an equivalent of. Aggregating sixteen studios' weeks in the
+ * organization has an equivalent of. Aggregating sixteen studios' weeks in the
  * browser to draw one line is a fan-out this page deliberately refuses (see the
  * counts note in `data.ts`), and doing it properly means a Cloud Function
  * writing an org rollup. That is worth building; it is not worth blocking a
@@ -16,7 +16,7 @@
  * So the one trend here is the one the page already holds the data for: the
  * roster carries `joined` on every row, so this costs ZERO extra reads and
  * cannot go stale relative to the figures above it. It is also the trend an
- * organisation actually reports on — a federation's annual meeting asks how many
+ * organization actually reports on — a federation's annual meeting asks how many
  * clubs it has, not how many bookings they took.
  *
  * ── IT IS CUMULATIVE, AND HONEST ABOUT A MIGRATION ──────────────────────────

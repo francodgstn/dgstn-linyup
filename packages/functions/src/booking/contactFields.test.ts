@@ -27,7 +27,7 @@ describe('resolveBookingContactFields — team default + activity, and the legac
   })
 
   it('falls back to showPhone ONLY while the new list is absent', () => {
-    // A team that never edited the new list keeps its old phone behaviour…
+    // A team that never edited the new list keeps its old phone behavior…
     assert.deepEqual(resolveBookingContactFields({ showPhone: true }, null), [{ key: 'phone' }])
     assert.deepEqual(resolveBookingContactFields({ showPhone: false }, null), [])
     // …and one that HAS edited it is never second-guessed by the old boolean.

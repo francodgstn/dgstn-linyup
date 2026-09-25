@@ -6,7 +6,7 @@
 // secret but never read one out of the console.
 //
 // Extracted from the Brevo form so the Stripe settings page uses the identical
-// control: the clear-on-save behaviour and the "write-only" promise are security
+// control: the clear-on-save behavior and the "write-only" promise are security
 // properties, and two copies would eventually disagree about them.
 
 import { useState, useTransition } from 'react'

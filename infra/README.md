@@ -340,7 +340,7 @@ below therefore applies to the prod project alone. See `docs/custom-domains.md` 
 domain was considered and rejected — reasoning in `docs/custom-domains.md`.
 
 **Moving the zone is NOT proxying it.** Every record that exists today is
-recreated **grey-cloud / DNS-only**, where Cloudflare is a plain authoritative DNS
+recreated **gray-cloud / DNS-only**, where Cloudflare is a plain authoritative DNS
 host and behaves identically to OVH. Only the two new records are proxied.
 
 ```
@@ -482,7 +482,7 @@ figure onto the daily `platform_metrics/{date}` snapshot, which the operator
 console's **Providers** page reads.
 
 This exists because **there is no Cloud Billing API that returns consumption** —
-`cloudbilling` serves account metadata and the SKU price catalogue, and real cost
+`cloudbilling` serves account metadata and the SKU price catalog, and real cost
 data otherwise means a BigQuery billing export: opt-in, hours of delay, and
 billable itself. The budget already evaluates several times a day and its
 notification carries `costAmount` and `budgetAmount`, so it does double duty and

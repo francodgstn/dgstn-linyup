@@ -15,7 +15,7 @@
 // used to write a permanent, dated rating indistinguishable from a deliberate
 // neutral, so Save stays disabled until a star is touched (see RatingStars).
 // Copy comes from the caller — the surfaces translate from different
-// namespaces — so this owns the behaviour, not the words.
+// namespaces — so this owns the behavior, not the words.
 
 import { useEffect, useState } from 'react'
 import { GOAL_STATUSES, type GoalEvaluation, type GoalStatus } from '@linyup/shared'

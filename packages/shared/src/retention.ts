@@ -29,7 +29,7 @@ export const LEDGER_RETENTION_DAYS = {
   automation_logs: 90,
   /** `teams/{id}/notifications` — the studio's inbox. A notification is a
    *  NUDGE, not a record: what it points at (the request, the submission, the
-   *  organisation) keeps its own document. The only reader shows the UNREAD
+   *  organization) keeps its own document. The only reader shows the UNREAD
    *  page (`useTeamNotifications`), so an item nobody opened in ninety days is
    *  not one the studio was going to open. */
   notifications: 90,

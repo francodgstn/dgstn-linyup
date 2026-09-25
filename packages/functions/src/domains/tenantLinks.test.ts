@@ -41,7 +41,7 @@ describe('rewriteTenantPublicLinks', () => {
   })
 
   // THE ONE THAT MATTERS: a slug that is a prefix of another must not drag its
-  // neighbour onto this studio's domain.
+  // neighbor onto this studio's domain.
   it('does NOT touch a different studio whose slug merely starts the same', () => {
     const other = `${ORIGIN}/public/${SLUG}-nord/booking`
     assert.strictEqual(rewriteTenantPublicLinks(other, opts), other)
@@ -64,7 +64,7 @@ describe('rewriteTenantPublicLinks', () => {
     assert.strictEqual(rewriteTenantPublicLinks(body, opts), body)
   })
 
-  it('routes an organisation through the org tree', () => {
+  it('routes an organization through the org tree', () => {
     assert.strictEqual(
       rewriteTenantPublicLinks(`${ORIGIN}/public/org/${SLUG}/events`, {
         ...opts,

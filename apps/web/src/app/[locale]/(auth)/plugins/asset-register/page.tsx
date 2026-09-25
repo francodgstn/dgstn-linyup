@@ -431,7 +431,7 @@ export default function AssetRegisterPage() {
         ))}
       </div>
       {/* The one thing an owner has to understand about this page: the values
-          are an estimate and nothing here touches the books. It was a grey
+          are an estimate and nothing here touches the books. It was a gray
           one-liner in accountant's words; a callout in plain words is the
           difference between being read and being skipped. */}
       <div className="flex items-start gap-2.5 rounded-lg border bg-muted/40 p-3 text-sm">

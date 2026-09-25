@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * WHAT AN ORGANISATION CAN HONESTLY BE ASKED — the whole data layer of the org
+ * WHAT AN ORGANIZATION CAN HONESTLY BE ASKED — the whole data layer of the org
  * dashboard, in one place, because the interesting constraint here is not the
  * shape of the queries but WHO IS ALLOWED TO ASK THEM.
  *
@@ -10,7 +10,7 @@
  * decide the whole page:
  *
  *   1. **`teams/{teamId}` is members-or-creator.** An org admin is NOT
- *      automatically a member of the studios in the organisation, so the roster
+ *      automatically a member of the studios in the organization, so the roster
  *      cannot read a studio's own document — which is why the existing Studios
  *      page falls back to printing a raw team id. The studio's NAME is reachable
  *      anyway, from `teams/{id}/public_profile/{id}`, which is world-readable.
@@ -31,7 +31,7 @@
  *
  * NOTHING HERE RELAXES A RULE, and nothing here needs a Cloud Function. That is
  * deliberate for a first iteration: the page is composed entirely of reads the
- * organisation already had, so it can be reshaped freely without a deploy.
+ * organization already had, so it can be reshaped freely without a deploy.
  *
  * ── WHY COUNTS AND NOT DOCUMENTS ────────────────────────────────────────────
  *
@@ -103,7 +103,7 @@ export interface OrgStudioCounts {
 }
 
 /**
- * THE ROSTER — the organisation's constituent studios, named.
+ * THE ROSTER — the organization's constituent studios, named.
  *
  * `status in ['active', 'invited']` matches the Studios page: a removed studio
  * is history, and the dashboard is about the federation as it stands. The two
@@ -149,7 +149,7 @@ export function useOrgRoster(orgId: string) {
       })
 
       // Named studios first and alphabetically; the unnamed sink to the bottom
-      // rather than sorting under a raw id nobody recognises.
+      // rather than sorting under a raw id nobody recognizes.
       return rows.sort((a, b) => (a.name ?? SORTS_LAST).localeCompare(b.name ?? SORTS_LAST))
     },
   })
@@ -164,8 +164,8 @@ export function useOrgRoster(orgId: string) {
  * This used to count every live contact of every member studio and call it
  * `people`. A federation does not have those people: a studio inside it has
  * contacts who are nobody's business but its own — someone who trains at the
- * club spot, a lead from a fitness app, a person doing a personalised activity
- * the studio runs under its own name. Counting them made the organisation look
+ * club spot, a lead from a fitness app, a person doing a personalized activity
+ * the studio runs under its own name. Counting them made the organization look
  * bigger than it is AND made every studio that serves non-members look worse at
  * "coverage" for doing so. Both directions were wrong, and the second was a
  * perverse incentive. See `docs/org-contact-visibility.md`.
@@ -178,7 +178,7 @@ export function useOrgRoster(orgId: string) {
  * ── THE TWO FIELDS ARE DIFFERENT QUESTIONS AND BOTH ARE NEEDED ──────────────
  *
  *   `onBooks`    — `org_ids`, ANY status. Expired, revoked and merely requested
- *                  all count: the organisation knows this person. This is the
+ *                  all count: the organization knows this person. This is the
  *                  DENOMINATOR, and it is also exactly the set the rules let an
  *                  admin read, so the figure can never describe more people than
  *                  the page could name.
@@ -201,7 +201,7 @@ export function useOrgRoster(orgId: string) {
  * not one a member studio had agreed to answer.
  *
  * BOTH COUNT LIVE CONTACTS ONLY, through `liveContactConstraints` — not deleted
- * AND not archived. They shipped with `deleted_at` alone, so an organisation
+ * AND not archived. They shipped with `deleted_at` alone, so an organization
  * counted people who had left and read a figure that flattered it (Franco,
  * 2026-09-08). The pair has one owner; see `lib/liveContacts.ts`.
  *
@@ -311,7 +311,7 @@ export function useOrgUpcomingEvents(orgId: string) {
   })
 }
 
-/** What is waiting on the organisation's admins. `null` = not asked or denied. */
+/** What is waiting on the organization's admins. `null` = not asked or denied. */
 export interface OrgAttentionCounts {
   accessRequests: number | null
   memberInvitations: number | null
@@ -382,7 +382,7 @@ export function sumOrNull(values: (number | null | undefined)[]): number | null 
  *
  * The two are counted separately because they answer differently-shaped
  * questions. A row is "people in this status"; `people` is "people with a record
- * at all", and it is NOT the sum of the rows — somebody holding a licence that
+ * at all", and it is NOT the sum of the rows — somebody holding a license that
  * is active and a grading that is merely requested is one person in two rows.
  * The bar is a distribution and so is sized by the row sum; the header states
  * `people`, which can never exceed the headcount above it.
@@ -401,10 +401,10 @@ export interface OrgAffiliationStatusCount {
 }
 
 /**
- * THE ORGANISATION'S AFFILIATION VOCABULARY, in the org's own words.
+ * THE ORGANIZATION'S AFFILIATION VOCABULARY, in the org's own words.
  *
  * `affiliation_statuses` is tenant-configurable and admits `isOrgMember`; an
- * organisation that has never edited it has an empty subcollection, which means
+ * organization that has never edited it has an empty subcollection, which means
  * the DEFAULTS rather than "no statuses". Merged the same way the Affiliations
  * page merges them, so both surfaces name and order the vocabulary identically.
  */
@@ -429,11 +429,11 @@ export function useOrgAffiliationStatusDefs(orgId: string) {
 }
 
 /**
- * HOW MANY OF THE ORGANISATION'S AFFILIATIONS SIT IN EACH STATUS.
+ * HOW MANY OF THE ORGANIZATION'S AFFILIATIONS SIT IN EACH STATUS.
  *
  * ── IT COUNTS ROWS, THROUGH THE COLLECTION GROUP, AND THAT IS A DECISION ────
  *
- * `org_id` names the issuing organisation, `status_id` the bucket. That shape is
+ * `org_id` names the issuing organization, `status_id` the bucket. That shape is
  * the ONE `firestore.rules` can prove for an org admin: the collection-group
  * block admits `isOrgAdminOfOrg` on the row's own `org_id`, so a query pinning
  * `org_id` is provably inside it.
@@ -450,7 +450,7 @@ export function useOrgAffiliationStatusDefs(orgId: string) {
  * ── WHAT #249 FIXED IS NOT GIVEN BACK ───────────────────────────────────────
  *
  * A collection group cannot reach the parent contact, which is why this count
- * could not see `archived_at` and an ex-member's licence sat in the federation's
+ * could not see `archived_at` and an ex-member's license sat in the federation's
  * queue for ever. `contact_live` is now denormalised onto every affiliation by
  * `syncAffiliationContactLive`, so the same exclusion is an ordinary equality
  * filter here.
@@ -463,18 +463,18 @@ export function useOrgAffiliationStatusDefs(orgId: string) {
  *
  * ── RECORDS, NOT PEOPLE, AND THE DISTINCTION IS LOAD-BEARING ────────────────
  *
- * A person holding a licence that is active and a grading that is merely
+ * A person holding a license that is active and a grading that is merely
  * requested is one person in two rows. That is the right answer to "how many
- * licences are awaiting review" and the wrong one to "how many people", so the
+ * licenses are awaiting review" and the wrong one to "how many people", so the
  * copy says records and the strip states no percentage of the headcount — a
  * ratio across those two populations would be the lie.
  *
  * ── ONE AGGREGATION PER STATUS ─────────────────────────────────────────────
  *
  * `getCountFromServer` per status def transfers one integer each, where
- * downloading the rows to tally them would be every licence the federation has
+ * downloading the rows to tally them would be every license the federation has
  * ever issued. No `teamId` scoping and no chunking: `org_id` already bounds the
- * query to this organisation's own rows, which is also what makes it provable.
+ * query to this organization's own rows, which is also what makes it provable.
  */
 export function useOrgAffiliationStatusCounts(
   orgId: string,

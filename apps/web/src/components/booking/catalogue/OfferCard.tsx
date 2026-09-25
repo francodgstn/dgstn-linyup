@@ -10,7 +10,7 @@ import { activityGradient } from '@/components/booking/StickyBar'
 // The class flow and the appointment picker each drew their own, and the two
 // were not variations on a theme: the class card carried the studio's picture,
 // its description, its tags, its prerequisites and its prices; the appointment
-// card carried a name, a price and a line of grey text. Same studio, same
+// card carried a name, a price and a line of gray text. Same studio, same
 // visitor, two answers to "what is this?", and the appointment was always the
 // poorer of the two, for no reason anybody chose.
 //
@@ -34,13 +34,13 @@ import { activityGradient } from '@/components/booking/StickyBar'
 export interface OfferChip {
   label: string
   /** 'positive' is the ONE free/good signal (a free trial). Everything else is
-   *  neutral on purpose: a row of coloured chips says nothing. */
+   *  neutral on purpose: a row of colored chips says nothing. */
   tone?: 'neutral' | 'positive'
 }
 
 export interface OfferCardProps {
   name: string
-  /** The studio's picture. Falls back to its colour, then to a deterministic
+  /** The studio's picture. Falls back to its color, then to a deterministic
    *  gradient from the name. An appointment has never had an image, so this
    *  fallback is what it will normally show. */
   image?: string | null
@@ -49,7 +49,7 @@ export interface OfferCardProps {
   description?: string | null
   /** The amber line. `label` is the caller's word for it ("Prerequisites"). */
   note?: { label: string; text: string } | null
-  /** The grey row under the text: length, place, online. Free-form because the
+  /** The gray row under the text: length, place, online. Free-form because the
    *  icons and their order belong to the flow, not to the card. */
   meta?: ReactNode
   priceChip?: string | null

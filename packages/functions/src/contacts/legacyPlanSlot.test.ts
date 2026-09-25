@@ -74,7 +74,7 @@ const KEY = new RegExp(`(?<![\\w.?])['"]?(?:${FIELDS})['"]?\\s*:(?!:)`, 'g')
 const ASSIGN = new RegExp(`\\.(?:${FIELDS})\\s*=(?!=)|\\[['"](?:${FIELDS})['"]\\]\\s*=(?!=)`, 'g')
 const WRITER_CALL = /(?<!function\s)\bwriteContactSubscriptionFields\s*\(/g
 
-/** CODE only, line endings normalised — a comment that quotes a slot write is
+/** CODE only, line endings normalized — a comment that quotes a slot write is
  *  documentation, and counting it is the confusion this file exists to remove. */
 function code(source: string): string {
   return source

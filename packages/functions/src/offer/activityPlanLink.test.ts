@@ -22,7 +22,7 @@ import {
   type CourseEdgeFields,
 } from '@linyup/shared'
 
-// The activity ↔ plan edge, which the catalogue page edits from BOTH directions.
+// The activity ↔ plan edge, which the catalog page edits from BOTH directions.
 // The headline test is `same edge, either direction`; every other case here
 // exists because getting it wrong shipped once already.
 // Run with: pnpm --filter @linyup/functions test
@@ -39,7 +39,7 @@ const OFF = { access: false, rate: false }
 
 describe('the activity ↔ plan edge', () => {
   describe('same edge, either direction', () => {
-    // THE PROPERTY THE CATALOGUE EXISTS TO GUARANTEE. Both directions call this
+    // THE PROPERTY THE CATALOG EXISTS TO GUARANTEE. Both directions call this
     // one function with the same arguments, so what this really pins is that no
     // second write path has grown back beside it.
     it('gating a class produces one document regardless of which side asked', () => {
@@ -437,7 +437,7 @@ describe('the activity ↔ plan edge', () => {
 
 describe('the course ↔ plan edge', () => {
   // The per-tier rules are not a choice made in the editor; they are what
-  // `resolvePaymentOptions`' course arm honours. A control offered on a tier
+  // `resolvePaymentOptions`' course arm honors. A control offered on a tier
   // that ignores the field writes successfully, shows no error, and changes
   // nothing a member sees — which is the failure these tests exist to stop.
   const course = (accessRule: Record<string, unknown>, benefit?: unknown) =>
@@ -551,8 +551,8 @@ describe('the course ↔ plan edge', () => {
     })
   })
 
-  describe('which facets each tier honours', () => {
-    it('free and registered honour neither', () => {
+  describe('which facets each tier honors', () => {
+    it('free and registered honor neither', () => {
       assert.deepEqual(coursePlanFacets(course({ type: 'free' })), { access: false, rate: false })
       assert.deepEqual(coursePlanFacets(course({ type: 'registered' })), {
         access: false,
@@ -560,7 +560,7 @@ describe('the course ↔ plan edge', () => {
       })
     })
 
-    it('both plan-bearing tiers honour BOTH — the same pair a class carries', () => {
+    it('both plan-bearing tiers honor BOTH — the same pair a class carries', () => {
       // Until 2026-09-01 these were exclusive per tier, which is what made
       // "Premium free, Elite 20% off" inexpressible on a course while being
       // ordinary on a class.
@@ -572,7 +572,7 @@ describe('the course ↔ plan edge', () => {
       }
     })
 
-    it('a subscription-tier rate is honoured but INERT until there is a price', () => {
+    it('a subscription-tier rate is honored but INERT until there is a price', () => {
       // Offered, so a studio can set it up before pricing the course — and
       // dimmed, because the resolver's subscription branch returns before it
       // reads `benefit`. Exactly a class that sells no drop-in yet.
@@ -656,7 +656,7 @@ describe('the course ↔ plan edge', () => {
     })
 
     it('writes nothing at all on a free or registered course', () => {
-      // Both facets asked for, neither honoured.
+      // Both facets asked for, neither honored.
       const asked = { access: true, rate: true }
       assert.equal(coursePlanEdgeUpdate(course({ type: 'free' }), 'premium', asked), null)
       assert.equal(coursePlanEdgeUpdate(course({ type: 'registered' }), 'premium', asked), null)
@@ -716,9 +716,9 @@ describe('the course ↔ plan edge', () => {
 // to say "free", one of them inert.
 //
 // These assertions are the guard: `offeringRateEffects` derives from the very
-// sets `resolvePaymentOptions` honours, so an effect can never again be offered
+// sets `resolvePaymentOptions` honors, so an effect can never again be offered
 // where it would be dropped.
-describe('offeringRateEffects — the editor offers only what the resolver honours', () => {
+describe('offeringRateEffects — the editor offers only what the resolver honors', () => {
   const activityTarget = (type: 'class' | 'appointment') =>
     ({ kind: 'activity' as const, doc: { type } as never })
   const courseTarget = (type: 'free' | 'purchase' | 'subscription') =>
@@ -750,7 +750,7 @@ describe('offeringRateEffects — the editor offers only what the resolver honou
     ])
   })
 
-  it('never offers `spend_credits` — the resolver honours it, no editor writes it', () => {
+  it('never offers `spend_credits` — the resolver honors it, no editor writes it', () => {
     for (const t of [
       activityTarget('class'),
       activityTarget('appointment'),

@@ -46,7 +46,7 @@ component knows, and the server was already resolving the member. The pricing
 divergence was DISPLAY only (the member saw the guest figure and was charged the
 member one); the `new_contacts` promo was refused at Apply time by
 `previewPromoCode` and again inside the reserve; the per-contact cap keys on the
-session contact's own normalised email and never reset. What the investigation
+session contact's own normalized email and never reset. What the investigation
 DID turn up, and what made the fix worth its size, was not in the entry: a
 **covered** member was routed into `createAppointmentCheckout`, refused
 `{ reason: 'covered' }` by design, and told *"This slot is no longer available."*
@@ -134,7 +134,7 @@ real second payment; and giving the rail credentials, because avoiding them is
 what BYO is FOR. So the rail now does two things and neither of them touches a
 row:
 
-- **Guidance is the primary defence, and it was WRONG in one place.** The setup
+- **Guidance is the primary defense, and it was WRONG in one place.** The setup
   table in `docs/payment-contact-studio.md` told studios to subscribe to
   `invoice.payment_succeeded` — i.e. the documented setup produced the defect.
   Corrected, with the reason. The dialog note (UX-17) is accurate and is now a
@@ -412,7 +412,7 @@ surfaced were real:
 - `scripts/connect-test-account.ts`'s Stripe client type (see the `scripts/`
   entry above) — found in the same pass.
 
-Two shapes had to be modelled properly to get there. `StripeWebhookPayload<T>` is
+Two shapes had to be modeled properly to get there. `StripeWebhookPayload<T>` is
 `Omit<T, 'lastResponse'>`: every alias is derived from a `retrieve()`, so each
 carries the HTTP envelope the SDK staples onto an API response, and
 `event.data.object` has none — typing a handler with the bare alias demands a
@@ -525,7 +525,7 @@ The empty state says "No one has accepted yet" rather than "No RSVPs yet",
 because a DECLINE deletes its row — the list is the yeses, not every reply.
 
 `EventPeekSheet` carried a second crossing, found while fixing the first: it read
-`attendees_count ?? participants_count` and labelled whichever it got with the
+`attendees_count ?? participants_count` and labeled whichever it got with the
 same word, so an event with no acceptances and twelve people through the door
 reported twelve RSVPs. It reads the RSVP count alone now.
 
@@ -563,8 +563,8 @@ Two things worth knowing:
 - **The semantics are byte-identical**, including the odd one. A cup check-in
   with NO `categories` key auto-confirms, and only an EMPTY array means "nobody
   assigned"; `checkinCompletion.test.ts` pins that with a comment saying it is
-  there "so the exam fix cannot be read as licence to change it". The first
-  version of this change did read it as licence and broke that test — the
+  there "so the exam fix cannot be read as license to change it". The first
+  version of this change did read it as license and broke that test — the
   registry now reproduces the old expression exactly.
 - **One deliberate narrowing.** The old branch applied the cup's rule to ANY
   event type carrying a `categories` array; keyed lookup reaches only the types
@@ -638,7 +638,7 @@ the tab is translated.
 
 Seven hardcoded English strings, and its empty state says "Add ranking systems in
 Team Settings" — wrong for an org-managed tenant, whose systems live on the
-organisation and whose team tab is locked.
+organization and whose team tab is locked.
 
 ### The rank filter cannot express "this belt and above" — FIXED 2026-08-27
 
@@ -704,7 +704,7 @@ reconstructable without a new pass.
 
 `transforms/contacts.ts` writes `ranks[systemId] = Number(hmdRank)` with no check
 that the number exists in `HMD_BELT_LEVELS`. A bad source value becomes a rank
-that renders as a floor-matched neighbour (see `getPrimaryRank` above).
+that renders as a floor-matched neighbor (see `getPrimaryRank` above).
 
 ### Unverified in PR#105, by admission
 
@@ -718,13 +718,13 @@ were checked in a browser against computed styles.
 
 ## Newly recorded, 2026-08-27 — left open by the org-scope build
 
-### `useAffiliationTerm` resolves the wrong organisation in org scope — FIXED 2026-08-28
+### `useAffiliationTerm` resolves the wrong organization in org scope — FIXED 2026-08-28
 
 `hooks/useAffiliationTerm.ts` calls `useOrg()`, and the studio sidebar is a
 SIBLING of the org route's children — so `OrgProvider` does not wrap it and the
 call returns the module default (`org: null`). The hook then falls back to the
 CURRENT TEAM's `org_id`. On an `/org/{X}` route where X is not the current
-team's org, the sidebar's affiliation word is a different organisation's, with
+team's org, the sidebar's affiliation word is a different organization's, with
 no error. Pre-existing; the scope build did not introduce it but does make org
 scope a place people spend time, so it is worth fixing.
 
@@ -733,17 +733,17 @@ URL in `ScopeContext`, so the hook should read the ROUTE's org id from there
 rather than the team's.
 
 **Fixed 2026-08-28, as described.** The hook now reads `orgIdFromPath(pathname)`
-and falls back to the team's `org_id` only when the URL names no organisation at
+and falls back to the team's `org_id` only when the URL names no organization at
 all — the route is the more specific fact, and the team's org is a default for
-pages that are not about an organisation. `useOrg()` still wins where it has an
+pages that are not about an organization. `useOrg()` still wins where it has an
 org, because there it has already resolved and cached the document.
 
 ### The sidebar quick-search does not index org destinations — FIXED 2026-08-27
 
 Named as a risk in `docs/org-navigation.md` before the build and still true
-after it. The search catalogue is built from `NAV_SECTIONS` + the settings
+after it. The search catalog is built from `NAV_SECTIONS` + the settings
 items; the four org rows and seven rail items are in neither, so in org scope
-the switcher is the only way in and Ctrl+K finds nothing. The catalogue builder
+the switcher is the only way in and Ctrl+K finds nothing. The catalog builder
 takes resolved entries, so this is a matter of feeding it the org items when the
 scope is org — not a new mechanism.
 
@@ -793,10 +793,10 @@ call about what that page is, not a patch.
 one web reader, `usePublicSurfaces`, and that hook is imported only by `(auth)`
 routes. So the toggle governs what the STUDIO is shown about its own surfaces,
 not what a visitor can reach. Switching it off does not hide anything public.
-Worth deciding deliberately: either the public routes should honour it, or it
+Worth deciding deliberately: either the public routes should honor it, or it
 should be described as what it is.
 
-**Franco chose: honour it publicly** (2026-08-28).
+**Franco chose: honor it publicly** (2026-08-28).
 
 Enforced in `listAvailability`, not on the page. That callable is the one door
 every client goes through, so the web picker, the mobile app and anything added
@@ -900,7 +900,7 @@ does exactly that, so only CREATE was blocked.
 
 The client-side twin, and the rule's own comment already claimed it was closed:
 "the manual confirm/unconfirm toggle (`is_completed`) is the only direct client
-write allowed". The rule authorised the caller and then constrained no fields at
+write allowed". The rule authorized the caller and then constrained no fields at
 all, so a manager could `updateDoc` their own row's `teamId` and move it into
 another studio, or rewrite `event.id` and drift `completed_checkins_count` on
 two events at once. Now allow-listed to what the toggle actually writes.
@@ -944,7 +944,7 @@ twenty-seven files, so twenty were unchecked — every backfill, `purge-team`,
 It found a live one immediately: `scripts/connect-test-account.ts` declared
 `type StripeClient = InstanceType<typeof import('stripe').default>`, which this
 tsconfig cannot resolve because `stripe` uses `export =` — while the same
-`.default` on the VALUE side is synthesised by esModuleInterop and runs fine.
+`.default` on the VALUE side is synthesized by esModuleInterop and runs fine.
 The type is now DERIVED from the loader expression the runtime evaluates, so the
 two cannot disagree again.
 
@@ -952,7 +952,7 @@ two cannot disagree again.
 
 ## Found and fixed in one pass, 2026-08-27 (#120) — two rules holes
 
-Recorded because **how** they were found generalises, and because neither was
+Recorded because **how** they were found generalizes, and because neither was
 ever in this list: they were invisible until somebody read the events area as a
 **migrated HMD studio** rather than as a seeded one. The emulator seed contains
 no org-scoped event, so nothing had ever exercised these paths.
@@ -973,7 +973,7 @@ responded. The migration passes shipped in the same PR write exactly that data.
 Fixed by `currentTeamInOrgOfEvent(eventId)` in `firestore.rules`, granting
 **read only**; authoring an org event's divisions stays with the org admin.
 
-### The organisation root document was `isOrgMember` only
+### The organization root document was `isOrgMember` only
 
 Every subcollection below it — `org_places`, `affiliation_types`,
 `org_program_templates`, `installed_plugins` — already carried
@@ -1018,7 +1018,7 @@ The types are separate too: `WebsiteSection` / `WebsiteSectionType` in
 **The cost is not duplication, it is drift.** The header-menu tree shipped for
 teams (`MenuTarget` — `kind: 'section' | 'surface' | 'url' | 'none'` — in
 `types/website.ts`) has no counterpart in `orgWebsite.ts` at all, so an
-organisation cannot arrange its header the way a studio can. Every future
+organization cannot arrange its header the way a studio can. Every future
 website feature is now two builds, and whichever tier is not in front of the
 author quietly falls behind.
 
@@ -1045,7 +1045,7 @@ decision above, because each was a live defect rather than a design question:
 - **The contact section's "show social links" switch had nothing to show.**
   `ContactBlock` renders socials from `ctx.socialLinks` and `Organization`
   carried no such field, so nothing could ever set any. Removed at first, then
-  put back the same day with the field, an editor in Organisation settings and
+  put back the same day with the field, an editor in Organization settings and
   the draft preview reading it — `publishOrgWebsite` turned out to have been
   reading `org.socialLinks` defensively all along, waiting for exactly that.
 
@@ -1055,13 +1055,13 @@ The menu tree and the preview overlay are done, and they cost far less than the
 table above implies because the pieces were already tenant-agnostic:
 
 - **The header menu.** `menu?: SiteMenuItem[]` on `OrgSiteDraft` and
-  `OrgPublishedSite`, carried by `saveOrgSiteDraft` and sanitised by the SAME
+  `OrgPublishedSite`, carried by `saveOrgSiteDraft` and sanitized by the SAME
   `sanitizeMenu` the team publish uses (it only needed an `export` — its rules
   bound depth and breadth and validate a target's shape, none of which differs
   between tenants). `MenuPanel` took a widened `sections` type and nothing else;
   `utils/siteMenu.ts` needed no change at all. ADDITIVE: an absent menu still
   derives, so no published org site changed.
-  `surfaces={[]}` because an organisation has no cross-surface links — Shop, My
+  `surfaces={[]}` because an organization has no cross-surface links — Shop, My
   space and Documents are studio surfaces.
 - **The preview overlay**, in place of the sticky 420px column — and that column
   is what the menu tree now occupies, which is exactly the trade
@@ -1079,7 +1079,7 @@ the same shape that fixed the divergence between the two ranking editors.
 builders share (hero, content, gallery, contact) plus `Field` and `ImageField`.
 `SiteEditorTenant` carries `kind` and `id` — and, crucially, the tenant's own
 `uploadImage`, because WHERE AN IMAGE GOES is the only thing that actually
-differed. Carrying the behaviour rather than switching on the enum also keeps a
+differed. Carrying the behavior rather than switching on the enum also keeps a
 shared component from importing out of an app route.
 
 What stays per-tenant is what the tenants genuinely CAN do differently: the
@@ -1098,7 +1098,7 @@ two files were read side by side:
 - Its image-size limit was a bare `const MAX_IMAGE_SIZE_MB = 5` where the team's
   goes through `getWebsiteLimits()`, the seam that exists so an operator can
   raise it. Same number, one of them unreachable.
-- `ContactFields` was identical in behaviour and different only in whitespace —
+- `ContactFields` was identical in behavior and different only in whitespace —
   the state a copy reaches just before somebody edits one of them.
 
 Two more untranslated strings in the org-only sections ("Show address on each

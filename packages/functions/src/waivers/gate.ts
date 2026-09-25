@@ -75,7 +75,7 @@
 // emailed signature. That machinery is gone (see `WaiverConfig.mayIncludeMinors`
 // in @linyup/shared), and with it the only reason a rail could not finish: the
 // consent step is now always completable by the person standing there. So there
-// is one behaviour on every rail — sign, or be refused — and `WaiverGateStep`
+// is one behavior on every rail — sign, or be refused — and `WaiverGateStep`
 // has no `defer` arm to reintroduce it.
 //
 // ══ THE TWO ORDERING RULES, WHICH ARE THE WHOLE POINT ═══════════════════════
@@ -199,7 +199,7 @@ export interface WaiverSubmission {
   /**
    * THE SELF-DECLARATION, shown only on a waiver the studio flagged
    * `mayIncludeMinors`: "I am signing as a parent or guardian" instead of "I am
-   * the participant". It is honoured ONLY for a flagged waiver — a value the
+   * the participant". It is honored ONLY for a flagged waiver — a value the
    * step never showed must not land in the evidence, the same discipline that
    * governs every other field on this payload.
    */
@@ -238,7 +238,7 @@ export interface WaiverGateDecisionInput {
 }
 
 /**
- * The whole gate, as a pure function, so every rail's behaviour can be asserted
+ * The whole gate, as a pure function, so every rail's behavior can be asserted
  * without a Firestore emulator and no refusal in `WaiverRefusalReason` can be
  * argued about one rail at a time. (That union is the owner of the refusal set.)
  *
@@ -306,7 +306,7 @@ export function decideWaiverGate(input: WaiverGateDecisionInput): WaiverGateStep
  * Both halves are load-bearing. The payload is untrusted in what it may NAME —
  * a row for a `documentId` this policy does not contain is never consumed by any
  * decision, so it must never reach a record either. And a declaration the step
- * did not SHOW is not a declaration: honouring `signingAsGuardian` on an
+ * did not SHOW is not a declaration: honoring `signingAsGuardian` on an
  * unflagged waiver would let a client stamp "a parent signed" onto an
  * adults-only studio's ledger, which is a claim nobody was asked to make.
  */

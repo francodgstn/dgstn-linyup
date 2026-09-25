@@ -75,7 +75,7 @@ import type { SubscriptionTypeDoc, WeeklyReport } from '@/hooks/useDashboardData
 import { buildWeekKeys, formatAxisWeek, formatTooltipWeek, isoWeekToDate, shortWeekLabel } from '@/lib/isoWeek'
 import { endOfISOWeek } from 'date-fns'
 
-/** Same bands and colours as the contacts snapshot, so the two agree on sight. */
+/** Same bands and colors as the contacts snapshot, so the two agree on sight. */
 const AGE_GROUPS = [
   { key: 'demoAgeKids', min: 5, max: 9, color: '#4ADE80' },
   { key: 'demoAgeYouth', min: 10, max: 14, color: '#60A5FA' },

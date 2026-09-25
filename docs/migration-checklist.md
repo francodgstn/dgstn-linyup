@@ -203,7 +203,7 @@ Legend: ✅ done · ⏳ in progress · ❌ not started · ~~skipped~~ (out of sc
 - ✅ Booking management — confirm (creates participant), revert to pending, mark no-show, cancel, rebook
 
 ### Coaching
-> Restructured: there is no separate `/coaching` admin page. Coaching is modelled as an activity type
+> Restructured: there is no separate `/coaching` admin page. Coaching is modeled as an activity type
 > (`type: 'group_class' | 'coaching'` on `Activity`). Sessions inherit `activityType` from their linked
 > activity. Coach slot generation remains a backend concern. The bio-link-side booking flow is intact.
 - ✅ Activity `type` field (group_class | coaching) — selectable in Activities form; sessions inherit `activityType`
@@ -247,7 +247,7 @@ Legend: ✅ done · ⏳ in progress · ❌ not started · ~~skipped~~ (out of sc
 
 ## Automation Engine (new in Linyup — supersedes hmd-lineup's daily-only outreach approach)
 
-> Replaces the simple `sendAutomationRuleEmails` daily job with a three-tier generalised engine.
+> Replaces the simple `sendAutomationRuleEmails` daily job with a three-tier generalized engine.
 > Outreach emails are one possible action; the engine supports diverse triggers and multiple action types.
 
 - ✅ `utils/automationEngine.ts` — core engine: normalizeRule, evaluateContactConditions, runRule, fireEventRules, enqueueDelayedRule

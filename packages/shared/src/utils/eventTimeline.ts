@@ -157,7 +157,7 @@ export function timelineDateAt(r: TimelineRange, fraction: number): Date {
  * holds a two-digit date the same way and puts a long month at 868.
  *
  * The widest zoom is measured PER YEAR rather than per month, because at that
- * scale a month is never labelled and never needs to be: 300px a year keeps the
+ * scale a month is never labeled and never needs to be: 300px a year keeps the
  * four year labels apart and still leaves a fortnight-long camp about 12px of
  * bar, which reads as a bar rather than a tick.
  */
@@ -338,7 +338,7 @@ export interface TimelineInput {
    *
    * Absent on every event ⇒ one band, and the packer behaves exactly as it did
    * before bands existed. Absent on SOME is treated as its own band (`''`)
-   * rather than merged into a neighbour's, because a typeless event sharing a
+   * rather than merged into a neighbor's, because a typeless event sharing a
    * row with the competitions would say it was one.
    */
   group?: string

@@ -109,7 +109,7 @@ npx eas-cli init          # or: npx eas-cli project:init
 
 Because `app.config.js` is dynamic, `eas init` **cannot write the id into the
 config**. It prints the project id (a UUID) and, if the account is an
-organisation, may ask for `owner`. Then, in `app.config.js`:
+organization, may ask for `owner`. Then, in `app.config.js`:
 
 - make the id the default: `const easProjectId = process.env.EAS_PROJECT_ID || '<the uuid>'`
   (keep the env override — CI and a second account can still redirect it).

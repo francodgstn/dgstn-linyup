@@ -52,7 +52,7 @@ export async function captureBrevoCredits(
   }
 
   const lines = Array.isArray(res.plan) ? res.plan : []
-  // An account with no plan array is a shape we do not recognise. Returning an
+  // An account with no plan array is a shape we do not recognize. Returning an
   // empty `plans` would render as "0 credits on no plans", so treat it as a gap.
   if (lines.length === 0) {
     console.warn('[provider-usage] brevo: account carried no plan lines')

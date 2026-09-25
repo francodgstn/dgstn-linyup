@@ -48,7 +48,7 @@ describe('subscriptionEndsAt', () => {
 
   it('says nothing about a subscription that has ALREADY ended', () => {
     // The past is not an announcement — `status` already says it. Without this,
-    // a cancelled membership would show "ends on <a date last month>" forever.
+    // a canceled membership would show "ends on <a date last month>" forever.
     for (const status of ['canceled', 'cancelled', 'unpaid', 'expired']) {
       assert.equal(
         subscriptionEndsAt({ status, cancel_at_period_end: true, cancel_at: CANCEL_AT }),
@@ -98,10 +98,10 @@ const LEGACY_CANCELLING = {
 
 describe('subscriptionIsCancelling — WHETHER, asked apart from WHEN', () => {
   it('is TRUE for a pre-migration doc that has the boolean and NO date', () => {
-    // The regression this pins: deriving "is it cancelling" from
+    // The regression this pins: deriving "is it canceling" from
     // `subscriptionEndsAt(...) !== null` additionally demands a date, which these
     // docs do not have — so the org billing page hid Reactivate from exactly the
-    // studios that were cancelled and still live, and the operator console showed
+    // studios that were canceled and still live, and the operator console showed
     // an empty cell for them.
     assert.equal(subscriptionIsCancelling(LEGACY_CANCELLING), true)
     assert.equal(subscriptionEndsAt(LEGACY_CANCELLING), null, 'the date is genuinely unknown')
@@ -134,7 +134,7 @@ describe('subscriptionIsCancelling — WHETHER, asked apart from WHEN', () => {
   //
   // The gap this closes: every case above supplies a `status`, so a predicate
   // that REQUIRED one passed the whole suite while reading status-less docs as
-  // "not cancelling". Two verification lenses disagreed about whether that
+  // "not canceling". Two verification lenses disagreed about whether that
   // mattered, because only one of them walked a doc with no status.
   //
   // It is not hypothetical. The SaaS webhook's `subscription.updated` branch
@@ -190,7 +190,7 @@ describe('subscriptionIsCancelling — WHETHER, asked apart from WHEN', () => {
     })
   }
 
-  it('THE REAL DOC: a status-less saas_subscriptions row reads as cancelling', () => {
+  it('THE REAL DOC: a status-less saas_subscriptions row reads as canceling', () => {
     // Field-for-field the emulator's saas_subscriptions/hmd, as the SaaS webhook
     // wrote it from evt_1U4wq0Gz6xwscm1ePB35od9E. Before the fix this was `false`
     // — the regression against 926c72b on org billing and the operator console.
@@ -207,7 +207,7 @@ describe('subscriptionIsCancelling — WHETHER, asked apart from WHEN', () => {
 
   it('agrees with subscriptionEndsAt wherever a date IS known', () => {
     // The two may only diverge on the missing-date case above; anywhere a date
-    // exists, "there is an end date" and "it is cancelling" must be the same
+    // exists, "there is an end date" and "it is canceling" must be the same
     // answer, or two surfaces will disagree about one subscription.
     const cases = [
       { status: 'active', cancel_at_period_end: true, cancel_at: CANCEL_AT },
@@ -267,7 +267,7 @@ describe('subscriptionCancellation', () => {
     assert.equal(rec.reason, 'payment_failed')
   })
 
-  it('knows both spellings of cancelled', () => {
+  it('knows both spellings of canceled', () => {
     // Stripe writes `canceled`; the SaaS rail's own vocabulary writes
     // `cancelled`. A set that knew one would silently drop half of them.
     for (const status of ['canceled', 'cancelled']) {
@@ -290,12 +290,12 @@ describe('subscriptionCancellation', () => {
     )
   })
 
-  it('NARRATES a pre-migration doc that is cancelling with no date at all', () => {
+  it('NARRATES a pre-migration doc that is canceling with no date at all', () => {
     // The operator-console half of the same regression: gating the record on a
     // date meant `toSubscriptionView` produced five nulls for these docs and the
     // console showed "—" where it had previously shown the cancellation.
     const rec = subscriptionCancellation(LEGACY_CANCELLING)
-    assert.ok(rec, 'a doc that is cancelling always has a record, date or not')
+    assert.ok(rec, 'a doc that is canceling always has a record, date or not')
     assert.equal(rec.endsAt, null)
     assert.equal(rec.ended, false)
     assert.equal(rec.reason, null)

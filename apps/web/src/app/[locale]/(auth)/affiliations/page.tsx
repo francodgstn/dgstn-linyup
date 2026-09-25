@@ -45,13 +45,13 @@ import {
 import { AffiliationTypesManager } from '@/components/affiliations/AffiliationTypesManager'
 import { callFunction } from '@/lib/callFunction'
 
-// ─── colour map ────────────────────────────────────────────────────────────────
+// ─── color map ────────────────────────────────────────────────────────────────
 
 
 // ─── data hooks ───────────────────────────────────────────────────────────────
 
 /**
- * The organisation's NAME, for the one sentence on this page that has to say
+ * The organization's NAME, for the one sentence on this page that has to say
  * WHO can see a contact. A member studio may read its org's root document —
  * see the note on `match /organizations/{orgId}` in `firestore.rules`.
  */
@@ -519,13 +519,13 @@ export default function TeamAffiliationsPage() {
     [contacts],
   )
 
-  // NOT ON THE ORGANISATION'S BOOKS — the studio's own people, and the number
+  // NOT ON THE ORGANIZATION'S BOOKS — the studio's own people, and the number
   // that tells the manager what the federation cannot see.
   //
   // `org_ids` (any status), never `has_active`: the filter chips above already
   // answer "is their affiliation current", and this is a different question —
-  // whether the organisation knows this person AT ALL. A contact with a lapsed
-  // licence is inactive but very much on the books, and counting them here
+  // whether the organization knows this person AT ALL. A contact with a lapsed
+  // license is inactive but very much on the books, and counting them here
   // would tell a manager the org cannot see somebody it can.
   //
   // ── ACTIVE ONLY, AND EVERY OTHER BUCKET IS EXCLUDED FOR ITS OWN REASON ─────
@@ -541,7 +541,7 @@ export default function TeamAffiliationsPage() {
   //                the LAST thing this notice should suggest, and at HMD Basel
   //                there are 93 of them: the number alone would read as a
   //                backlog and push a manager to clear it.
-  //   provisional  a lead whose registration has not materialised. Not a
+  //   provisional  a lead whose registration has not materialized. Not a
   //                federation candidate yet, and may never be.
   //
   // That last pressure is the whole reason the notice is styled neutrally, so
@@ -661,13 +661,13 @@ export default function TeamAffiliationsPage() {
         )}
       </div>
 
-      {/* WHAT THE ORGANISATION CANNOT SEE — stated to the studio, because the
+      {/* WHAT THE ORGANIZATION CANNOT SEE — stated to the studio, because the
           studio is the only party that can see both sides of it.
 
           A studio inside a federation has contacts who are nobody's business but
           its own: someone training at the club spot, a lead from a fitness app,
           a person doing an activity the studio runs under its own name. Since
-          `orgAdminMayReadContact`, the organisation cannot read them at all —
+          `orgAdminMayReadContact`, the organization cannot read them at all —
           which is the intent, and is also exactly the kind of guarantee that is
           worthless if the person relying on it cannot tell whether it is
           holding. So the studio gets the number.
@@ -688,7 +688,7 @@ export default function TeamAffiliationsPage() {
                 {t('notOnBooksTitle', { count: notOnOrgBooks })}
               </span>{' '}
               <span className="text-muted-foreground">
-                {/* The organisation's own word for an affiliation is the H1 of
+                {/* The organization's own word for an affiliation is the H1 of
                     this page, so the sentence does not repeat it — and cannot:
                     `affiliationTerm` is tenant-configurable, so any article in
                     front of it ("Add a {term}") is a grammar bug waiting for the

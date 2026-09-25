@@ -61,7 +61,7 @@ tab bars" changes how an area run reads the one in front of it.
 
 6. **Write `docs/ux-review-YYYY-MM.md`** in the shape of
    `docs/security-audit-2026-07.md`: a headline paragraph on what was reviewed
-   and the top-line judgement, then
+   and the top-line judgment, then
 
    ```
    | # | Sev | Finding | Area | Owner | Status |
@@ -99,8 +99,8 @@ different owners, and several are L/XL refactors that deserve their own plan.
 
 ## After two or three runs
 
-Promote whatever recurs into `docs/ux-principles.md` — the judgement calls that
+Promote whatever recurs into `docs/ux-principles.md` — the judgment calls that
 cannot be derived from code (vocabulary lock, which patterns are canonical,
 defaults-over-settings). The agent already reads that file if it exists and
-treats it as outranking its own judgement. Writing it *before* any review has run
+treats it as outranking its own judgment. Writing it *before* any review has run
 would be speculative; harvest it instead.

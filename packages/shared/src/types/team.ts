@@ -176,7 +176,7 @@ export function resolveSignupDocumentIds(input: {
  * One level of a ranking system, and how it LOOKS.
  *
  * Clubs identify a level visually, and they do not all do it the same way: a
- * martial art has a belt colour (sometimes two, for a split belt), a swim school
+ * martial art has a belt color (sometimes two, for a split belt), a swim school
  * has an animal per level, and plenty of clubs have their own badge artwork.
  * All four are the same field's job — "how do we show this level" — so they live
  * together and resolve through ONE precedence rule (`rankLevelBadge`) rather
@@ -214,12 +214,12 @@ export interface RankLevel {
    */
   id: string
   label: string
-  /** Primary colour. The belt, or the background behind an emoji. */
+  /** Primary color. The belt, or the background behind an emoji. */
   color?: string
   /**
-   * Second colour of a SPLIT level — Orange/Green, Blue/Red. Absent means a
+   * Second color of a SPLIT level — Orange/Green, Blue/Red. Absent means a
    * solid one. The badge is drawn as two halves, which is what the belt itself
-   * looks like; approximating it with the primary colour alone loses the
+   * looks like; approximating it with the primary color alone loses the
    * distinction between two adjacent grades.
    */
   secondColor?: string
@@ -252,7 +252,7 @@ export type RankBadge =
 
 /**
  * THE precedence for rendering a level: uploaded artwork, then emoji, then a
- * split colour, then a solid one.
+ * split color, then a solid one.
  *
  * One function because the badge is drawn in at least five places across the web
  * app and the member app, and "which of these four fields wins" is exactly the
@@ -372,7 +372,7 @@ export type BookingContactBaseField = (typeof BOOKING_CONTACT_BASE_FIELDS)[numbe
  * `showPhone` is read here as a FALLBACK and nowhere else. It predates this list
  * and says the same thing a `phone` entry says; two writers for one fact is the
  * drift this codebase keeps paying for. A team that has never edited the new
- * list still gets its phone behaviour from the old boolean; one that has, does
+ * list still gets its phone behavior from the old boolean; one that has, does
  * not consult it again.
  */
 export function resolveBookingContactFields(
@@ -440,7 +440,7 @@ export function resolveBookingReminderSteps(settings: {
 // yet (no `linyup_nav_pins` / legacy `linyup_settings_pins` key in
 // localStorage) — once the user pins/unpins/reorders anything, their choice
 // is persisted and wins permanently, even if this default later changes.
-// Ids are the same catalogue keys the sidebar already resolves pins against
+// Ids are the same catalog keys the sidebar already resolves pins against
 // (main nav ids, settings ids from SETTINGS_ITEMS, or plugin-scoped
 // `plugin:{pluginId}:{href}`); an id that doesn't currently resolve (e.g. a
 // plugin that isn't installed for this team) is silently skipped, so a stale
@@ -579,7 +579,7 @@ export interface TenantFlags {
    * A REAL customer the platform has agreed to bill nothing, indefinitely.
    *
    * Exempt from the trial sweep like `pilot`, and COUNTED in platform metrics
-   * like `pilot` — this is real usage, and Linyup's first migrated organisation
+   * like `pilot` — this is real usage, and Linyup's first migrated organization
    * is about to be its largest tenant, so hiding it (as `internal` would) would
    * corrupt every usage number on the platform.
    *
@@ -601,9 +601,9 @@ export interface TenantFlags {
    * A platform-fee rate NEGOTIATED with this tenant, replacing its plan's
    * published take-rate on member payments. Null or absent = the published rate.
    *
-   * On an ORGANISATION it applies to every studio in it, read through at charge
+   * On an ORGANIZATION it applies to every studio in it, read through at charge
    * time exactly like `comped` (see `resolvePlatformFee` in functions) — a
-   * studio's OWN rate wins over its organisation's.
+   * studio's OWN rate wins over its organization's.
    *
    * Operator-set only (`flags` is pinned against client writes). Written WHOLE
    * or set to null, never key-by-key: Firestore deep-merges a nested map, so a
@@ -636,7 +636,7 @@ export interface NegotiatedFeeRate {
 /**
  * Is this tenant exempt from the daily trial-lapse sweep?
  *
- * THE one reader of these flags for that decision, so a team and an organisation
+ * THE one reader of these flags for that decision, so a team and an organization
  * can never answer it differently — they used to each spell the check out, and
  * adding a third flag meant finding both. Nothing else about the three flags is
  * the same: `internal` also hides the tenant from platform metrics, `comped`
@@ -652,7 +652,7 @@ export function tenantExemptFromTrialSweep(flags?: TenantFlags): boolean {
  * THE one reader of the flags for that decision, for the same reason
  * `tenantExemptFromTrialSweep` exists: the check used to be spelled out inline,
  * and the copies did not agree. The daily snapshot skipped internal TEAMS but
- * not internal ORGANISATIONS, and the operator console's overview skipped
+ * not internal ORGANIZATIONS, and the operator console's overview skipped
  * neither — so the console and `platform_metrics/{date}` reported different
  * numbers for the same platform, while a comment in the snapshot called the
  * shared reducer "single source of truth".
@@ -966,7 +966,7 @@ export interface BookingSettings {
    */
   appointmentsEnabled?: boolean
   /** Minutes before a session's start that online booking closes. Absent/0 = no
-   *  cutoff (bookable right up to start, today's behaviour). Enforced
+   *  cutoff (bookable right up to start, today's behavior). Enforced
    *  authoritatively by the booking callables — see `isPastBookingCutoff`
    *  (types/session.ts); this setting only configures the threshold. */
   cutoffMinutes?: number
@@ -1012,7 +1012,7 @@ export interface PublicCoach {
 
 // ─── Gamification settings (teams/{id}.settings.gamification) ─────────────────
 // Badge thresholds + coach-assigned badge definitions — the studio's
-// customisation of the gamification plugin. SAME SHAPE as the mobile app's
+// customization of the gamification plugin. SAME SHAPE as the mobile app's
 // hand-mirror (`apps/mobile/src/types/index.ts`'s `GamificationSettings` /
 // `BadgeThresholds` / `CoachBadgeConfig`, pre-existing there); this is the
 // shared definition it should read from instead of hand-mirroring further.
@@ -1043,7 +1043,7 @@ export interface GamificationSettings {
 
 /**
  * The product's own badge thresholds — what every surface falls back to for a
- * studio that has never customised them. ONE copy: the admin editor's
+ * studio that has never customized them. ONE copy: the admin editor's
  * defaults, the member app's fallback and the Space's badge list all read
  * this. The same numbers used to be typed out in the editor, the app and the
  * Space, byte-identical — which is exactly the state that is one edit away
@@ -1144,7 +1144,7 @@ export interface TeamPublicProfile {
   name: string
   description?: string
   slug: string
-  // Which organisation this studio belongs to. Public surfaces need it to list
+  // Which organization this studio belongs to. Public surfaces need it to list
   // the parent org's published events alongside the studio's own — an org event
   // has no teamId, so a teamId query can never find it. Null when independent.
   org_id?: string | null
@@ -1191,7 +1191,7 @@ export interface TeamPublicProfile {
    * `teams/{id}` is members-only, and the Space runs on a contact session. Read
    * from `public_profile`, a member's check-in form asks about the axes their
    * studio actually chose; without it the form falls back to the defaults and a
-   * studio's customisation silently never reaches the people filling it in.
+   * studio's customization silently never reaches the people filling it in.
    *
    * Nothing private: a label the member is about to be asked to rate.
    */
@@ -1372,7 +1372,7 @@ export interface TeamPublicProfile {
   gamificationEnabled?: boolean
   // The badge thresholds + coach-badge definitions themselves (see
   // GamificationSettings above), so the Space and the mobile app render a
-  // studio's OWN customisation rather than the built-in defaults. Denormalized
+  // studio's OWN customization rather than the built-in defaults. Denormalized
   // from `teams/{id}.settings.gamification` by syncTeamPublicProfile,
   // regardless of `gamificationEnabled` (the plugin gate governs whether a
   // reader SHOWS the tab, not whether the settings exist to mirror). Absent ⇒
@@ -1386,16 +1386,16 @@ export interface TeamPublicProfile {
   // is what every stored document and reader already says.
   aggregator_subscription_types?: PublicSubscriptionTypeEntry[]
   // The EFFECTIVE ranking systems (belts/ranks) this team's contacts are
-  // scored against — team's own, or its organisation's when the org has
+  // scored against — team's own, or its organization's when the org has
   // configured any (see `effectiveRankingSystems`, utils/rankingSystems.ts;
   // "when set, overrides" is the org doc's own rule, applied here rather than
   // re-decided by each reader). Denormalized because the member surfaces
   // (Space, mobile) run on a contact session and cannot read `teams/{id}` or
-  // `organizations/{id}`. Nothing private: level names and colours a member
+  // `organizations/{id}`. Nothing private: level names and colors a member
   // already sees on their own rank. LIMITATION: an org-only write (no team
   // write) does not re-trigger this sync — see syncTeamPublicProfile's header.
   ranking_systems?: RankingSystem[]
-  // The organisation's custom label for the affiliation concept (e.g.
+  // The organization's custom label for the affiliation concept (e.g.
   // "Membership", "Lizenz") — mirrors `Organization.affiliation_term`, null
   // when independent or when the org has set none (every reader resolves it
   // through the shared `resolveAffiliationTerm`, never inline — its fallback

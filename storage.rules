@@ -180,7 +180,7 @@ service firebase.storage {
     // organizations/{orgId}/site/{sectionId}/... They are shown on the PUBLIC org
     // site, so reads are open (also served via the download token); writes are
     // org-admin-only and image-only.
-    // The org-level twin of teams/{teamId}/ranking above. An organisation that
+    // The org-level twin of teams/{teamId}/ranking above. An organization that
     // owns its studios' ranking systems owns their badge artwork with them.
     match /organizations/{orgId}/ranking/{allPaths=**} {
       // GET only — public badge artwork (A12). No broad org match grants staff

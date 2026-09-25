@@ -19,7 +19,7 @@ import { toMinorUnits } from '../utils/money'
 //
 // Wire conventions, decided once here: snake_case keys with an `object` field;
 // money as integer MINOR units beside its currency (storage mixes major and
-// minor — this is the one place it is normalised); instants as ISO 8601 UTC.
+// minor — this is the one place it is normalized); instants as ISO 8601 UTC.
 // Pure and client-safe: no Firebase import, timestamps read by shape.
 
 export interface ApiProjectionContext {
@@ -101,7 +101,7 @@ export interface ApiContactAddress {
   locality: string | null
 }
 
-/** A deleted or anonymised contact is never projected, so it has no lifecycle here. */
+/** A deleted or anonymized contact is never projected, so it has no lifecycle here. */
 export type ApiContactLifecycle = Exclude<ContactLifecycle, 'deleted'>
 
 export interface ApiContact {
@@ -157,7 +157,7 @@ function projectHeldPlan(plan: HeldPlan, currency: string): ApiHeldPlan {
 
 /**
  * A contact as the API returns it, or null when it must not be returned at all
- * (deleted or anonymised — `contactLifecycle` decides, never a field test).
+ * (deleted or anonymized — `contactLifecycle` decides, never a field test).
  */
 export function projectContact(contact: Contact, ctx: ApiProjectionContext): ApiContact | null {
   const lifecycle = contactLifecycle(contact)

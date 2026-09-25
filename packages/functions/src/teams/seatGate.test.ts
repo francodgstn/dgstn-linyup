@@ -22,7 +22,7 @@ import {
 const SRC = path.join(__dirname, '..')
 
 /**
- * Line endings normalised. The working tree is checked out LF on CI and CRLF on
+ * Line endings normalized. The working tree is checked out LF on CI and CRLF on
  * Windows, and the assertions below slice source on newline markers: without
  * this, indexOf of a newline-brace-newline sequence returns -1 against a CRLF
  * file, the slice silently collapses to two characters, and the gate assertion
