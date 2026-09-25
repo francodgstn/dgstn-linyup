@@ -2105,8 +2105,12 @@ async function seedTeam(opts: TeamSeed) {
       const coachUid = coaches[0].uid
       const coachContacts = await db.collection('contacts').where('teamId', '==', teamId).limit(6).get()
       for (const c of coachContacts.docs) await c.ref.update({ assigned_coach_ids: [coachUid] })
-      const coachSessions = await db.collection('sessions').where('teamId', '==', teamId).limit(3).get()
-      for (const s of coachSessions.docs)
+      // CLASS sessions only: an appointment's id is `apt_{providerId}_{startMs}`,
+      // so moving its providerId alone makes listAvailability offer a booked time
+      // that bookAppointment then refuses. Class sessions carry no activityType.
+      const teamSessions = await db.collection('sessions').where('teamId', '==', teamId).get()
+      const coachSessions = teamSessions.docs.filter((s) => s.get('activityType') !== 'appointment').slice(0, 3)
+      for (const s of coachSessions)
         await s.ref.update({ providerId: coachUid, providerName: coaches[0].displayName })
     }
   }
