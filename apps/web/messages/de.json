@@ -2282,7 +2282,13 @@
     "subTypeMoreOptionsLabel": "Weitere Optionen",
     "subTypeMoreOptionsHint": "Partnerquelle, Auszahlung und Kontaktaufnahme beim Checkout",
     "subTypePriceMoreOptionsLabel": "Weitere Optionen",
-    "subTypePriceMoreOptionsHint": "Begrenzen, wie oft eine Person dies kaufen kann"
+    "subTypePriceMoreOptionsHint": "Begrenzen, wie oft eine Person dies kaufen kann",
+    "paymentsTabLinyup": "Mit Linyup",
+    "paymentsTabOutside": "Ausserhalb von Linyup",
+    "paymentsTabDetails": "Rechnungsangaben",
+    "paymentsLinyupIntro": "Mitglieder bezahlen online direkt in Linyup, und das Geld landet auf deinem eigenen Stripe-Konto. Du nimmst Bargeld, Überweisungen oder nutzt deinen eigenen Anbieter? Das findest du unter <other>Ausserhalb von Linyup</other>.",
+    "paymentsOutsideIntro": "Erfasse Zahlungen, die du selbst entgegennimmst: Bargeld, Überweisung, TWINT oder dein eigenes Stripe- oder Payrexx-Konto. Damit Mitglieder online in Linyup bezahlen können, siehe <other>Mit Linyup</other>.",
+    "paymentsOutsideIntroOnly": "Erfasse Zahlungen, die du selbst entgegennimmst: Bargeld, Überweisung, TWINT oder dein eigenes Stripe- oder Payrexx-Konto."
   },
   "Bookings": {
     "title": "Buchungen",
@@ -3154,7 +3160,9 @@
     "whatsappUsageCategory_service": "Serviceantworten",
     "whatsappUsageCategory_authentication": "Authentifizierung",
     "whatsappUsageBillingNote": "Meta stellt deinem Studio diese Nachrichten direkt in Rechnung — Linyup verrechnet nichts zusätzlich.",
-    "whatsappMessagesNotConnected": "Nachrichten können verfasst werden, sobald die Studioinhaberin oder der Studioinhaber eine WhatsApp-Nummer verbunden hat."
+    "whatsappMessagesNotConnected": "Nachrichten können verfasst werden, sobald die Studioinhaberin oder der Studioinhaber eine WhatsApp-Nummer verbunden hat.",
+    "settingsPlaceholderBody": "Plugins findest, installierst und konfigurierst du im Plugin-Katalog. Er öffnet sich als eigene Seite.",
+    "settingsPlaceholderCta": "Plugins öffnen"
   },
   "AiAssistant": {
     "launcherLabel": "KI-Assistent",
