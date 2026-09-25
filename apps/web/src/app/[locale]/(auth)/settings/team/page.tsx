@@ -122,7 +122,7 @@ import { useRankHolderCount } from '@/lib/rank-utils'
 import { useRankingSystems } from '@/hooks/useRankingSystems'
 import { useEmailSenderSettings } from '@/hooks/useEmailSenderSettings'
 import { useSubscriptionTypes } from '@/hooks/useSubscriptionTypes'
-import { useByoStripeDoubleRecording } from '@/hooks/useConnect'
+import { useByoStripeDoubleRecording, useConnectStatus } from '@/hooks/useConnect'
 import { Link, useRouter } from '@/i18n/navigation'
 import type { Route } from 'next'
 import { SaveBarProvider, useSaveBarSection } from '@/components/forms/SaveBar'
@@ -1767,9 +1767,45 @@ function RankingTab({
 
 // ─── payments tab ─────────────────────────────────────────────────────────────
 
+type PaymentsSubTab = 'linyup' | 'outside' | 'details'
+
+/** The Payments sub-tab strip. Underlined, like the Offerings pane's tabs. */
+function PaymentsSubTabs({
+  value,
+  onChange,
+  tabs,
+}: {
+  value: PaymentsSubTab
+  onChange: (tab: PaymentsSubTab) => void
+  tabs: { key: PaymentsSubTab; label: string }[]
+}) {
+  return (
+    <div className="flex gap-1 overflow-x-auto border-b" role="tablist">
+      {tabs.map((tab) => {
+        const on = tab.key === value
+        return (
+          <button
+            key={tab.key}
+            type="button"
+            role="tab"
+            aria-selected={on}
+            onClick={() => onChange(tab.key)}
+            className={`-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
+              on
+                ? 'border-primary text-foreground'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {tab.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 function PaymentsTab({ teamId, canEdit }: { teamId: string; canEdit: boolean }) {
   const t = useTranslations('TeamSettings')
-  const tConnect = useTranslations('ConnectPayments')
   const qc = useQueryClient()
   const { user, team } = useAuth()
   const {
@@ -1790,6 +1826,30 @@ function PaymentsTab({ teamId, canEdit }: { teamId: string; canEdit: boolean }) 
   //
   // Read only when there IS a Stripe integration to accuse, and only for
   // somebody who can act on it (a manager cannot even see this list).
+  // ── THREE SUB-TABS (Franco, 2026-09-25) ───────────────────────────────────
+  // With Linyup (the rail that takes money), Outside Linyup (the ones that only
+  // record it) and Billing details (the currency and the legal profile, which
+  // belong to neither rail — the currency prices every surface, and the legal
+  // profile is printed on receipts for cash too). The line the note below
+  // describes is now the tab boundary itself.
+  //
+  // It OPENS ON THE TAB THE STUDIO USES: connected to Stripe → With Linyup;
+  // only manual modes or its own provider → Outside Linyup; nothing yet → With
+  // Linyup, where the case for it is made. Until the studio picks a tab the
+  // default follows the data as it loads; once it picks, it stays.
+  const connectOffered = team?.payments?.connectEnabled !== false
+  const { data: connectStatus } = useConnectStatus(teamId, connectOffered)
+  const [pickedPayTab, setPickedPayTab] = useState<PaymentsSubTab | null>(null)
+  const defaultPayTab: PaymentsSubTab =
+    !connectOffered
+      ? 'outside'
+      : connectStatus?.connected
+        ? 'linyup'
+        : (team?.payment_modes?.length ?? 0) > 0 || integrations.length > 0
+          ? 'outside'
+          : 'linyup'
+  const payTab = pickedPayTab ?? defaultPayTab
+
   const hasStripeGateway = integrations.some((i) => i.config.type === 'stripe')
   const { data: doubleRecording } = useByoStripeDoubleRecording(teamId, canEdit && hasStripeGateway)
 
@@ -1930,29 +1990,62 @@ function PaymentsTab({ teamId, canEdit }: { teamId: string; canEdit: boolean }) 
           takes money is above the record-only heading, everything that merely
           writes down money already taken is below it. Keep it that way — a card
           moved across that line silently reverses what its heading claims. */}
-      {/* ── SECTIONS, NOT CARDS (the Settings → General layout) ────────────
-          The line between the two sections is the line described above: the
-          first takes money, the second records money taken elsewhere. The
-          billing currency and the legal profile save from the floating bar;
-          the Stripe Connect actions, the payment-mode chips and the provider
-          list act at once, as they always did. No write moved — only the
-          buttons that trigger two of them. */}
-      <SettingsSection title={tConnect('title')}>
+      {/* ── ONE STRIP, THREE PANELS, ALL MOUNTED ───────────────────────────
+          Every panel stays mounted and is only hidden, so an unsaved currency
+          or legal-profile edit keeps its place in the floating bar while the
+          studio looks at another tab. Underline tabs, the Offerings pane's
+          shape, so the strip does not read as a second navigation bar. The
+          currency and the legal profile save from the bar; the Stripe Connect
+          actions, the payment-mode chips and the provider list act at once. */}
+      <PaymentsSubTabs
+        value={payTab}
+        onChange={setPickedPayTab}
+        tabs={[
+          ...(connectOffered ? [{ key: 'linyup' as const, label: t('paymentsTabLinyup') }] : []),
+          { key: 'outside' as const, label: t('paymentsTabOutside') },
+          { key: 'details' as const, label: t('paymentsTabDetails') },
+        ]}
+      />
+
+      <div className={payTab === 'linyup' ? 'space-y-2' : 'hidden'}>
+        <p className="text-sm text-muted-foreground">
+          {t.rich('paymentsLinyupIntro', {
+            other: (chunks) => (
+              <button
+                type="button"
+                onClick={() => setPickedPayTab('outside')}
+                className="text-primary underline-offset-2 hover:underline"
+              >
+                {chunks}
+              </button>
+            ),
+          })}
+        </p>
         {/* Stripe Connect — its own status and actions. Renders nothing when
-            an operator has switched the rail off for this team. */}
-        <ConnectPaymentsCard teamId={teamId} embedded />
+            an operator has switched the rail off for this team, and then this
+            tab is not offered at all. */}
+        <SettingsSection>
+          <ConnectPaymentsCard teamId={teamId} embedded />
+        </SettingsSection>
+      </div>
 
-        {/* The currency the rail above charges in — money-side, so it stays in
-            this section and above the record-only one. */}
-        <BillingCurrencyRow
-          teamId={teamId}
-          current={team?.default_currency}
-          gatewayCurrency={gatewayCurrency}
-          canEdit={canEdit}
-        />
-      </SettingsSection>
-
-      <SettingsSection title={t('paymentsRecordOnlyTitle')}>
+      <div className={payTab === 'outside' ? 'space-y-2' : 'hidden'}>
+        <p className="text-sm text-muted-foreground">
+          {connectOffered
+            ? t.rich('paymentsOutsideIntro', {
+                other: (chunks) => (
+                  <button
+                    type="button"
+                    onClick={() => setPickedPayTab('linyup')}
+                    className="text-primary underline-offset-2 hover:underline"
+                  >
+                    {chunks}
+                  </button>
+                ),
+              })
+            : t('paymentsOutsideIntroOnly')}
+        </p>
+      <SettingsSection>
 
       {/* ── TWO CARDS, CHEAPEST FIRST ─────────────────────────────────────────
           Manual on top and the external provider below it: taking cash is what
@@ -2125,11 +2218,26 @@ function PaymentsTab({ teamId, canEdit }: { teamId: string; canEdit: boolean }) 
       )}
       </div>
       </SettingsSection>
+      </div>
 
-      {/* The creditor identity printed on documents (Tarif 595 receipts today,
-          QR-bill invoices later) — SHARED, not owned by either plugin. Owner
-          write, member read: see components/payments/LegalProfileCard.tsx. */}
-      <LegalProfileCard teamId={teamId} />
+      <div className={payTab === 'details' ? 'space-y-10' : 'hidden'}>
+        {/* The currency every payment surface prices in — the Linyup rail's
+            and the record-only ones' alike, which is why it is on neither of
+            their tabs. */}
+        <SettingsSection>
+          <BillingCurrencyRow
+            teamId={teamId}
+            current={team?.default_currency}
+            gatewayCurrency={gatewayCurrency}
+            canEdit={canEdit}
+          />
+        </SettingsSection>
+
+        {/* The creditor identity printed on documents (Tarif 595 receipts today,
+            QR-bill invoices later) — SHARED, not owned by either plugin. Owner
+            write, member read: see components/payments/LegalProfileCard.tsx. */}
+        <LegalProfileCard teamId={teamId} />
+      </div>
 
       {/* Add/edit dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>

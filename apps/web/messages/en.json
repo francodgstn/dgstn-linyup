@@ -2282,7 +2282,13 @@
     "subTypeMoreOptionsLabel": "More options",
     "subTypeMoreOptionsHint": "Partner source, payout, and checkout contact capture",
     "subTypePriceMoreOptionsLabel": "More options",
-    "subTypePriceMoreOptionsHint": "Limit how many times one person can buy this"
+    "subTypePriceMoreOptionsHint": "Limit how many times one person can buy this",
+    "paymentsTabLinyup": "With Linyup",
+    "paymentsTabOutside": "Outside Linyup",
+    "paymentsTabDetails": "Billing details",
+    "paymentsLinyupIntro": "Members pay online inside Linyup, and the money lands in your own Stripe account. Taking cash, bank transfers or using your own provider? That's <other>Outside Linyup</other>.",
+    "paymentsOutsideIntro": "Record payments you take yourself: cash, bank transfer, TWINT, or your own Stripe or Payrexx account. To let members pay online inside Linyup, see <other>With Linyup</other>.",
+    "paymentsOutsideIntroOnly": "Record payments you take yourself: cash, bank transfer, TWINT, or your own Stripe or Payrexx account."
   },
   "Bookings": {
     "title": "Bookings",
@@ -3154,7 +3160,9 @@
     "whatsappUsageCategory_service": "Service replies",
     "whatsappUsageCategory_authentication": "Authentication",
     "whatsappUsageBillingNote": "Meta bills your studio directly for these — Linyup adds no charge of its own.",
-    "whatsappMessagesNotConnected": "Messages can be written once the studio owner has connected a WhatsApp number."
+    "whatsappMessagesNotConnected": "Messages can be written once the studio owner has connected a WhatsApp number.",
+    "settingsPlaceholderBody": "Browse, install and configure plugins in the plugin catalogue. It opens as its own page.",
+    "settingsPlaceholderCta": "Open plugins"
   },
   "AiAssistant": {
     "launcherLabel": "AI assistant",

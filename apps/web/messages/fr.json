@@ -2282,7 +2282,13 @@
     "subTypeMoreOptionsLabel": "Plus d'options",
     "subTypeMoreOptionsHint": "Source partenaire, versement et saisie du contact à la caisse",
     "subTypePriceMoreOptionsLabel": "Plus d'options",
-    "subTypePriceMoreOptionsHint": "Limiter le nombre d'achats par personne"
+    "subTypePriceMoreOptionsHint": "Limiter le nombre d'achats par personne",
+    "paymentsTabLinyup": "Avec Linyup",
+    "paymentsTabOutside": "En dehors de Linyup",
+    "paymentsTabDetails": "Informations de facturation",
+    "paymentsLinyupIntro": "Vos membres paient en ligne dans Linyup, et l'argent arrive sur votre propre compte Stripe. Vous encaissez en espèces, par virement ou avec votre propre prestataire ? C'est dans <other>En dehors de Linyup</other>.",
+    "paymentsOutsideIntro": "Enregistrez les paiements que vous encaissez vous-même : espèces, virement, TWINT, ou votre propre compte Stripe ou Payrexx. Pour que vos membres paient en ligne dans Linyup, voyez <other>Avec Linyup</other>.",
+    "paymentsOutsideIntroOnly": "Enregistrez les paiements que vous encaissez vous-même : espèces, virement, TWINT, ou votre propre compte Stripe ou Payrexx."
   },
   "Bookings": {
     "title": "Réservations",
@@ -3154,7 +3160,9 @@
     "whatsappUsageCategory_service": "Réponses de service",
     "whatsappUsageCategory_authentication": "Authentification",
     "whatsappUsageBillingNote": "Meta facture ces messages directement à votre studio — Linyup n'ajoute aucun frais supplémentaire.",
-    "whatsappMessagesNotConnected": "Les messages pourront être rédigés dès que le ou la propriétaire du studio aura connecté un numéro WhatsApp."
+    "whatsappMessagesNotConnected": "Les messages pourront être rédigés dès que le ou la propriétaire du studio aura connecté un numéro WhatsApp.",
+    "settingsPlaceholderBody": "Parcourez, installez et configurez les plugins dans le catalogue. Il s'ouvre sur sa propre page.",
+    "settingsPlaceholderCta": "Ouvrir les plugins"
   },
   "AiAssistant": {
     "launcherLabel": "Assistant IA",

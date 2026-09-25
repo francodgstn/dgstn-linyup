@@ -2282,7 +2282,13 @@
     "subTypeMoreOptionsLabel": "Altre opzioni",
     "subTypeMoreOptionsHint": "Fonte partner, pagamento e raccolta del contatto alla cassa",
     "subTypePriceMoreOptionsLabel": "Altre opzioni",
-    "subTypePriceMoreOptionsHint": "Limita quante volte una persona può acquistarlo"
+    "subTypePriceMoreOptionsHint": "Limita quante volte una persona può acquistarlo",
+    "paymentsTabLinyup": "Con Linyup",
+    "paymentsTabOutside": "Fuori da Linyup",
+    "paymentsTabDetails": "Dati di fatturazione",
+    "paymentsLinyupIntro": "I membri pagano online direttamente in Linyup e il denaro arriva sul tuo conto Stripe. Incassi in contanti, con bonifico o usi un tuo fornitore? Lo trovi in <other>Fuori da Linyup</other>.",
+    "paymentsOutsideIntro": "Registra i pagamenti che incassi tu: contanti, bonifico, TWINT o il tuo conto Stripe o Payrexx. Per far pagare i membri online in Linyup, vedi <other>Con Linyup</other>.",
+    "paymentsOutsideIntroOnly": "Registra i pagamenti che incassi tu: contanti, bonifico, TWINT o il tuo conto Stripe o Payrexx."
   },
   "Bookings": {
     "title": "Prenotazioni",
@@ -3154,7 +3160,9 @@
     "whatsappUsageCategory_service": "Risposte di servizio",
     "whatsappUsageCategory_authentication": "Autenticazione",
     "whatsappUsageBillingNote": "Meta addebita questi messaggi direttamente al tuo studio — Linyup non aggiunge alcun costo.",
-    "whatsappMessagesNotConnected": "I messaggi si potranno scrivere non appena il o la titolare dello studio avrà collegato un numero WhatsApp."
+    "whatsappMessagesNotConnected": "I messaggi si potranno scrivere non appena il o la titolare dello studio avrà collegato un numero WhatsApp.",
+    "settingsPlaceholderBody": "Sfoglia, installa e configura i plugin nel catalogo. Si apre in una pagina a sé.",
+    "settingsPlaceholderCta": "Apri i plugin"
   },
   "AiAssistant": {
     "launcherLabel": "Assistente IA",

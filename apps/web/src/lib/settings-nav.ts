@@ -101,23 +101,19 @@ export const SETTINGS_ITEMS: SettingsNavItem[] = [
   // Affiliations moved to the main nav's "Offer" section (/offer/affiliations).
   { id: 'teamCustomFields', href: '/settings/team?tab=custom-fields', labelKey: 'teamCustomFields', icon: ListChecks, group: 'studio', gate: 'customFields' },
   { id: 'teamCoaching', href: '/settings/coaching', labelKey: 'teamCoaching', icon: Target, group: 'studio' },
-  // THE ONE ROW THAT DELIBERATELY LEAVES THE SHELL (2026-09-20). The marketplace
-  // moved out of the detail pane to a full page at /plugins, where its per-plugin
-  // editors already lived (/plugins/website, /plugins/finance, …), so the
-  // catalogue and the things it installs share a prefix at last.
-  //
-  // The Places note further down says a rail row pointing outside /settings
-  // "throws the reader out of settings mid-task", and that rule still holds for
-  // every other row. It does not bite here, because browsing plugins IS the task
-  // rather than a step inside another one — nobody is halfway through configuring
-  // the booking page when they open the catalogue. And the shell was costing the
-  // one screen in the app that is nothing but a card grid a rail's width of grid.
+  // THE PLUGINS ROW LANDS INSIDE SETTINGS (2026-09-25). The marketplace is a
+  // full page at /plugins, where its per-plugin editors live (/plugins/website,
+  // /plugins/finance, …) — but this row no longer jumps there. It opens
+  // /settings/plugins, a one-button stop in the shell, because a rail row that
+  // leaves the shell throws the reader out of settings with no warning (the
+  // Places note further down makes the same point). The extra click is the
+  // studio choosing to leave.
   //
   // The row stays because this is a destination a studio looks for under
   // Settings, and because it is what puts "plugins / extensions / add-ons /
   // marketplace" in the global search index (the sidebar's own Explore-plugins
   // button is NOT indexed — see the searchEntries note in (auth)/layout.tsx).
-  { id: 'plugins', href: '/plugins', labelKey: 'plugins', icon: Puzzle, group: 'studio', exact: true },
+  { id: 'plugins', href: '/settings/plugins', labelKey: 'plugins', icon: Puzzle, group: 'studio', exact: true },
   // API keys for the public API and MCP server (docs/public-api.md). Owner-only:
   // the key records are owner-READ in firestore.rules, so anyone else would
   // arrive at a page that can only explain why it is empty. Shown whether or not

@@ -1,4 +1,12 @@
-// Legacy path. The plugins marketplace is a FULL PAGE again, at /plugins —
+// The Settings stop for plugins, and the legacy path of the marketplace.
+//
+// WITH A QUERY it redirects, as it always has: `?plugin=<id>` deep links (below)
+// must keep opening the catalogue on that plugin's card. WITHOUT ONE it renders
+// PluginsPlaceholder — this is where the settings rail's Plugins row lands, so a
+// click in the settings list keeps the studio in settings until it chooses to
+// open the catalogue (see PluginsPlaceholder).
+//
+// The plugins marketplace is a FULL PAGE again, at /plugins —
 // where its per-plugin editors already live (/plugins/website, /plugins/finance,
 // …), so the catalogue and the things it installs finally share a prefix.
 //
@@ -14,6 +22,7 @@
 // people on the bare grid with no idea which card they were sent for.
 import { redirect } from 'next/navigation'
 import type { Route } from 'next'
+import { PluginsPlaceholder } from './PluginsPlaceholder'
 
 export default async function Page({
   params,
@@ -29,6 +38,7 @@ export default async function Page({
     else if (value !== undefined) qs.set(key, value)
   }
   const query = qs.toString()
+  if (!query) return <PluginsPlaceholder />
   const base = locale === 'en' ? '/plugins' : `/${locale}/plugins`
-  redirect((query ? `${base}?${query}` : base) as Route)
+  redirect(`${base}?${query}` as Route)
 }
