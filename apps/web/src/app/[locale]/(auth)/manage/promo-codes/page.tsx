@@ -927,18 +927,18 @@ function Header({
     <div className="flex items-start gap-2">
       <Ticket className="mt-1 h-5 w-5 shrink-0 text-muted-foreground" />
       <div>
-        <h1 className="text-2xl font-semibold">{t('title')}</h1>
+        <div className="flex items-center gap-1.5">
+          <h1 className="text-2xl font-semibold">{t('title')}</h1>
+          {showQuickLinks && (
+            <QuickLinks links={[{ href: '/manage/pricing' as Route, label: tNav('pricing') }]} />
+          )}
+        </div>
         <p className="mt-0.5 text-sm text-muted-foreground">{t('subtitle')}</p>
         {/* Quick link (UX-71): a code created here changes nothing visible on
             this page beyond its own row. Pricing's Discounts section is the one
             admin surface that shows the live, in-window codes next to the prices
             they cut — i.e. the page that confirms the code is actually running.
             Not shown in the locked branch below: there are no codes to check. */}
-        {showQuickLinks && (
-          <QuickLinks
-            links={[{ href: '/manage/pricing' as Route, label: tNav('pricing') }]}
-          />
-        )}
       </div>
     </div>
   )

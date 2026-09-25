@@ -3080,16 +3080,16 @@ export default function ContactsPage() {
         <div>
           <div className="flex items-center gap-1.5">
             <h1 className="text-2xl font-bold tracking-tight">{t('title')}</h1>
+            <QuickLinks
+              links={[
+                { href: '/bookings' as Route, label: tNav('bookings') },
+                { href: '/payments' as Route, label: tNav('payments') },
+              ]}
+            />
           </div>
           {/* The head-count used to sit here. The list itself already answers
               "how many", and the two pages a studio reaches for from a contact
               list — what they booked, and what they paid — had no pointer. */}
-          <QuickLinks
-            links={[
-              { href: '/bookings' as Route, label: tNav('bookings') },
-              { href: '/payments' as Route, label: tNav('payments') },
-            ]}
-          />
           {!loadingActive && !usage.isUnlimited && (
             <div className="mt-1.5 flex items-center gap-2 max-w-xs">
               <div className="h-1.5 flex-1 rounded-full bg-muted overflow-hidden">

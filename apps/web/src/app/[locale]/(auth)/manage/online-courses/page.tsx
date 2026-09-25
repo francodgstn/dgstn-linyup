@@ -200,7 +200,12 @@ export default function OnlineCoursesPage() {
         <div className="flex items-center gap-2">
           <GraduationCap className="h-5 w-5 text-muted-foreground" />
           <div>
-            <h1 className="text-2xl font-semibold">{t('title')}</h1>
+            <div className="flex items-center gap-1.5">
+              <h1 className="text-2xl font-semibold">{t('title')}</h1>
+              <QuickLinks
+                links={[{ href: '/settings/team?tab=payments' as Route, label: tNav('teamPayments') }]}
+              />
+            </div>
             {shopUrl ? (
               <a
                 href={shopUrl}
@@ -229,9 +234,6 @@ export default function OnlineCoursesPage() {
       {/* The payment destination reads as a prompt link like every other
           cross-page pointer, instead of a `text-xs` link tucked under the quota
           counter where it looked like a footnote about the quota. */}
-      <QuickLinks
-        links={[{ href: '/settings/team?tab=payments' as Route, label: tNav('teamPayments') }]}
-      />
 
       {/* Status filter */}
       <div className="flex flex-wrap gap-2">

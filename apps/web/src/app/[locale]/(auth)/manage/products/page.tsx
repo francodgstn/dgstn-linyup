@@ -430,7 +430,12 @@ export default function ProductsPage() {
         <div className="flex items-center gap-2">
           <Tag className="h-5 w-5 text-muted-foreground" />
           <div>
-            <h1 className="text-2xl font-semibold">{t('title')}</h1>
+            <div className="flex items-center gap-1.5">
+              <h1 className="text-2xl font-semibold">{t('title')}</h1>
+              <QuickLinks
+                links={[{ href: '/settings/team?tab=payments' as Route, label: tNav('teamPayments') }]}
+              />
+            </div>
             {shopUrl ? (
               <a
                 href={shopUrl}
@@ -473,9 +478,6 @@ export default function ProductsPage() {
       {/* The payment destination reads as a prompt link like every other
           cross-page pointer, instead of a `text-xs` link tucked under the quota
           counter where it looked like a footnote about the quota. */}
-      <QuickLinks
-        links={[{ href: '/settings/team?tab=payments' as Route, label: tNav('teamPayments') }]}
-      />
 
       {/* Team-wide collection default — written once, inherited by every product
           that says nothing of its own. Read-only for a manager: the team doc is

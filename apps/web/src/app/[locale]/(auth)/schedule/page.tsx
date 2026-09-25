@@ -1234,6 +1234,13 @@ export default function CalendarPage() {
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
             <h1 className="text-2xl font-bold tracking-tight">{t('title')}</h1>
+            <QuickLinks
+              links={[
+                { href: '/offer/activities' as Route, label: tNav('activities') },
+                { href: '/bookings' as Route, label: tNav('bookings') },
+                { href: '/settings/booking' as Route, label: tNav('bookingPage') },
+              ]}
+            />
           </div>
           {/* WHAT FILLS THIS CALENDAR, AND WHAT COMES OUT OF IT. A session is an
               instance of an ACTIVITY and produces BOOKINGS, and the calendar
@@ -1242,13 +1249,6 @@ export default function CalendarPage() {
               because it is where the bookings actually come from; it opens in a
               new tab rather than joining the QuickLinks line, which types its
               hrefs as in-app Routes. */}
-          <QuickLinks
-            links={[
-              { href: '/offer/activities' as Route, label: tNav('activities') },
-              { href: '/bookings' as Route, label: tNav('bookings') },
-              { href: '/settings/booking' as Route, label: tNav('bookingPage') },
-            ]}
-          />
         </div>
         {/* ONE height across this row. These controls were hand-sized
             independently — a `size="sm"` link and a px-4/py-2 trigger — so

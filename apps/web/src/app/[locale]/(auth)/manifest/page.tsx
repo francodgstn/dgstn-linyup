@@ -123,16 +123,18 @@ export default function ManifestPage() {
       {/* Toolbar — screen only */}
       <div className="no-print flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">{t('pageTitle')}</h1>
+          <div className="flex items-center gap-1.5">
+            <h1 className="text-2xl font-semibold">{t('pageTitle')}</h1>
+            <QuickLinks
+              links={[
+                { href: '/schedule' as Route, label: tNav('calendar') },
+                { href: '/bookings' as Route, label: tNav('bookings') },
+              ]}
+            />
+          </div>
           {/* The description ("Every session today, with its roster — built to
               print") said what the page visibly is. The two pages a coach
               actually moves to from here are worth the line instead. */}
-          <QuickLinks
-            links={[
-              { href: '/schedule' as Route, label: tNav('calendar') },
-              { href: '/bookings' as Route, label: tNav('bookings') },
-            ]}
-          />
         </div>
         <Button onClick={() => window.print()} className="gap-2">
           <Printer className="h-4 w-4" />

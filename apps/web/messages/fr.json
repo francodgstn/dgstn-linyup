@@ -7498,7 +7498,8 @@
   },
   "QuickLinks": {
     "related": "Voir aussi :",
-    "availabilityToActivities": "Gérer les activités sur rendez-vous"
+    "availabilityToActivities": "Gérer les activités sur rendez-vous",
+    "relatedPages": "Pages liées"
   },
   "Site": {
     "loading": "Chargement…",
