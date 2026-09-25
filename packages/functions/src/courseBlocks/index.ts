@@ -47,6 +47,7 @@ import {
   foldOfferingPlanEdgeUpdates,
   type ActivityRateChoice,
   type Activity,
+  type Benefit,
   type CourseBlock,
   type CourseCurriculumItem,
   type CourseMeeting,
@@ -60,7 +61,7 @@ import { resolveCourseSchedule, type CourseScheduleInput } from './schedule'
  *  roll". The roller's query (`status == 'active'`) is what makes it free. */
 export const FIXED_SERIES_STATUS = 'fixed'
 
-interface CourseBlockWrite {
+export interface CourseBlockWrite {
   name?: unknown
   description?: unknown
   curriculum?: unknown
@@ -261,10 +262,30 @@ export const createCourseBlock = onCall(async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'User must be authenticated')
   const teamId = requireTeamId(request.data)
   await requireCapability(request.auth.uid, teamId, 'schedule.manage')
+  return createCourseBlockRecord(admin.firestore(), request.auth.uid, teamId, request.data as CourseBlockWrite)
+})
 
-  const data = request.data as CourseBlockWrite
+/** The plan links a new course is born with. Empty from the course form, which
+ *  links a course in the Offerings pane like every other offering; the setup
+ *  wizard asks for them first and passes what `courseBlockPlanEdgeUpdate` built. */
+export interface NewCourseBlockLinks {
+  includedSubscriptionTypeIds: string[]
+  benefit: Benefit | null
+}
+
+/**
+ * THE COURSE CREATOR: a course, its owned series and every lesson. The one way
+ * a course comes into being, reached by `createCourseBlock` and by the setup
+ * wizard (`applyOfferingSetup`). The caller has already checked who may.
+ */
+export async function createCourseBlockRecord(
+  db: FirebaseFirestore.Firestore,
+  uid: string,
+  teamId: string,
+  data: CourseBlockWrite,
+  born: { links?: NewCourseBlockLinks; createdVia?: 'wizard' } = {}
+): Promise<{ id: string; seriesId: string; meetings: number; created: number }> {
   const schedule = resolveCourseSchedule(data.schedule as CourseScheduleInput)
-  const db = admin.firestore()
 
   const activityId = optionalString(data.activityId, 200)
   const activityName = await loadActivityName(db, teamId, activityId)
@@ -283,11 +304,12 @@ export const createCourseBlock = onCall(async (request) => {
     providerName: optionalString(data.providerName, 120),
     places: cleanPlaces(data.places),
     priceAmount: cleanPrice(data.priceAmount),
-    // The plan edge starts empty and is drawn where every other offering's is,
-    // in the Offerings pane, so a course is linked to a plan the same way a
-    // class is rather than through a second editor that learns the same rules.
-    includedSubscriptionTypeIds: [],
-    benefit: null,
+    // The plan edge starts empty from the course form and is drawn where every
+    // other offering's is, in the Offerings pane, so a course is linked to a
+    // plan the same way a class is rather than through a second editor that
+    // learns the same rules. The setup wizard asks first and passes the links.
+    includedSubscriptionTypeIds: born.links?.includedSubscriptionTypeIds ?? [],
+    benefit: born.links?.benefit ?? null,
     audience: data.audience === 'members' ? ('members' as const) : ('anyone' as const),
     close_days_before: cleanCloseDays(data.closeDaysBefore),
     booking_closes_at: closesAt(schedule.meetings, cleanCloseDays(data.closeDaysBefore)),
@@ -302,7 +324,8 @@ export const createCourseBlock = onCall(async (request) => {
     fanout_conflicts: [],
     created_at: FieldValue.serverTimestamp(),
     updated_at: FieldValue.serverTimestamp(),
-    createdBy: request.auth.uid,
+    createdBy: uid,
+    ...(born.createdVia ? { created_via: born.createdVia } : {}),
   }
 
   const blockRef = db.collection(COURSE_BLOCKS_COLLECTION).doc()
@@ -313,8 +336,8 @@ export const createCourseBlock = onCall(async (request) => {
   const seriesRef = db.collection(SESSION_SERIES_COLLECTION).doc()
   await seriesRef.set({
     teamId,
-    teacher: request.auth.uid,
-    createdBy: request.auth.uid,
+    teacher: uid,
+    createdBy: uid,
     course_block_id: blockRef.id,
     // Not 'active': the roller must never touch it. Every occurrence is written
     // below, in full, and the meeting list is the only thing that changes it.
@@ -349,7 +372,7 @@ export const createCourseBlock = onCall(async (request) => {
   await seriesRef.update({ totalOccurrences: created })
 
   return { id: blockRef.id, seriesId: seriesRef.id, meetings: schedule.meetings.length, created }
-})
+}
 
 // ─── updateCourseBlock ───────────────────────────────────────────────────────
 

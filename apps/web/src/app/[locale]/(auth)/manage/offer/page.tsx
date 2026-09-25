@@ -2093,8 +2093,12 @@ export default function CataloguePage() {
           plans={plans}
           activities={activities}
           bookingSettings={bookingSettings}
-          onHandoff={(kind) => (kind === 'course' ? setCourseEditing('new') : setCreating('activity'))}
           onCreated={({ kind, id }) => {
+            if (kind === 'course') {
+              void qc.invalidateQueries({ queryKey: ['course-blocks', currentTeamId] })
+              select({ kind: 'courseBlock', id })
+              return
+            }
             refreshQueries(qc, ['activities'], ['subscription-types'])
             select({ kind: kind === 'plan' ? 'plan' : 'activity', id })
           }}
