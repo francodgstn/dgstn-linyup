@@ -89,6 +89,57 @@ describe('toContactsCsv', () => {
     assert.ok(!line.includes('undefined'))
   })
 
+  // docs/multi-plan-holdings.md §5: every held plan, not the legacy slot's one.
+  it('lists every plan held at export time, and none that has ended or not begun', () => {
+    const DAY = 86_400_000
+    const now = Date.parse('2026-09-25T12:00:00Z')
+    const plan = (over: Record<string, unknown>) => ({
+      subscription_type_id: 't',
+      subscription_type_name: null,
+      source: 'grant',
+      status: 'active',
+      starts_at_ms: now - 30 * DAY,
+      ends_at_ms: null,
+      price_id: null,
+      amount: null,
+      recurrence: null,
+      ref: 'r',
+      ...over,
+    })
+    const csv = toContactsCsv(
+      [
+        {
+          id: 'c1',
+          subscription_type_name: 'Legacy slot',
+          held_plans: [
+            plan({ subscription_type_name: 'Gold', source: 'stripe', status: 'past_due' }),
+            plan({
+              subscription_type_name: 'Kids',
+              grant_source: 'purchase',
+              ends_at_ms: Date.parse('2026-12-31T00:00:00Z'),
+            }),
+            plan({ subscription_type_name: '10er', source: 'credits', credits_remaining: 4 }),
+            plan({ subscription_type_name: 'Ended', ends_at_ms: now - DAY }),
+            plan({ subscription_type_name: 'Future', starts_at_ms: now + DAY }),
+            plan({ subscription_type_name: 'Empty pack', source: 'credits', credits_remaining: 0 }),
+          ],
+        },
+      ],
+      { nowMs: now }
+    )
+    const [header, line] = rows(csv)
+    assert.ok(header.includes(',plans,'))
+    assert.ok(!header.includes('subscription_type'))
+    assert.ok(
+      line.includes(
+        'Gold (recurring billing, past_due); Kids (bought, until 2026-12-31); 10er (credit pack, 4 left)'
+      ),
+      line
+    )
+    for (const gone of ['Legacy slot', 'Ended', 'Future', 'Empty pack'])
+      assert.ok(!line.includes(gone), gone)
+  })
+
   it('emits one row per contact, in the order given', () => {
     const csv = toContactsCsv([{ id: 'a' }, { id: 'b' }, { id: 'c' }])
     const out = rows(csv)
