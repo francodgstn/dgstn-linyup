@@ -77,7 +77,7 @@ import { useState } from 'react'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 import { useTranslations } from 'next-intl'
 import type { Contact, EngagementBand, EngagementThresholds, RankingSystem } from '@linyup/shared'
-import { ENGAGEMENT_BANDS, computeEngagementBand, isRosterContact, primaryRank, rankLevelKey, orderedLevels } from '@linyup/shared'
+import { ENGAGEMENT_BANDS, computeEngagementBand, isRosterContact, primaryRank, rankLevelKey, orderedLevels, heldMemberships } from '@linyup/shared'
 import {
   Select,
   SelectContent,
@@ -318,7 +318,8 @@ export function RosterDonut({
           // A TYPE counts once per contact, however many subscriptions of it
           // they hold — two Essential plans is one type, not "more than one".
           const distinct = new Map<string, string>()
-          for (const sub of c.active_subscriptions ?? []) {
+          // The plan list (`heldMemberships`), the one "subscribed" definition.
+          for (const sub of heldMemberships(c)) {
             if (!distinct.has(sub.subscription_type_id))
               distinct.set(sub.subscription_type_id, sub.subscription_type_name ?? '—')
           }

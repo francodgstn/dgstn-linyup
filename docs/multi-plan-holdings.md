@@ -320,7 +320,18 @@ Each phase is its own PR and leaves `main` shippable.
      adds (`assignPlan`, `replace: false`) and never touches billing; the old
      dialog's replace-everything save and its cancel-all-billing default are
      gone. Ended Stripe billing keeps its cancellation record under the list.
-     Still to do: payment ↔ plan-card links, and the other surfaces above.
+   - **Built (2026-09-25): payment ↔ plan-card links** (`planCardForPayment`,
+     `apps/web/src/lib/payments.ts`) — each card lists its payments, each
+     payment row opens its card.
+   - **Built (2026-09-25): the display surfaces read the list** through
+     `heldMemberships` (shared, planHoldings.ts — every current held plan but
+     credit packs, the one "subscribed" definition for display): the contact
+     header chips and facts line, the contacts-list badge, the member Space
+     card and its "change subscription" link, Payments → Subscriptions (one row
+     per held plan; "unlinked" = live Stripe billing no plan list knows about),
+     and the dashboard's figures, donut and overview card.
+     Still to do: the billing warning (`contactBillingIsUnlinked`, which still
+     compares Stripe billing to the legacy slot), CSV, the mobile profile.
 5. **Remove the slot.** Delete the `subscription_type_*` fields from the
    Contact type, the rules and every remaining reader; the census test's
    allow-list ends empty. No adoption wait — nothing is live.

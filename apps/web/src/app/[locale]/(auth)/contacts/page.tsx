@@ -45,7 +45,7 @@ import {
 } from '@linyup/shared'
 import type {
   RankRef, Contact, ContactGroup, AcquisitionStage, ContactEntry, ContactSource, ContactRequest, RankingSystem, SubscriptionType, SubscriptionPrice, OrgAffiliationStatusDef, SaasPlan, EngagementBand, EngagementThresholds, CustomFieldDefinition, CustomFieldType } from '@linyup/shared'
-import { ACQUISITION_STAGES, CONTACT_ENTRIES, CONTACT_SOURCES, ENGAGEMENT_BANDS, contactLifecycle } from '@linyup/shared'
+import { ACQUISITION_STAGES, CONTACT_ENTRIES, CONTACT_SOURCES, ENGAGEMENT_BANDS, contactLifecycle, heldMemberships } from '@linyup/shared'
 // The ONE contact predicate — see packages/shared/src/utils/contactFilter.ts.
 // Never re-implement matching here; extend the resolver instead.
 import {
@@ -1942,18 +1942,18 @@ function ContactRow({
                 <ShieldCheck className="h-3.5 w-3.5" />
               </span>
             )}
-            {(contact.active_subscriptions?.length ?? 0) > 0 ? (
-              <Badge variant="secondary" className="text-xs font-normal">
-                {contact.active_subscriptions![0].subscription_type_name ??
-                  contact.subscription_type_name}
-                {contact.active_subscriptions!.length > 1 &&
-                  ` +${contact.active_subscriptions!.length - 1}`}
-              </Badge>
-            ) : contact.subscription_type_name ? (
-              <Badge variant="secondary" className="text-xs font-normal">
-                {contact.subscription_type_name}
-              </Badge>
-            ) : null}
+            {/* What they hold: the first membership + "+N", from the plan
+                list (`heldMemberships`, the one "subscribed" definition). */}
+            {(() => {
+              const held = heldMemberships(contact)
+              if (held.length === 0) return null
+              return (
+                <Badge variant="secondary" className="text-xs font-normal">
+                  {held[0].subscription_type_name ?? t('subscriptionHeadingCard')}
+                  {held.length > 1 && ` +${held.length - 1}`}
+                </Badge>
+              )
+            })()}
           </div>
         </div>
       </button>

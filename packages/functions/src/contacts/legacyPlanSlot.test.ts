@@ -242,11 +242,6 @@ const CENSUS: Record<string, CensusEntry> = {
   },
 
   // ── web ───────────────────────────────────────────────────────────────────
-  'apps/web/src/app/[locale]/(auth)/contacts/[id]/page.tsx': {
-    sites: 2,
-    writers: [],
-    note: "the header chips' fallback object is display; the plan dialog saves and clears through the plan callables",
-  },
   'apps/web/src/app/[locale]/(public)/public/[slug]/space/SpaceMembershipCard.tsx': {
     sites: 2,
     writers: [],

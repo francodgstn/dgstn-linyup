@@ -92,7 +92,7 @@ import {
   Users,
 } from 'lucide-react'
 import type { Contact, SubscriptionType } from '@linyup/shared'
-import { isRosterContact, partnerSubscriptionTypeIds } from '@linyup/shared'
+import { isRosterContact, partnerSubscriptionTypeIds, heldMemberships } from '@linyup/shared'
 import { Skeleton } from '@/components/ui/skeleton'
 import { usePlan } from '@/hooks/usePlan'
 import { useMonthlyRevenue } from '@/hooks/useMonthlyRevenue'
@@ -255,9 +255,14 @@ export function FiguresBlock({
   // folding it into "on one of your own plans" would make the subtitle false.
   // The same predicate the weekly report uses (subscriptionSource.ts in shared).
   const aggregatorIds = partnerSubscriptionTypeIds(subTypes as SubscriptionType[])
-  const withSub = live.filter((c) => !!c.subscription_type_id)
-  const internalSubs = withSub.filter((c) => !aggregatorIds.has(c.subscription_type_id!)).length
-  const aggregatorSubs = withSub.length - internalSubs
+  // From the plan list (`heldMemberships`, the one "subscribed" definition):
+  // it read the single legacy slot, so a member on two plans counted by
+  // whichever was written last. "Your own" = holds at least one plan the
+  // studio sold; partner-only members are counted apart.
+  const heldTypes = live.map((c) => heldMemberships(c).map((p) => p.subscription_type_id))
+  const withSubCount = heldTypes.filter((ids) => ids.length > 0).length
+  const internalSubs = heldTypes.filter((ids) => ids.some((id) => !aggregatorIds.has(id))).length
+  const aggregatorSubs = withSubCount - internalSubs
 
   const affiliated = live.filter((c) => c.affiliation_summary?.has_active).length
 

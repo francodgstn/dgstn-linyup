@@ -18,7 +18,7 @@
 //   'full'    (Account) — the amounts too; Account is where the detail lives.
 //
 // A FAILED READ IS NOT AN EMPTY MEMBERSHIP. `contacts/{id}` is where
-// `active_subscriptions` lives; when it will not load we do not know what this
+// the plan list (`held_plans`) lives; when it will not load we do not know what this
 // person holds, and "You have no active membership" is a claim about a paying
 // customer's account. Hence the error state, on both surfaces.
 
@@ -30,17 +30,16 @@ import { formatCurrency } from '@/lib/format'
 import { QueryErrorState } from '@/components/ui/query-error'
 import { Skeleton } from '@/components/ui/skeleton'
 import { loadFailureDetail } from '@/lib/publicQueryError'
-import { planGrantIsCurrent } from '@linyup/shared'
+import { heldMemberships } from '@linyup/shared'
 import type { ActiveSubscriptionSummary } from '@linyup/shared'
 import { useSpaceTheme } from './useSpaceTheme'
 import { useSpaceContact } from './useSpaceContact'
 import { usePublicTeam } from '../PublicTeamProvider'
 import { usePublicFormat } from '../usePublicFormat'
 
-/** One row of the member's membership list — the fields of the shared
- *  `ActiveSubscriptionSummary` this card reads (every one optional, because the
- *  legacy single-field fallback below cannot fill them all), plus one of its
- *  own. A real summary IS one of these; no cast. */
+/** One row of the member's membership list, built from one held plan
+ *  (`heldMemberships`) — the `ActiveSubscriptionSummary` fields this card
+ *  reads, plus one of its own. */
 type ShownSubscription = Partial<
   Pick<
     ActiveSubscriptionSummary,
@@ -49,7 +48,7 @@ type ShownSubscription = Partial<
 > & {
   /** End of a one-off grant ("2 months included") — the member's own answer to
    *  "until when", which otherwise only the studio could see. */
-  until?: { toDate(): Date } | null
+  until?: number | null
 }
 
 interface Props {
@@ -71,25 +70,26 @@ export function SpaceMembershipCard({ variant, slug, hasSubscriptionsForSale }: 
 
   const cardStyle = { background: cardBg, border: `1px solid ${cardBorder}` }
 
-  const subs: ShownSubscription[] = contact?.active_subscriptions ?? []
-  // The flat grant, shown only while it still COVERS her — the same
-  // `planGrantIsCurrent` comparison the booking gate makes. A member whose "2
-  // months included" has run out must not be told she is still a member by the
-  // very screen she opens to check.
-  const legacy: ShownSubscription[] =
-    !subs.length && contact?.subscription_type_id && planGrantIsCurrent(contact)
-      ? [
-          {
-            subscription_type_id: contact.subscription_type_id,
-            subscription_type_name: contact.subscription_type_name ?? null,
-            recurrence: contact.subscription_recurrence ?? null,
-            cancelling: false,
-            // The date she has left, so "until when" needs no support ticket.
-            until: contact.subscription_expires_at ?? null,
-          },
-        ]
-      : []
-  const shownSubs = subs.length ? subs : legacy
+  // EVERY MEMBERSHIP SHE HOLDS, from the plan list (docs/multi-plan-holdings.md
+  // §5): Stripe billing and every plan given or bought another way, each
+  // shown while it still COVERS her (`holdingIsCurrent`, the comparison the
+  // booking gate makes), so a membership that has run out is not shown as
+  // one on the very screen she opens to check. Credit packs have their own
+  // section. It used to read the Stripe mirror, and the single legacy slot
+  // only when there was no Stripe plan at all, so a second plan was invisible.
+  const shownSubs: ShownSubscription[] = heldMemberships(contact).map((p) => {
+    const cancelling = p.status === 'cancelling'
+    return {
+      subscription_type_id: p.subscription_type_id,
+      subscription_type_name: p.subscription_type_name,
+      recurrence: p.recurrence,
+      amount: p.amount ?? undefined,
+      cancelling,
+      cancels_at_ms: cancelling ? (p.ends_at_ms ?? undefined) : undefined,
+      // A given or bought plan with an end of its own ("2 months included").
+      until: p.source === 'grant' ? p.ends_at_ms : null,
+    }
+  })
   const aff = contact?.affiliation_summary
   const hasMembership = shownSubs.length > 0 || aff?.has_active === true
 
@@ -135,8 +135,8 @@ export function SpaceMembershipCard({ variant, slug, hasSubscriptionsForSale }: 
                     STATE — the member keeps training until this date. THE DATE
                     ONLY: the rest of the cancellation record (reason, survey,
                     comment) is the studio's to read, not read back to the member
-                    who wrote it, and it could not reach here anyway —
-                    `active_subscriptions` mirrors LIVE subscriptions only. */}
+                    who wrote it, and it could not reach here anyway — the plan
+                    list carries a status and a date, never the record. */}
                 {typeof s.cancels_at_ms === 'number' ? (
                   <span className="block text-xs font-normal" style={{ color: '#b45309' }}>
                     {t('membershipEndsOn', {
