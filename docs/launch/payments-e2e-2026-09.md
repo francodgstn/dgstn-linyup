@@ -14,11 +14,12 @@ from Firestore and, where the number is the point, from Stripe. The specs are in
 
 Nothing here touched a deployed environment.
 
-**Result of the final run** (fresh seed, all fixes in): 30 passed, 2 skipped,
-0 failed across `e2e/payments` and `e2e/promo-code-checkout.spec.ts`, with the
-two touched specs rerun green after the last fix. The two skips are the open
-decisions below, kept as `test.fixme` so they turn into failing tests the day
-the behaviour is chosen.
+**Result of the full run** (fresh seed, rebased on main, all fixes in, including
+the refund decision, fix 12): 31 passed, 1 skipped across `e2e/payments` and
+`e2e/promo-code-checkout.spec.ts`, counting the staff appointment test, whose
+only failure was a slot a previous run had left booked; its cleanup was then
+fixed and it passed twice back to back. The skip is the organisation checkout,
+kept as `test.fixme` until it is decided.
 
 ## What was covered
 
@@ -37,7 +38,7 @@ the behaviour is chosen.
 | | Priced trial on a plan-gated class | `booking` |
 | | Paid appointment (the hold is the session) | `booking` |
 | Studio | Payment link for a membership, paid by a new person | `studio-payments` |
-| | Refund: the partial refusal on a membership is explained inline, then the full refund | `studio-payments` |
+| | Refund: the partial refusal on a membership is explained inline, then the full refund cancels its Stripe subscription | `studio-payments` |
 | | Manual cash payment gives a plan; voiding it takes the plan back | `studio-payments` |
 | | Tarif 595 receipt from a payment: issued, PDF downloaded by the studio and by the member in Space, voided | `studio-payments` |
 | | QR-bill invoices: install, invoice, PDF, mark paid (records the payment) | `studio-payments` |
@@ -105,17 +106,17 @@ The earlier `promo-code-checkout.spec.ts` stays where it is.
     server-side Firestore REST reads follow the slot's emulator port instead of
     slot 0's (a worktree's public pages rendered from another checkout's data,
     which is why the first run saw "not accepting online payments").
+12. **A full refund of a Stripe-billed membership left it billing** (decided
+    2026-09-25: cancel it). The dialog said the refund "takes back the
+    membership it set up", but the reversal only clears a plan a one-off payment
+    set, so the subscription reported `skipped_not_owner`, stayed active and
+    billed again the next month. A full refund of a membership payment now
+    cancels its Stripe subscription at once, through the same helper as the
+    staff cancel action; the dialog and the toast say so, and a failed cancel is
+    a warning, not a failed refund. `docs/payment-contact-studio.md`.
 
 ## Needs a decision
 
-- **Refunding a Stripe-billed membership.** The refund dialog says it "takes back
-  what the payment gave: the membership it set up". For a membership billed by a
-  Stripe subscription it does not: `reversePaymentEffects` only clears a plan a
-  one-off payment set, records `subscription: skipped_not_owner`, and the
-  subscription stays active and bills again next month. Options: cancel the
-  Stripe subscription when its only payment is refunded in full, or keep the
-  behaviour and say so in the dialog and the toast. Pinned as a `fixme` in
-  `studio-payments.spec.ts`.
 - **Organisation checkout.** The org Billing page offers a self-serve
   "Subscribe", but `linyup_organization_monthly` is archived on the platform
   (`scripts/stripe-sync.ts` treats the org tier as sales-led and never creates

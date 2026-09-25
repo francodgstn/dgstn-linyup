@@ -4955,7 +4955,7 @@
     "refundDifferentAmount": "Rembourser un autre montant",
     "refundAmountLabel": "Montant du remboursement",
     "refundAmountMax": "Au maximum {amount}",
-    "refundReversesSubscription": "Cela reprend aussi ce que le paiement avait accordé : l’abonnement qu’il a mis en place et les cours non utilisés. Ce qu’un paiement plus récent a payé reste intact.",
+    "refundReversesSubscription": "Cela reprend aussi ce que le paiement avait accordé : l’abonnement qu’il a mis en place et les cours non utilisés. Un abonnement facturé via Stripe est résilié immédiatement et ne sera pas renouvelé.",
     "refundReversesCourse": "Cela retire aussi le cours de l’espace de {name}.",
     "refundConsumedTitle": "Une partie de ce pack a déjà été utilisée",
     "refundConsumedWhat": "{name} a utilisé {used} des {granted} cours de ce pack.",
@@ -5042,7 +5042,9 @@
     "stripeReceiptNone": "Stripe n'a pas de reçu pour ce paiement.",
     "stripeReceiptError": "Impossible de récupérer le reçu Stripe.",
     "lineKind_course_block": "Cours",
-    "selectCourseBlock": "Quel cours"
+    "selectCourseBlock": "Quel cours",
+    "refundSubscriptionCancelled": "Remboursé. L’abonnement est résilié et ne sera plus facturé.",
+    "refundSubscriptionCancelFailed": "L’argent a été remboursé, mais l’abonnement n’a pas pu être résilié et pourrait être facturé à nouveau. Résiliez-le dans le profil de {name}."
   },
   "PaymentErrors": {
     "setupIncomplete": "La configuration du compte de paiement n'est pas terminée, l'action n'a donc pas pu aboutir. Terminer la configuration dans Paramètres → Paiements.",

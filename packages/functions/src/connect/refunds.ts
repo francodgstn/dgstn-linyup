@@ -50,6 +50,7 @@ import * as admin from 'firebase-admin'
 import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 import { refundDirectCharge } from '../utils/connect/client'
 import { assertManager, loadEnabledTeam, requireChargeableAccount } from './access'
+import { cancelConnectSubscriptionNow } from './payments'
 import { reverseGiftCardDrawdown, unvoidGiftCard, voidUntouchedGiftCard } from './giftCards'
 import {
   lineItemForReversal,
@@ -336,6 +337,39 @@ export const refundMemberPayment = onCall(async (request) => {
       )
     }
 
+    // ── A full refund of a Stripe-billed membership ENDS it ──────────────────
+    // Franco's call, 2026-09-25. The reversal above clears only a plan a ONE-OFF
+    // payment set (`subscription_source_ref`); a membership billed by a Stripe
+    // subscription came out `skipped_not_owner`, stayed active and billed again
+    // next month, while the dialog told the manager the membership was taken
+    // back. Giving a membership payment back in full now cancels the
+    // subscription it came from, at once: the member keeps nothing they were
+    // refunded for, and is not charged again. Same place as the reversal and for
+    // the same reason, AFTER the money moved and never throwing.
+    const stripeSubscriptionId = (payment.subscriptionId as string | undefined) ?? null
+    let subscriptionCancelled: 'cancelled' | 'already_ended' | 'failed' | null = null
+    if (fullRefund && stripeSubscriptionId) {
+      try {
+        subscriptionCancelled = await cancelConnectSubscriptionNow({
+          teamId,
+          accountId,
+          subscriptionId: stripeSubscriptionId,
+        })
+      } catch (err) {
+        console.error(
+          `[connect] subscription cancel after full refund failed (pi=${paymentIntentId} sub=${stripeSubscriptionId}):`,
+          err
+        )
+        subscriptionCancelled = 'failed'
+      }
+      await paymentSnap.ref
+        .set(
+          { subscription_cancel_on_refund: { state: subscriptionCancelled, at: Timestamp.now(), by: uid } },
+          { merge: true }
+        )
+        .catch((e) => console.error(`[connect] subscription cancel stamp failed (pi=${paymentIntentId}):`, e))
+    }
+
     // ── Say what just happened, without waiting for Stripe to tell us ────────
     // The `charge.refunded` webhook is still the RECONCILER — it writes the
     // authoritative amount_refunded / status / refunds[] — but it lands on its
@@ -367,7 +401,7 @@ export const refundMemberPayment = onCall(async (request) => {
         console.error(`[connect] optimistic refund stamp failed (pi=${paymentIntentId}):`, e)
       )
 
-    return { refundId: refund.id, status: refund.status, reversal }
+    return { refundId: refund.id, status: refund.status, reversal, subscriptionCancelled }
   } catch (err) {
     // The card was voided in anticipation of a refund that never happened —
     // put it back, or the buyer loses the value AND keeps paying for it.

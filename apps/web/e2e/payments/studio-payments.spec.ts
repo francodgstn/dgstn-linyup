@@ -3,8 +3,9 @@
  *
  *   payment link   → Payments → "Create payment link" → a new person pays it on
  *                    Stripe → a contact, a member_subscriptions row, the plan
- *   refund         → that payment's row → "Refund" → Stripe refunds it and the
- *                    member_payments row says so
+ *   refund         → that payment's row → "Refund" → Stripe refunds it, the
+ *                    member_payments row says so, and the membership's Stripe
+ *                    subscription is cancelled
  *   manual payment → a contact's Payments tab → "Record payment" (cash) → a
  *                    payment_events row and the plan → "Void" → both taken back
  *   Tarif 595      → that payment's row → "Tarif 595 receipt" → issued with its
@@ -44,6 +45,7 @@ let context: BrowserContext
 let page: Page
 let errors: string[]
 let linkPaymentIntent = ''
+let linkSubscriptionId = ''
 
 test.beforeAll(async ({ browser }) => {
   await deleteContactsByEmail(STUDIO.teamId, LINK_EMAIL)
@@ -94,6 +96,7 @@ test('payment link: the studio sends a Premium link and a new person pays it', a
   expect(cs.status).toBe('complete')
   expect(cs.amount_total).toBe(13900)
   const subId = typeof cs.subscription === 'string' ? cs.subscription : cs.subscription!.id
+  linkSubscriptionId = subId
 
   const contact = await waitFor('the contact created by the payment', async () => (await findContactsByEmail(STUDIO.teamId, LINK_EMAIL))[0])
   const sub = await waitFor('member_subscriptions row', async () => {
@@ -139,7 +142,8 @@ test('refund: a partial refund of a membership is explained, then the full amoun
   await dialog.getByRole('button', { name: /^Refund CHF\s?139/ }).click()
   await expect.poll(() => full.status, { timeout: 120_000 }).toBe(200)
   expect(full.body?.result?.reversal?.state).not.toBe('failed')
-  await expect(page.getByText('Refunded.').first()).toBeVisible()
+  expect(full.body?.result?.subscriptionCancelled).toBe('cancelled')
+  await expect(page.getByText('Refunded. The membership is cancelled and will not bill again.').first()).toBeVisible()
 
   const refunds = await stripe.refunds.list({ payment_intent: linkPaymentIntent }, { stripeAccount: ACCT[STUDIO.teamId] })
   expect(refunds.data.reduce((sum, r) => sum + r.amount, 0)).toBe(13900)
@@ -149,17 +153,21 @@ test('refund: a partial refund of a membership is explained, then the full amoun
   })
 })
 
-// OPEN DECISION (docs/launch/payments-e2e-2026-09.md, "Refunding a Stripe-billed
-// membership"). The dialog says a refund "takes back what the payment gave: the
-// membership it set up", but reversePaymentEffects only clears a plan a ONE-OFF
-// payment set (`subscription_source_ref`): a Stripe-billed subscription records
-// `skipped_not_owner`, stays active, and bills again next month. Whether the
-// refund should cancel it or only say so is the studio-facing call this waits on.
-test.fixme('refund: a full refund of a membership\'s only payment ends the membership', async () => {
+// A full refund of a Stripe-billed membership payment ENDS the membership
+// (decided 2026-09-25): the subscription is cancelled on the studio's account at
+// once, so it never bills again, and the plan leaves the member.
+test('refund: the full refund of a membership cancels its Stripe subscription', async () => {
+  test.skip(!linkSubscriptionId, 'needs the subscription from the payment link test')
+  const s = await stripe.subscriptions.retrieve(linkSubscriptionId, undefined, { stripeAccount: ACCT[STUDIO.teamId] })
+  expect(s.status).toBe('canceled')
   const [contact] = await findContactsByEmail(STUDIO.teamId, LINK_EMAIL)
-  const c = (await contact.ref.get()).data()!
-  const held = (c.held_plans ?? []) as Array<{ subscription_type_id?: string }>
-  expect(held.map((h) => h.subscription_type_id)).not.toContain('seed-team-studio-sub-premium')
+  await waitFor('Premium gone from the member', async () => {
+    const c = (await contact.ref.get()).data()!
+    const held = (c.held_plans ?? []) as Array<{ subscription_type_id?: string }>
+    return held.some((h) => h.subscription_type_id === 'seed-team-studio-sub-premium') ? null : true
+  })
+  const row = (await db.doc(`teams/${STUDIO.teamId}/member_payments/${linkPaymentIntent}`).get()).data()
+  expect(row?.subscription_cancel_on_refund?.state).toBe('cancelled')
 })
 
 /** Emma Schneider: seeded, joined, no plan. */
@@ -405,10 +413,18 @@ test('gift card at the desk: a CHF 40 card sold for cash is minted and recorded'
 const APPT_LINK_EMAIL = 'e2e-appointment-link@example.com'
 
 test('appointment payment link: staff books a new client and the emailed link is paid', async ({ browser }) => {
+  // A previous run's appointment still occupies the prefilled slot (the server
+  // rightly refuses a double booking): remove it first. Matched by the booking's
+  // own email, because an earlier cleanup may already have removed its contact.
+  const sessions = await db.collection('sessions').where('activityId', '==', 'seed-team-studio-act-appointment').get()
+  for (const s of sessions.docs) {
+    const mine = await s.ref.collection('bookings').where('email', '==', APPT_LINK_EMAIL).limit(1).get()
+    if (!mine.empty) await db.recursiveDelete(s.ref)
+  }
   await deleteContactsByEmail(STUDIO.teamId, APPT_LINK_EMAIL)
   await page.goto('/schedule', { waitUntil: 'domcontentloaded' })
   await page.getByRole('button', { name: 'New', exact: true }).click()
-  await page.getByRole('menuitem', { name: 'New appointment' }).click()
+  await page.getByRole('menuitem', { name: /^(Book a client in|New appointment)$/ }).click()
   const dialog = page.getByRole('dialog')
   await expect(dialog.getByText('New appointment').first()).toBeVisible()
   // Coach and today's next free hour come prefilled; the activity may still be

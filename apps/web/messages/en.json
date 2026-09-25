@@ -4955,7 +4955,7 @@
     "refundDifferentAmount": "Refund a different amount",
     "refundAmountLabel": "Refund amount",
     "refundAmountMax": "At most {amount}",
-    "refundReversesSubscription": "This also takes back what the payment gave: the membership it set up, and any unused classes on it. Anything a newer payment paid for is left alone.",
+    "refundReversesSubscription": "This also takes back what the payment gave: the membership it set up, and any unused classes on it. A membership billed through Stripe is cancelled at once, so it will not renew.",
     "refundReversesCourse": "This also removes the course from {name}’s Space.",
     "refundConsumedTitle": "Some of this pack has already been used",
     "refundConsumedWhat": "{name} has used {used} of the {granted} classes on this pack.",
@@ -5042,7 +5042,9 @@
     "stripeReceiptNone": "Stripe has no receipt for this payment.",
     "stripeReceiptError": "Could not fetch the Stripe receipt.",
     "lineKind_course_block": "Course",
-    "selectCourseBlock": "Which course"
+    "selectCourseBlock": "Which course",
+    "refundSubscriptionCancelled": "Refunded. The membership is cancelled and will not bill again.",
+    "refundSubscriptionCancelFailed": "The money was refunded, but the membership could not be cancelled and may bill again. Cancel it on {name}’s profile."
   },
   "PaymentErrors": {
     "setupIncomplete": "Payment account setup isn't finished yet, so this couldn't go through. Finish setup in Settings → Payments.",

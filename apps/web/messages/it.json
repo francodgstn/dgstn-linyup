@@ -4955,7 +4955,7 @@
     "refundDifferentAmount": "Rimborsa un importo diverso",
     "refundAmountLabel": "Importo del rimborso",
     "refundAmountMax": "Al massimo {amount}",
-    "refundReversesSubscription": "Questo riprende anche ciò che il pagamento aveva dato: l’abbonamento che ha attivato e le lezioni non utilizzate. Ciò che ha pagato un pagamento più recente resta intatto.",
+    "refundReversesSubscription": "Questo riprende anche ciò che il pagamento aveva dato: l’abbonamento che ha attivato e le lezioni non utilizzate. Un abbonamento fatturato tramite Stripe viene disdetto subito e non si rinnova.",
     "refundReversesCourse": "Questo rimuove anche il corso dallo spazio di {name}.",
     "refundConsumedTitle": "Una parte di questo pacchetto è già stata usata",
     "refundConsumedWhat": "{name} ha usato {used} delle {granted} lezioni di questo pacchetto.",
@@ -5042,7 +5042,9 @@
     "stripeReceiptNone": "Stripe non ha una ricevuta per questo pagamento.",
     "stripeReceiptError": "Impossibile recuperare la ricevuta Stripe.",
     "lineKind_course_block": "Corso",
-    "selectCourseBlock": "Quale corso"
+    "selectCourseBlock": "Quale corso",
+    "refundSubscriptionCancelled": "Rimborsato. L’abbonamento è disdetto e non verrà più addebitato.",
+    "refundSubscriptionCancelFailed": "Il denaro è stato rimborsato, ma l’abbonamento non è stato disdetto e potrebbe essere addebitato di nuovo. Disdicilo dal profilo di {name}."
   },
   "PaymentErrors": {
     "setupIncomplete": "La configurazione del conto di pagamento non è ancora completata, quindi l'operazione non è riuscita. Completare la configurazione in Impostazioni → Pagamenti.",

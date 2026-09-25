@@ -4955,7 +4955,7 @@
     "refundDifferentAmount": "Anderen Betrag erstatten",
     "refundAmountLabel": "Erstattungsbetrag",
     "refundAmountMax": "Höchstens {amount}",
-    "refundReversesSubscription": "Damit wird auch zurückgenommen, was die Zahlung gebracht hat: das damit eingerichtete Abo und noch nicht genutzte Lektionen. Was eine neuere Zahlung bezahlt hat, bleibt unberührt.",
+    "refundReversesSubscription": "Damit wird auch zurückgenommen, was die Zahlung gebracht hat: das damit eingerichtete Abo und noch nicht genutzte Lektionen. Ein über Stripe abgerechnetes Abo wird sofort gekündigt und verlängert sich nicht mehr.",
     "refundReversesCourse": "Damit wird der Kurs auch aus dem Bereich von {name} entfernt.",
     "refundConsumedTitle": "Ein Teil dieses Pakets wurde bereits genutzt",
     "refundConsumedWhat": "{name} hat {used} von {granted} Lektionen dieses Pakets genutzt.",
@@ -5042,7 +5042,9 @@
     "stripeReceiptNone": "Stripe hat für diese Zahlung keinen Beleg.",
     "stripeReceiptError": "Der Stripe-Beleg konnte nicht geladen werden.",
     "lineKind_course_block": "Kurs",
-    "selectCourseBlock": "Welcher Kurs"
+    "selectCourseBlock": "Welcher Kurs",
+    "refundSubscriptionCancelled": "Erstattet. Das Abo ist gekündigt und wird nicht mehr abgerechnet.",
+    "refundSubscriptionCancelFailed": "Das Geld wurde erstattet, das Abo konnte aber nicht gekündigt werden und könnte erneut abgerechnet werden. Bitte im Profil von {name} kündigen."
   },
   "PaymentErrors": {
     "setupIncomplete": "Die Einrichtung des Zahlungskontos ist noch nicht abgeschlossen, daher konnte dies nicht durchgeführt werden. Einrichtung unter Einstellungen → Zahlungen abschliessen.",
