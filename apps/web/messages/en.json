@@ -27,7 +27,10 @@
     "loadMore": "Load more",
     "showingCount": "{count} loaded",
     "showingOf": "{shown} of {total} loaded",
-    "close": "Close"
+    "close": "Close",
+    "unsavedChanges": "Unsaved changes",
+    "unsavedChangesInvalid": "Fix the highlighted fields to save",
+    "discard": "Discard"
   },
   "Plans": {
     "free": "Free",

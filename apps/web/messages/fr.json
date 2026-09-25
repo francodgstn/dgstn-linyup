@@ -27,7 +27,10 @@
     "loadMore": "Charger plus",
     "showingCount": "{count} chargés",
     "showingOf": "{shown} sur {total} chargés",
-    "close": "Fermer"
+    "close": "Fermer",
+    "unsavedChanges": "Modifications non enregistrées",
+    "unsavedChangesInvalid": "Corrigez les champs signalés pour enregistrer",
+    "discard": "Ignorer"
   },
   "Plans": {
     "free": "Free",

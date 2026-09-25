@@ -30,7 +30,7 @@ import { CustomFieldsTab } from '@/plugins/custom-fields/CustomFieldsTab'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import {
   Select,
   SelectContent,
@@ -125,7 +125,8 @@ import { useSubscriptionTypes } from '@/hooks/useSubscriptionTypes'
 import { useByoStripeDoubleRecording } from '@/hooks/useConnect'
 import { Link, useRouter } from '@/i18n/navigation'
 import type { Route } from 'next'
-import { SettingsSaveBar } from '@/components/settings/SettingsSaveBar'
+import { SaveBarProvider, useSaveBarSection } from '@/components/forms/SaveBar'
+import { HintTip, SettingsRow, SettingsSection } from '@/components/settings/SettingsSection'
 import { useTeamFormat } from '@/hooks/useTeamFormat'
 import { DeleteAccountCard } from '@/components/settings/DeleteAccountCard'
 
@@ -300,6 +301,11 @@ function useGatewayIntegrations(teamId: string | null, enabled: boolean) {
 // ─── engagement thresholds ────────────────────────────────────────────────────
 // Day windows that drive the read-only engagement band shown on each contact.
 // The band itself is derived on render (never stored).
+//
+// Settings → General is the pilot of the page-level save bar and the row layout
+// (components/forms/SaveBar.tsx, components/settings/SettingsSection.tsx). Each
+// section below keeps its own draft, validation and write, and registers with
+// the ONE bar at the bottom of the page instead of rendering its own Save.
 
 function EngagementThresholdsForm({
   team,
@@ -316,95 +322,109 @@ function EngagementThresholdsForm({
   const [active, setActive] = useState(String(current.active_within_days))
   const [low, setLow] = useState(String(current.low_within_days))
   const [atRisk, setAtRisk] = useState(String(current.at_risk_within_days))
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
 
   const a = Number(active)
   const l = Number(low)
   const r = Number(atRisk)
   const valid = [a, l, r].every((n) => Number.isInteger(n) && n > 0) && a < l && l < r
+  const dirty =
+    a !== current.active_within_days ||
+    l !== current.low_within_days ||
+    r !== current.at_risk_within_days
 
-  async function onSave() {
-    if (!valid || !canEdit) return
-    setSaving(true)
-    try {
-      await updateDoc(doc(db, TEAMS_COLLECTION, teamId), {
-        engagement_thresholds: {
-          active_within_days: a,
-          low_within_days: l,
-          at_risk_within_days: r,
-        },
-      })
-      await qc.invalidateQueries({ queryKey: ['team', teamId] })
-      setSaved(true)
-      setTimeout(() => setSaved(false), 2500)
-    } catch {
-      toast.error(t('saveError'))
-    } finally {
-      setSaving(false)
-    }
-  }
+  useSaveBarSection('engagement', {
+    dirty: canEdit && dirty,
+    valid,
+    reset: () => {
+      setActive(String(current.active_within_days))
+      setLow(String(current.low_within_days))
+      setAtRisk(String(current.at_risk_within_days))
+    },
+    save: async () => {
+      try {
+        await updateDoc(doc(db, TEAMS_COLLECTION, teamId), {
+          engagement_thresholds: {
+            active_within_days: a,
+            low_within_days: l,
+            at_risk_within_days: r,
+          },
+        })
+        await qc.invalidateQueries({ queryKey: ['team', teamId] })
+        return true
+      } catch {
+        toast.error(t('saveError'))
+        return false
+      }
+    },
+  })
 
-  const fields: { value: string; set: (v: string) => void; label: string; dot: string }[] = [
-    { value: active, set: setActive, label: t('engagementActiveWithin'), dot: 'bg-emerald-500' },
-    { value: low, set: setLow, label: t('engagementLowWithin'), dot: 'bg-amber-500' },
-    { value: atRisk, set: setAtRisk, label: t('engagementAtRiskWithin'), dot: 'bg-red-500' },
+  const fields: { id: string; value: string; set: (v: string) => void; label: string; dot: string }[] = [
+    { id: 'eng-active', value: active, set: setActive, label: t('engagementActiveWithin'), dot: 'bg-emerald-500' },
+    { id: 'eng-low', value: low, set: setLow, label: t('engagementLowWithin'), dot: 'bg-amber-500' },
+    { id: 'eng-risk', value: atRisk, set: setAtRisk, label: t('engagementAtRiskWithin'), dot: 'bg-red-500' },
   ]
 
   return (
-    // No own top divider any more — it is now the first section inside the
-    // "Other" Card (UI polish, Settings → General 3-card split).
-    <div className="space-y-3">
-      <div>
-        <p className="text-sm font-medium">{t('engagementTitle')}</p>
-        <p className="text-xs text-muted-foreground mt-0.5">{t('engagementHelp')}</p>
-        {!canEdit && <OwnerOnlyNote />}
-      </div>
-      <div className="grid grid-cols-3 gap-3">
-        {fields.map((f) => (
-          <div key={f.label} className="space-y-1.5">
-            <Label className="flex items-center gap-1.5 text-xs">
+    <SettingsSection
+      title={
+        <span className="inline-flex items-center gap-1.5">
+          {t('engagementTitle')}
+          <HintTip>
+            {t('engagementHelp')} {t('engagementDaysHint')}
+          </HintTip>
+        </span>
+      }
+    >
+      {fields.map((f, i) => (
+        <SettingsRow
+          key={f.id}
+          htmlFor={f.id}
+          label={
+            <span className="inline-flex items-center gap-2">
               <span className={`h-2 w-2 rounded-full ${f.dot}`} />
               {f.label}
-            </Label>
-            <Input
-              type="number"
-              min={1}
-              value={f.value}
-              disabled={!canEdit}
-              onChange={(e) => f.set(e.target.value)}
-            />
-          </div>
-        ))}
-      </div>
-      <p className="text-xs text-muted-foreground">{t('engagementDaysHint')}</p>
-      {!valid && <p className="text-xs text-destructive">{t('engagementInvalid')}</p>}
-      <SettingsSaveBar onSave={onSave} saving={saving} saved={saved} disabled={!canEdit || !valid} />
-    </div>
+            </span>
+          }
+          // The ordering rule belongs to the set, so it shows once, under the
+          // last window, rather than under whichever input broke it.
+          error={i === fields.length - 1 && !valid ? t('engagementInvalid') : undefined}
+        >
+          <Input
+            id={f.id}
+            type="number"
+            min={1}
+            value={f.value}
+            disabled={!canEdit}
+            aria-invalid={!valid || undefined}
+            onChange={(e) => f.set(e.target.value)}
+            className="w-28 tabular-nums"
+          />
+        </SettingsRow>
+      ))}
+    </SettingsSection>
   )
 }
 
 // Per-device interface preference: show/hide the navigational tab strip. Stored
-// per-browser (localStorage via OpenTabsContext), not on the team — so it sits
-// apart from the team fields, labelled as a this-device setting.
+// per-browser (localStorage via OpenTabsContext), not on the team, so it applies
+// the moment it is flipped and is not part of the page's save bar: a single
+// switch that is not part of a form saves instantly.
 function TabBarPreference() {
   const t = useTranslations('TeamSettings')
   const { enabled, setEnabled } = useOpenTabs()
   return (
-    // `pt-6`, not `pt-4` — this divider sits right below
-    // EngagementThresholdsForm's own SettingsSaveBar (same "Other" Card), and
-    // `pt-4` alone read as the save button touching the divider (UI polish,
-    // Settings → General). SettingsSaveBar already adds `pt-2` above itself;
-    // this is the gap BELOW it, which nothing previously supplied.
-    <div className="space-y-3 pt-6 border-t">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-sm font-medium">{t('tabBarTitle')}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">{t('tabBarHelp')}</p>
+    <SettingsSection title={t('sectionOther')}>
+      <SettingsRow htmlFor="tab-bar" label={t('tabBarTitle')} hint={t('tabBarHelp')}>
+        <div className="flex md:justify-end md:pt-2">
+          <Switch
+            id="tab-bar"
+            checked={enabled}
+            onCheckedChange={setEnabled}
+            aria-label={t('tabBarTitle')}
+          />
         </div>
-        <Switch checked={enabled} onCheckedChange={setEnabled} aria-label={t('tabBarTitle')} />
-      </div>
-    </div>
+      </SettingsRow>
+    </SettingsSection>
   )
 }
 
@@ -423,15 +443,18 @@ function GeneralForm({
   const qc = useQueryClient()
   const [slugError, setSlugError] = useState<string | null>(null)
   const [slugChecking, setSlugChecking] = useState(false)
-  const [saved, setSaved] = useState(false)
 
   const {
     register,
     handleSubmit,
     control,
-    formState: { errors, isSubmitting, isDirty },
+    reset,
+    formState: { errors, isDirty, isValid },
   } = useForm<GeneralData>({
     resolver: zodResolver(generalSchema),
+    // Validated as the studio types, because the save bar sits away from the
+    // fields and has to know BEFORE the click whether Save can run.
+    mode: 'onChange',
     defaultValues: {
       name: team.name,
       description: team.description ?? '',
@@ -452,8 +475,8 @@ function GeneralForm({
       const available = await isSlugAvailable(slug, teamId)
       if (!available) setSlugError(isReservedSlug(slug) ? t('slugReserved') : t('slugTaken'))
     } catch {
-      // FAILS CLOSED, and deliberately: `onSubmit` refuses while `slugError` is
-      // set, so a check that could not run blocks Save. Two studios sharing a
+      // FAILS CLOSED, and deliberately: the save bar refuses while `slugError`
+      // is set, so a check that could not run blocks Save. Two studios sharing a
       // slug send one studio's members to the other's public page and there is
       // no error anywhere to notice it; being asked to retry a blurred field is
       // the cheaper failure. Editing the slug again clears this and re-checks.
@@ -463,8 +486,8 @@ function GeneralForm({
     }
   }
 
-  async function onSubmit(data: GeneralData) {
-    if (slugError || !canEdit) return
+  async function onSubmit(data: GeneralData): Promise<boolean> {
+    if (slugError || !canEdit) return false
     try {
       await updateDoc(doc(db, TEAMS_COLLECTION, teamId), {
         name: data.name,
@@ -474,120 +497,147 @@ function GeneralForm({
         slug: data.slug,
       })
       await qc.invalidateQueries({ queryKey: ['team', teamId] })
-      setSaved(true)
-      setTimeout(() => setSaved(false), 2500)
+      // The saved values become the new baseline, so the form is clean again
+      // and the bar goes away.
+      reset(data)
+      return true
     } catch {
       toast.error(t('saveError'))
+      return false
     }
   }
 
+  const save = () =>
+    new Promise<boolean>((resolve) => {
+      void handleSubmit(
+        async (data) => resolve(await onSubmit(data)),
+        () => resolve(false)
+      )()
+    })
+
+  useSaveBarSection('general', {
+    dirty: canEdit && isDirty,
+    valid: isValid && !slugError && !slugChecking,
+    save,
+    reset: () => {
+      reset()
+      setSlugError(null)
+    },
+  })
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-      {!canEdit && <OwnerOnlyNote />}
-
-      <div className="space-y-1.5">
-        <Label htmlFor="name">{t('teamName')}</Label>
-        <Input id="name" {...register('name')} disabled={!canEdit} />
-        {errors.name && <p className="text-destructive text-xs">{errors.name.message}</p>}
-      </div>
-
-      <div className="space-y-1.5">
-        <Label htmlFor="description">{t('description')}</Label>
-        <textarea
-          id="description"
-          {...register('description')}
-          rows={3}
-          disabled={!canEdit}
-          placeholder={t('descriptionPlaceholder')}
-          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 resize-none disabled:opacity-60"
-        />
-        {errors.description && (
-          <p className="text-destructive text-xs">{errors.description.message}</p>
-        )}
-      </div>
-
-      <div className="space-y-1.5">
-        <Label htmlFor="sport_type">{t('sportType')}</Label>
-        <Controller
-          name="sport_type"
-          control={control}
-          render={({ field }) => (
-            <Select
-              value={field.value || '__none__'}
-              disabled={!canEdit}
-              onValueChange={(v) => field.onChange(v === '__none__' ? '' : v)}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={t('sportTypeNone')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none__">{t('sportTypeNone')}</SelectItem>
-                {SPORT_TYPES.map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {s}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        />
-      </div>
-
-      <div className="space-y-1.5">
-        <Label htmlFor="language">{t('language')}</Label>
-        <Controller
-          name="language"
-          control={control}
-          render={({ field }) => (
-            <Select value={field.value} disabled={!canEdit} onValueChange={field.onChange}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {TEAM_LANGUAGES.map((l) => (
-                  <SelectItem key={l.value} value={l.value}>
-                    {l.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        />
-        {/* Said plainly, because the obvious reading is the wrong one: this is
-            not the language of the dashboard (that follows the URL), it is the
-            language your members are written to in. */}
-        <p className="text-xs text-muted-foreground">{t('languageHint')}</p>
-      </div>
-
-      <div className="space-y-1.5">
-        <Label htmlFor="slug">{t('slug')}</Label>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground shrink-0 select-none">
-            /public/
-          </span>
+    <form
+      onSubmit={(e) => {
+        e.preventDefault()
+        void save()
+      }}
+    >
+      <SettingsSection title={t('sectionTeam')}>
+        <SettingsRow htmlFor="name" label={t('teamName')} error={errors.name?.message}>
           <Input
-            id="slug"
-            {...register('slug')}
+            id="name"
+            {...register('name')}
             disabled={!canEdit}
-            onBlur={(e) => onSlugBlur(e.target.value)}
-            placeholder="my-club"
-            className="font-mono"
+            aria-invalid={!!errors.name || undefined}
           />
-        </div>
-        {slugChecking && <p className="text-muted-foreground text-xs">{t('slugChecking')}</p>}
-        {slugError && <p className="text-destructive text-xs">{slugError}</p>}
-        {errors.slug && !slugError && (
-          <p className="text-destructive text-xs">{errors.slug.message}</p>
-        )}
-        <p className="text-xs text-muted-foreground">{t('slugHelp')}</p>
-      </div>
+        </SettingsRow>
 
-      <SettingsSaveBar
-        type="submit"
-        saving={isSubmitting}
-        saved={saved}
-        disabled={!canEdit || !isDirty || !!slugError || slugChecking}
-      />
+        <SettingsRow
+          htmlFor="description"
+          label={t('description')}
+          error={errors.description?.message}
+        >
+          <textarea
+            id="description"
+            {...register('description')}
+            rows={3}
+            disabled={!canEdit}
+            placeholder={t('descriptionPlaceholder')}
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 resize-none disabled:opacity-60"
+          />
+        </SettingsRow>
+
+        <SettingsRow htmlFor="sport_type" label={t('sportType')}>
+          <Controller
+            name="sport_type"
+            control={control}
+            render={({ field }) => (
+              <Select
+                value={field.value || '__none__'}
+                disabled={!canEdit}
+                onValueChange={(v) => field.onChange(v === '__none__' ? '' : v)}
+              >
+                <SelectTrigger id="sport_type" className="w-full">
+                  <SelectValue placeholder={t('sportTypeNone')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">{t('sportTypeNone')}</SelectItem>
+                  {SPORT_TYPES.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
+        </SettingsRow>
+
+        {/* The one hint on this page that stays visible: the obvious reading is
+            the wrong one. This is not the language of the dashboard (that
+            follows the URL), it is the language your members are written to in. */}
+        <SettingsRow
+          htmlFor="language"
+          label={t('language')}
+          hint={t('languageHint')}
+          hintMode="inline"
+        >
+          <Controller
+            name="language"
+            control={control}
+            render={({ field }) => (
+              <Select value={field.value} disabled={!canEdit} onValueChange={field.onChange}>
+                <SelectTrigger id="language" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {TEAM_LANGUAGES.map((l) => (
+                    <SelectItem key={l.value} value={l.value}>
+                      {l.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
+        </SettingsRow>
+
+        <SettingsRow
+          htmlFor="slug"
+          label={t('slug')}
+          hint={t('slugHelp')}
+          hintMode="focus"
+          error={slugError ?? (errors.slug?.message || undefined)}
+        >
+          <div
+            className={`flex items-center rounded-md border bg-background ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 ${
+              slugError || errors.slug ? 'border-destructive' : 'border-input'
+            }`}
+          >
+            <span className="shrink-0 select-none pl-3 font-mono text-sm text-muted-foreground">
+              /public/
+            </span>
+            <Input
+              id="slug"
+              {...register('slug', { onBlur: (e) => onSlugBlur(e.target.value) })}
+              disabled={!canEdit}
+              placeholder="my-club"
+              className="border-0 pl-0.5 font-mono shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+            />
+          </div>
+          {slugChecking && <p className="text-xs text-muted-foreground">{t('slugChecking')}</p>}
+        </SettingsRow>
+      </SettingsSection>
     </form>
   )
 }
@@ -623,8 +673,6 @@ function RegionalForm({
   // this component on the team id so a team switch remounts it; see there.
   const [draft, setDraft] = useState<RegionalSettings>(stored)
   const [zones, setZones] = useState<string[]>([])
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
 
   // Client-only: ~400 <option>s have no business in the server-rendered HTML,
   // and populating them after mount keeps the datalist out of hydration.
@@ -655,37 +703,54 @@ function RegionalForm({
     setDraft((d) => ({ ...d, [key]: value }))
   }
 
-  async function onSave() {
-    if (!canEdit || !zoneValid) return
-    setSaving(true)
-    try {
-      await updateDoc(doc(db, TEAMS_COLLECTION, teamId), { regional: draft })
-      await qc.invalidateQueries({ queryKey: ['team', teamId] })
-      setSaved(true)
-      setTimeout(() => setSaved(false), 2500)
-    } catch {
-      toast.error(t('saveError'))
-    } finally {
-      setSaving(false)
-    }
-  }
+  useSaveBarSection('regional', {
+    dirty: canEdit && dirty,
+    valid: zoneValid,
+    reset: () => setDraft(stored),
+    save: async () => {
+      try {
+        await updateDoc(doc(db, TEAMS_COLLECTION, teamId), { regional: draft })
+        await qc.invalidateQueries({ queryKey: ['team', teamId] })
+        return true
+      } catch {
+        toast.error(t('saveError'))
+        return false
+      }
+    },
+  })
 
   return (
-    // No own heading/divider here any more — this now lives inside its own
-    // "Region & format" Card, whose CardHeader carries the title and the hint
-    // (`regionTitle`/`regionHint`) that used to be repeated in-line right below
-    // it (UI polish, Settings → General 3-card split).
-    <div className="space-y-4">
-      {!canEdit && <OwnerOnlyNote />}
-
-      <div className="space-y-1.5">
-        <Label htmlFor="regional-timezone">{t('regionTimezone')}</Label>
+    <SettingsSection
+      title={
+        <span className="inline-flex items-center gap-1.5">
+          {t('sectionRegionFormat')}
+          <HintTip>{t('regionHint')}</HintTip>
+        </span>
+      }
+      // The preview rides in the heading: it answers "what will this look
+      // like?" for the whole section, so it belongs to none of the rows.
+      action={
+        <span
+          className="text-sm tabular-nums text-muted-foreground"
+          aria-label={t('regionPreview')}
+        >
+          {preview.dateMedium(REGION_PREVIEW_INSTANT)} · {preview.time(REGION_PREVIEW_INSTANT)}
+        </span>
+      }
+    >
+      <SettingsRow
+        htmlFor="regional-timezone"
+        label={t('regionTimezone')}
+        hint={t('regionTimezoneHint')}
+        error={!zoneValid ? t('regionTimezoneInvalid') : undefined}
+      >
         <div className="flex items-center gap-2">
           <Input
             id="regional-timezone"
             list="regional-timezone-options"
             value={draft.timezone}
             disabled={!canEdit}
+            aria-invalid={!zoneValid || undefined}
             onChange={(e) => set('timezone', e.target.value.trim())}
             placeholder="Europe/Zurich"
             className="font-mono"
@@ -693,7 +758,7 @@ function RegionalForm({
           <Button
             type="button"
             size="sm"
-            variant="outline"
+            variant="ghost"
             disabled={!canEdit}
             onClick={() => set('timezone', deviceTimeZone())}
           >
@@ -705,81 +770,59 @@ function RegionalForm({
             <option key={z} value={z} />
           ))}
         </datalist>
-        {!zoneValid && <p className="text-destructive text-xs">{t('regionTimezoneInvalid')}</p>}
-        <p className="text-xs text-muted-foreground">{t('regionTimezoneHint')}</p>
-      </div>
+      </SettingsRow>
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div className="space-y-1.5">
-          <Label>{t('regionWeekStart')}</Label>
-          <Select
-            value={String(draft.weekStartsOn)}
-            disabled={!canEdit}
-            onValueChange={(v) => set('weekStartsOn', (v === '0' ? 0 : 1) as WeekStart)}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="1">{t('regionWeekStartMonday')}</SelectItem>
-              <SelectItem value="0">{t('regionWeekStartSunday')}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+      <SettingsRow htmlFor="regional-week-start" label={t('regionWeekStart')}>
+        <Select
+          value={String(draft.weekStartsOn)}
+          disabled={!canEdit}
+          onValueChange={(v) => set('weekStartsOn', (v === '0' ? 0 : 1) as WeekStart)}
+        >
+          <SelectTrigger id="regional-week-start" className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="1">{t('regionWeekStartMonday')}</SelectItem>
+            <SelectItem value="0">{t('regionWeekStartSunday')}</SelectItem>
+          </SelectContent>
+        </Select>
+      </SettingsRow>
 
-        <div className="space-y-1.5">
-          <Label>{t('regionDateFormat')}</Label>
-          <Select
-            value={draft.dateFormat}
-            disabled={!canEdit}
-            onValueChange={(v) => set('dateFormat', v as DateFormatStyle)}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {DATE_FORMAT_STYLES.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {DATE_FORMAT_SAMPLE[s]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      <SettingsRow htmlFor="regional-date-format" label={t('regionDateFormat')}>
+        <Select
+          value={draft.dateFormat}
+          disabled={!canEdit}
+          onValueChange={(v) => set('dateFormat', v as DateFormatStyle)}
+        >
+          <SelectTrigger id="regional-date-format" className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {DATE_FORMAT_STYLES.map((s) => (
+              <SelectItem key={s} value={s}>
+                {DATE_FORMAT_SAMPLE[s]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </SettingsRow>
 
-        <div className="space-y-1.5">
-          <Label>{t('regionTimeFormat')}</Label>
-          <Select
-            value={draft.timeFormat}
-            disabled={!canEdit}
-            onValueChange={(v) => set('timeFormat', v as TimeFormatStyle)}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="24h">{t('regionTime24h')}</SelectItem>
-              <SelectItem value="12h">{t('regionTime12h')}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="rounded-lg border bg-muted/40 px-3 py-2">
-        <p className="text-xs text-muted-foreground">{t('regionPreview')}</p>
-        <p className="text-sm mt-0.5 tabular-nums">
-          {preview.dateMedium(REGION_PREVIEW_INSTANT)} · {preview.date(REGION_PREVIEW_INSTANT)} ·{' '}
-          {preview.time(REGION_PREVIEW_INSTANT)}
-        </p>
-      </div>
-
-      <SettingsSaveBar
-        onSave={onSave}
-        saving={saving}
-        saved={saved}
-        disabled={!canEdit || !dirty || !zoneValid}
-      />
-    </div>
+      <SettingsRow htmlFor="regional-time-format" label={t('regionTimeFormat')}>
+        <Select
+          value={draft.timeFormat}
+          disabled={!canEdit}
+          onValueChange={(v) => set('timeFormat', v as TimeFormatStyle)}
+        >
+          <SelectTrigger id="regional-time-format" className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="24h">{t('regionTime24h')}</SelectItem>
+            <SelectItem value="12h">{t('regionTime12h')}</SelectItem>
+          </SelectContent>
+        </Select>
+      </SettingsRow>
+    </SettingsSection>
   )
 }
 
@@ -2428,58 +2471,39 @@ export default function TeamSettingsPage() {
         </p>
       </div>
 
-      {/* Payments + Outreach manage their own stacked cards; General is now its
-          own 3-card split (see below); the remaining tabs share one wrapper. */}
+      {/* Payments + Outreach manage their own stacked cards; General is the
+          save-bar pilot (see below); the remaining tabs share one wrapper. */}
       {tab === 'payments' ? (
         <PaymentsTab teamId={currentTeamId} canEdit={canEdit} />
       ) : tab === 'general' ? (
-        // THREE CARDS, ONE PER TOPIC — this used to be one long Card holding
-        // four stacked sub-forms with hairline dividers between them (UI polish,
-        // 2026-08). Every field, its validation and its own save action are
-        // UNCHANGED; only the wrapper each section sits in moved.
-        //   Team            -> identity: name, description, sport, slug
-        //   Region & format -> RegionalForm: timezone, week start, date/time format
-        //   Other           -> engagement bands + the per-device tab-bar toggle
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">{t('sectionTeam')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <GeneralForm team={team} teamId={currentTeamId} canEdit={canEdit} />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">{t('sectionRegionFormat')}</CardTitle>
-              <CardDescription>{t('regionHint')}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {/* Keyed on the team: the draft below is seeded from
-                  `team.regional` at mount only, and the TeamSwitcher can change
-                  `currentTeamId` under a mounted settings page. Without the
-                  remount the form would keep team A's zone and formats and save
-                  them onto team B's document. */}
-              <RegionalForm
-                key={currentTeamId}
-                team={team}
-                teamId={currentTeamId}
-                canEdit={canEdit}
-              />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">{t('sectionOther')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <EngagementThresholdsForm team={team} teamId={currentTeamId} canEdit={canEdit} />
-              <TabBarPreference />
-            </CardContent>
-          </Card>
-        </div>
+        // THE SAVE-BAR PILOT. One list of sections, no cards, and one Save for
+        // the whole tab, in the floating bar that appears only while something
+        // is unsaved. Every field, its validation and its write are unchanged;
+        // each form registers with the bar instead of rendering its own button.
+        <SaveBarProvider disabled={!canEdit}>
+          <div className="space-y-10">
+            {!canEdit && <OwnerOnlyNote />}
+            <GeneralForm team={team} teamId={currentTeamId} canEdit={canEdit} />
+            {/* Keyed on the team: the draft below is seeded from
+                `team.regional` at mount only, and the TeamSwitcher can change
+                `currentTeamId` under a mounted settings page. Without the
+                remount the form would keep team A's zone and formats and save
+                them onto team B's document. */}
+            <RegionalForm
+              key={currentTeamId}
+              team={team}
+              teamId={currentTeamId}
+              canEdit={canEdit}
+            />
+            <EngagementThresholdsForm
+              key={`eng-${currentTeamId}`}
+              team={team}
+              teamId={currentTeamId}
+              canEdit={canEdit}
+            />
+            <TabBarPreference />
+          </div>
+        </SaveBarProvider>
       ) : (
         <Card>
           <CardContent className="pt-6">

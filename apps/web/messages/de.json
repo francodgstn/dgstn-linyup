@@ -27,7 +27,10 @@
     "loadMore": "Mehr laden",
     "showingCount": "{count} geladen",
     "showingOf": "{shown} von {total} geladen",
-    "close": "Schliessen"
+    "close": "Schliessen",
+    "unsavedChanges": "Ungespeicherte Änderungen",
+    "unsavedChangesInvalid": "Markierte Felder korrigieren, um zu speichern",
+    "discard": "Verwerfen"
   },
   "Plans": {
     "free": "Free",
