@@ -86,6 +86,7 @@ import {
   EyeOff,
   Zap,
   Loader2,
+  Globe,
 } from 'lucide-react'
 import { Link } from '@/i18n/navigation'
 import { SessionFormDialog } from '@/components/sessions/SessionFormDialog'
@@ -104,6 +105,7 @@ import { PlacesSheet } from '@/components/schedule/PlacesSheet'
 import { QUICK_ACTION_PARAM } from '@/lib/quickActions'
 import { useConfirm } from '@/components/ui/confirm-dialog'
 import { QuickLinks } from '@/components/layout/QuickLinks'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Tip } from '@/components/ui/tip'
 
 // `ssr: false` for the same reason the org events page does it: the timeline
@@ -1233,30 +1235,6 @@ export default function CalendarPage() {
           <div className="flex items-center gap-1.5">
             <h1 className="text-2xl font-bold tracking-tight">{t('title')}</h1>
           </div>
-          {/* NAME THE CLOCK WHEN IT IS NOT THE READER'S. Every time on this page
-              is printed in the studio's display zone (`Team.regional.timezone`,
-              Swiss by default when the field was never set). When that differs
-              from the browser's zone the numbers are correct and still look
-              wrong, so the line says which clock they are on and links to the
-              control that changes it. Same zone on both sides ⇒ nothing to
-              explain, and no line. */}
-          {/* The WEEK view runs on the device's clock (see THE CALENDAR'S
-              CLOCK in SessionsCalendar), the list on the studio's. So the line
-              names the clock of the view on screen, never one the view does
-              not use. */}
-          {fmt.timeZone !== deviceTimeZone() && (
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {view === 'calendar'
-                ? t('timezoneNoticeDevice', { zone: deviceTimeZone(), studioZone: fmt.timeZone })
-                : t('timezoneNotice', { zone: fmt.timeZone })}{' '}
-              <Link
-                href={'/settings/team?tab=general' as Route}
-                className="underline hover:text-foreground"
-              >
-                {t('timezoneChange')}
-              </Link>
-            </p>
-          )}
           {/* WHAT FILLS THIS CALENDAR, AND WHAT COMES OUT OF IT. A session is an
               instance of an ACTIVITY and produces BOOKINGS, and the calendar
               pointed at neither — the two pages a studio moves between all day
@@ -1419,6 +1397,40 @@ export default function CalendarPage() {
             }}
           />
         </div>
+        {/* NAME THE CLOCK WHEN IT IS NOT THE READER'S — as a chip, not a line
+            (Franco, 2026-09-25). Times here are printed in one zone, and when
+            it is not the browser's the numbers are right and still look wrong.
+            It used to be a full sentence under the page title, a line spent on
+            something a studio reads once; now it is the zone's name at the end
+            of this row, and the sentence and the Change link open from it.
+            The WEEK view runs on the device's clock (see THE CALENDAR'S CLOCK
+            in SessionsCalendar), the list on the studio's, so it names the
+            clock of the view on screen. Same zone on both sides ⇒ no chip. */}
+        {fmt.timeZone !== deviceTimeZone() && (
+          <Popover>
+            <PopoverTrigger
+              openOnHover
+              delay={150}
+              className="ml-auto inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <Globe className="h-3.5 w-3.5" />
+              {view === 'calendar' ? deviceTimeZone() : fmt.timeZone}
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-72 text-xs leading-relaxed text-muted-foreground">
+              <p>
+                {view === 'calendar'
+                  ? t('timezoneNoticeDevice', { zone: deviceTimeZone(), studioZone: fmt.timeZone })
+                  : t('timezoneNotice', { zone: fmt.timeZone })}{' '}
+                <Link
+                  href={'/settings/team?tab=general' as Route}
+                  className="underline hover:text-foreground"
+                >
+                  {t('timezoneChange')}
+                </Link>
+              </p>
+            </PopoverContent>
+          </Popover>
+        )}
       </div>
       {/* Hidden-calendars notice — an empty grid must never read as "you have
           nothing scheduled" when the truth is "you switched it off". Only
