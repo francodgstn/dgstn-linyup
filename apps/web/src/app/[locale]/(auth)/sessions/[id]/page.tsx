@@ -52,6 +52,7 @@ import {
 } from '@linyup/shared'
 import type { Session, Booking, Contact, Activity, WaitlistEntry, PerformanceIndicator } from '@linyup/shared'
 import { WaiverChip, WaiverDoorCheckChip } from '@/components/WaiverChip'
+import { BookingPartyLine } from '@/components/sessions/BookingPartyLine'
 import { useWaiverPolicy, useWaiverRoster } from '@/hooks/useWaiverStates'
 import { SessionFormDialog } from '@/components/sessions/SessionFormDialog'
 import { SessionDeleteDialog } from '@/components/sessions/SessionDeleteDialog'
@@ -1758,6 +1759,7 @@ export default function SessionDetailPage() {
               </div>
               <div className="flex-1 min-w-0">
                 <RosterName contactId={b.contact}>{b.lastname} {b.firstname}</RosterName>
+                <BookingPartyLine booking={b} />
                 {b.email && <p className="text-xs text-muted-foreground">{b.email}</p>}
               </div>
               <SeatFundingChip chip={seatChipFor(b.contact)} />
@@ -1799,6 +1801,7 @@ export default function SessionDetailPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <RosterName contactId={b.contact}>{b.lastname} {b.firstname}</RosterName>
+                    <BookingPartyLine booking={b} />
                     {b.email && <p className="text-xs text-muted-foreground">{b.email}</p>}
                   </div>
                   <SeatFundingChip chip={seatChipFor(b.contact)} />

@@ -25,8 +25,11 @@
 
 import { useTranslations } from 'next-intl'
 import {
+  DURATION_PARTY_MAX,
+  resolveDurationParty,
   resolveDurationSale,
   type ActivityDuration,
+  type DurationParty,
   type DurationSaleMode,
 } from '@linyup/shared'
 import { Input } from '@/components/ui/input'
@@ -51,6 +54,10 @@ export interface DurationFormValue {
    *  and "free" are the same stored bytes but different intentions, and only a
    *  stored mode can tell the validator which one the coach meant. */
   mode: DurationSaleMode
+  /** A GROUP books this length and the price is per person, or null for one
+   *  person. Held as the studio typed it, so an out-of-range number is shown
+   *  and refused (`durationPartyProblem`) rather than silently clamped. */
+  party: DurationParty | null
 }
 
 export function toDurationFormValues(
@@ -62,6 +69,7 @@ export function toDurationFormValues(
       minutes: d.minutes,
       price: sale.priceAmount != null ? String(sale.priceAmount) : '',
       mode: sale.mode,
+      party: resolveDurationParty(d),
     }
   })
 }
@@ -92,6 +100,9 @@ export function toActivityDurations(durations: DurationFormValue[]): ActivityDur
       // behind it.
       priceAmount: d.mode === 'priced' && d.price.trim() !== '' ? parsePriceInput(d.price) : null,
       ...(d.mode === 'benefit_only' ? { benefitOnly: true } : {}),
+      // Never on a plan-only length: nothing would cover the people brought
+      // along (`resolveDurationParty` ignores it there, so it is not written).
+      ...(d.party && d.mode !== 'benefit_only' ? { party: d.party } : {}),
     }))
 }
 
@@ -102,9 +113,34 @@ export function toggleDurationValue(
 ): DurationFormValue[] {
   return durations.some((d) => d.minutes === minutes)
     ? durations.filter((d) => d.minutes !== minutes)
-    : [...durations, { minutes, price: '', mode: 'free' as DurationSaleMode }].sort(
+    : [...durations, { minutes, price: '', mode: 'free' as DurationSaleMode, party: null }].sort(
         (a, b) => a.minutes - b.minutes
       )
+}
+
+/** Turn a length's group booking on (at "2 people", the commonest case) or
+ *  off, or change its bounds. */
+export function setDurationParty(
+  durations: DurationFormValue[],
+  minutes: number,
+  party: DurationParty | null
+): DurationFormValue[] {
+  return durations.map((d) => (d.minutes === minutes ? { ...d, party } : d))
+}
+
+/** Is this row's group unusable? Whole numbers, at least one person, room for
+ *  at least two, and no more than the largest party an appointment takes. */
+export function durationPartyProblem(d: DurationFormValue): boolean {
+  if (!d.party || d.mode === 'benefit_only') return false
+  const { min, max } = d.party
+  return (
+    !Number.isInteger(min) ||
+    !Number.isInteger(max) ||
+    min < 1 ||
+    max < 2 ||
+    max < min ||
+    max > DURATION_PARTY_MAX
+  )
 }
 
 /** Switch a length between the three ways it can be sold. Changing mode always
@@ -253,7 +289,97 @@ export function AppointmentDurationsEditor({
                           duration: formatDuration(d.minutes),
                         })}
                       />
+                      {d.party && (
+                        <span className="text-xs text-muted-foreground">
+                          {t('durationPartyPerPerson')}
+                        </span>
+                      )}
                     </div>
+                  )}
+                  {/* A GROUP books this length together and pays per person
+                      ("I come with another person"). Not offered on a plan-only
+                      length: nothing would cover the people brought along. */}
+                  {d.mode !== 'benefit_only' && (
+                    <div className="flex flex-wrap items-center justify-end gap-1.5">
+                      <button
+                        type="button"
+                        disabled={!canEdit}
+                        aria-pressed={!!d.party}
+                        onClick={() =>
+                          onChange(
+                            setDurationParty(value, d.minutes, d.party ? null : { min: 2, max: 2 })
+                          )
+                        }
+                        className={`rounded border px-2 py-1 text-xs font-medium transition-colors ${
+                          d.party
+                            ? 'bg-primary text-primary-foreground border-primary'
+                            : 'bg-background text-muted-foreground border-border hover:border-foreground'
+                        } ${canEdit ? '' : 'pointer-events-none opacity-60'}`}
+                      >
+                        {t('durationPartyToggle')}
+                      </button>
+                      {d.party && (
+                        <>
+                          <span className="text-xs text-muted-foreground">
+                            {t('durationPartyPeople')}
+                          </span>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={DURATION_PARTY_MAX}
+                            step={1}
+                            value={Number.isFinite(d.party.min) ? String(d.party.min) : ''}
+                            disabled={!canEdit}
+                            onChange={(e) =>
+                              onChange(
+                                setDurationParty(value, d.minutes, {
+                                  ...d.party!,
+                                  min: Number.parseInt(e.target.value, 10),
+                                })
+                              )
+                            }
+                            className="h-8 w-16 text-sm"
+                            aria-label={t('durationPartyMinLabel', {
+                              duration: formatDuration(d.minutes),
+                            })}
+                          />
+                          <span className="text-xs text-muted-foreground">
+                            {t('durationPartyTo')}
+                          </span>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={DURATION_PARTY_MAX}
+                            step={1}
+                            value={Number.isFinite(d.party.max) ? String(d.party.max) : ''}
+                            disabled={!canEdit}
+                            onChange={(e) =>
+                              onChange(
+                                setDurationParty(value, d.minutes, {
+                                  ...d.party!,
+                                  max: Number.parseInt(e.target.value, 10),
+                                })
+                              )
+                            }
+                            className="h-8 w-16 text-sm"
+                            aria-label={t('durationPartyMaxLabel', {
+                              duration: formatDuration(d.minutes),
+                            })}
+                          />
+                        </>
+                      )}
+                    </div>
+                  )}
+                  {d.party && d.mode !== 'benefit_only' && (
+                    durationPartyProblem(d) ? (
+                      <p className="text-destructive text-xs">
+                        {t('durationPartyValidation', { max: DURATION_PARTY_MAX })}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        {d.mode === 'priced' ? t('durationPartyHintPriced') : t('durationPartyHintFree')}
+                      </p>
+                    )
                   )}
                   {/* A pack-only length with nothing that covers it is bookable
                       by NOBODY — said here, where it is authored, as well as on

@@ -2007,7 +2007,17 @@
     "fieldBookingGroup": "Groupe sur la page de réservation",
     "fieldBookingGroupPlaceholder": "p. ex. Cours",
     "fieldBookingGroupHint": "Regroupe la page de réservation sous un titre. Laissez vide pour l'afficher seul.",
-    "chipPriceFrom": "dès {price}"
+    "chipPriceFrom": "dès {price}",
+    "durationPartyToggle": "Pour un groupe",
+    "durationPartyPerPerson": "par personne",
+    "durationPartyPeople": "Personnes",
+    "durationPartyTo": "à",
+    "durationPartyMinLabel": "Nombre minimum de personnes pour {duration}",
+    "durationPartyMaxLabel": "Nombre maximum de personnes pour {duration}",
+    "durationPartyHintPriced": "Le prix est par personne. La personne qui réserve indique le nom de chacun.",
+    "durationPartyHintFree": "La personne qui réserve indique le nom de chacun.",
+    "durationPartyValidation": "Utilisez des nombres entiers de 1 à {max}, avec de la place pour au moins 2 personnes.",
+    "chipPricePerPerson": "{price} par personne"
   },
   "Benefit": {
     "fieldLabel": "Avantage membre",
@@ -2807,7 +2817,22 @@
     "memberCoveredHint": "Inclus dans votre abonnement — réservation en cours…",
     "errorCheckoutFailed": "Impossible de démarrer le paiement. Veuillez réessayer.",
     "errorPaymentRequired": "Cette séance nécessite désormais un paiement. Veuillez réessayer.",
-    "payAtStudioNote": "Paiement sur place au studio."
+    "payAtStudioNote": "Paiement sur place au studio.",
+    "partyTitle": "Qui vient ?",
+    "partyHintFixed": "Ce rendez-vous est pour {count} personnes. Indiquez le nom de chacun pour que le coach sache qui attendre.",
+    "partyHintRange": "Ce rendez-vous est pour {min} à {max} personnes. Indiquez le nom de chacun pour que le coach sache qui attendre.",
+    "partyPeopleLabel": "Personnes",
+    "partyFewer": "Une personne de moins",
+    "partyMore": "Une personne de plus",
+    "partyYou": "Vous",
+    "partyCompanionLabel": "Personne {n}",
+    "partyCompanionPlaceholder": "Prénom et nom",
+    "partyTotal": "{count, plural, one {# personne} other {# personnes}} à {unit} chacune : {total}",
+    "partyNamesMissing": "Indiquez un nom pour chaque personne qui vous accompagne.",
+    "partyContinue": "Continuer",
+    "partySummary": "Pour {count} personnes, avec {names}.",
+    "partyChange": "Modifier",
+    "durationPricePerPerson": "{price} par personne"
   },
   "AppointmentCancel": {
     "title": "Annuler le rendez-vous",
@@ -5159,7 +5184,8 @@
     "courseBlockClosed": "Réservations closes",
     "courseBlockJoin": "Participer",
     "courseBlockJoined": "Vous êtes inscrit au cours",
-    "courseBlockCurriculum": "Au programme"
+    "courseBlockCurriculum": "Au programme",
+    "payPerVisitPerPerson": "{price} par personne"
   },
   "Products": {
     "title": "Produits",
@@ -5867,7 +5893,8 @@
     "choosePlaceSubtitle": "Choisissez où vous souhaitez venir.",
     "coursesCurriculum": "Au programme",
     "errorDropInSignedUpOnly": "Ce cours est réservé aux personnes inscrites auprès du studio. Connectez-vous avec l'e-mail de votre inscription pour le payer.",
-    "dropInSubtitleSignIn": "Inscrit(e) chez nous ? Connectez-vous et payez {price} pour ce cours"
+    "dropInSubtitleSignIn": "Inscrit(e) chez nous ? Connectez-vous et payez {price} pour ce cours",
+    "badgePerPerson": "{price} par personne"
   },
   "PublicTrialBooking": {
     "titleBookTrialClass": "Réserver un cours d'essai",
@@ -7643,7 +7670,8 @@
     "emptyPosts": "Aucun article pour le moment.",
     "readMore": "Lire la suite",
     "navPosts": "Blog",
-    "navSplit": "Aperçu"
+    "navSplit": "Aperçu",
+    "termPerPerson": "{price} par personne"
   },
   "OrgMemberInvite": {
     "title": "Invitation à l'organisation",
@@ -9172,5 +9200,9 @@
     "joinEmailRequired": "Il nous faut une adresse e-mail pour vous réserver une place.",
     "joinFailed": "Cela n'a pas fonctionné. Réessayez ou écrivez au studio.",
     "closeButton": "Fermer"
+  },
+  "BookingParty": {
+    "group": "Groupe de {count}",
+    "groupWith": "Groupe de {count}, avec {names}"
   }
 }

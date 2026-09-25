@@ -165,6 +165,89 @@ export interface ActivityDuration {
    *  is IGNORED (`resolveDurationSale` returns no price), so a stale number
    *  left by a studio switching modes can never be charged. */
   benefitOnly?: boolean
+  /** APPOINTMENT-ONLY. Present = a PARTY books this length together (the
+   *  booker plus the people they bring, between `min` and `max` in total) and
+   *  `priceAmount` is PER PERSON. "I come with another person, CHF 75 each" is
+   *  `{ minutes: 45, priceAmount: 75, party: { min: 2, max: 2 } }`. It is its
+   *  own length on its own offer, never a multiplier on the solo price: the
+   *  studio that sells both sells them at different prices. Read through
+   *  `resolveDurationParty`, never as a raw field. */
+  party?: DurationParty | null
+}
+
+/** How many people book one party length together, the booker included. */
+export interface DurationParty {
+  min: number
+  max: number
+}
+
+/** The largest party one appointment takes. A private lesson for a small
+ *  group, not a class: past this the studio wants a class with seats. */
+export const DURATION_PARTY_MAX = 10
+/** A companion's name, as the booking stores it. */
+export const PARTICIPANT_NAME_MAX = 60
+
+/**
+ * THE ONE READER of a length's party: the bounds, or null when the length is
+ * booked by one person (absent, malformed, or `1..1`).
+ *
+ * A `benefit_only` length has no party. Its only way in is the booker's own
+ * member rule, and nothing covers the people they bring, so a party there
+ * would be a door nobody can walk through.
+ */
+export function resolveDurationParty(d: ActivityDuration): DurationParty | null {
+  if (resolveDurationSale(d).mode === 'benefit_only') return null
+  const p = d.party
+  if (!p || !Number.isInteger(p.min) || !Number.isInteger(p.max)) return null
+  const min = Math.max(1, p.min)
+  const max = Math.min(DURATION_PARTY_MAX, p.max)
+  if (max < min || max < 2) return null
+  return { min, max }
+}
+
+/** Why a booking's party was refused. `party_required` is an old client (the
+ *  member app before parties) asking for a party length as if it were solo:
+ *  refused by name rather than guessed, because guessing means either charging
+ *  a party it never showed or booking a group with nobody's name. */
+export type PartyRequestProblem = 'party_required' | 'party_size' | 'participant_names' | 'no_party'
+
+/**
+ * THE ONE CHECK of what a caller asked for against the length they chose, run
+ * by the picker and by every callable that books, so the two can never accept
+ * different parties. `participants` are the COMPANIONS' names, one per person
+ * beyond the booker; the booker's own name is the booking's.
+ */
+export function normalizePartyRequest(
+  d: ActivityDuration,
+  input: { people?: unknown; participants?: unknown }
+):
+  | { ok: true; people: number; participants: string[] }
+  | { ok: false; reason: PartyRequestProblem } {
+  const party = resolveDurationParty(d)
+  const names = Array.isArray(input.participants) ? input.participants : []
+  if (!party) {
+    const solo = input.people === undefined || input.people === null || input.people === 1
+    return solo && names.length === 0
+      ? { ok: true, people: 1, participants: [] }
+      : { ok: false, reason: 'no_party' }
+  }
+  if (input.people === undefined || input.people === null) {
+    // "Alone or with a friend" (1..2): a caller that names no party is alone,
+    // which is a booking this length takes. Only a length that cannot be
+    // booked alone needs the caller to have asked for a party.
+    return party.min === 1 && names.length === 0
+      ? { ok: true, people: 1, participants: [] }
+      : { ok: false, reason: 'party_required' }
+  }
+  const people = input.people
+  if (typeof people !== 'number' || !Number.isInteger(people) || people < party.min || people > party.max) {
+    return { ok: false, reason: 'party_size' }
+  }
+  const participants = names.map((n) => (typeof n === 'string' ? n.trim().slice(0, PARTICIPANT_NAME_MAX) : ''))
+  if (participants.length !== people - 1 || participants.some((n) => n.length === 0)) {
+    return { ok: false, reason: 'participant_names' }
+  }
+  return { ok: true, people, participants }
 }
 
 /** How a duration is sold. `'benefit_only'` = not sold individually; the
@@ -200,10 +283,16 @@ export function resolveDurationSale(d: ActivityDuration): {
  *  hour and a CHF 80 double was advertised as "CHF 45–80" on the booking card,
  *  the website's pricing block and the shop: a range whose floor is not the
  *  floor, because the free length sits outside it. */
-export type PriceRange =
+export type PriceRange = (
   | { kind: 'one'; amount: number }
   | { kind: 'range'; min: number; max: number }
   | { kind: 'from'; amount: number }
+) & {
+  /** Every sold length is priced PER PERSON, so the figures are per person and
+   *  the surface says so. Absent when any sold length is priced per booking:
+   *  see `appointmentPriceRange` for how a mix is kept in one unit. */
+  perPerson?: true
+}
 
 /**
  * THE ONE READER of an appointment's price spread: which of the three answers
@@ -223,15 +312,26 @@ export function appointmentPriceRange(
   durations: readonly ActivityDuration[] | null | undefined
 ): PriceRange | null {
   const all = durations ?? []
-  const priced = all
-    .map((d) => resolveDurationSale(d).priceAmount)
-    .filter((p): p is number => typeof p === 'number')
-  if (priced.length === 0) return null
+  const sold = all.flatMap((d) => {
+    const price = resolveDurationSale(d).priceAmount
+    return typeof price === 'number' ? [{ price, party: resolveDurationParty(d) }] : []
+  })
+  if (sold.length === 0) return null
+
+  // ONE UNIT PER ANSWER. When every sold length is per person the figures stay
+  // per person and say so. When only some are, a per-person length is counted
+  // at the smallest party it takes, so every figure is what one booking costs:
+  // "CHF 75-110" beside a per-person 75 would put two units in one range.
+  const allPerPerson = sold.every((s) => s.party !== null)
+  const priced = sold.map((s) => (allPerPerson || !s.party ? s.price : s.price * s.party.min))
+  const unit = allPerPerson ? { perPerson: true as const } : {}
 
   const min = Math.min(...priced)
   const max = Math.max(...priced)
-  if (min === max) return { kind: 'one', amount: min }
-  return priced.length === all.length ? { kind: 'range', min, max } : { kind: 'from', amount: min }
+  if (min === max) return { kind: 'one', amount: min, ...unit }
+  return priced.length === all.length
+    ? { kind: 'range', min, max, ...unit }
+    : { kind: 'from', amount: min, ...unit }
 }
 
 /** An appointment activity's duration menu, defaulting to a single unpriced
@@ -559,7 +659,13 @@ export interface ActivityPublicProfile {
    *  show "from CHF 45". Mirrored verbatim from `Activity.durations` — there's
    *  no per-contact data to strip any more (the old `subscriptionPricing`
    *  matrix is gone; see `ActivityDuration`'s history note). */
-  durations?: Array<{ minutes: number; priceAmount: number | null; benefitOnly?: boolean }>
+  durations?: Array<{
+    minutes: number
+    priceAmount: number | null
+    benefitOnly?: boolean
+    /** Present only for a party length, as `resolveDurationParty` reads it. */
+    party?: DurationParty
+  }>
   /** Mirrored verbatim from `Activity.memberBenefit` (appointments AND class
    *  drop-in member rates) — public-safe, since the referenced
    *  subscription-type ids are already public in the shop. */

@@ -61,6 +61,8 @@ export type PromoPreviewTarget =
       activityId: string
       startMs: number
       durationMinutes: number
+      /** A party length's size, so the preview prices every place. */
+      people?: number
     }
   | { kind: 'course'; courseId: string }
   | { kind: 'product'; productId: string; variantId?: string }

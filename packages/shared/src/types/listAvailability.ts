@@ -12,7 +12,7 @@
 // NO `accessRule` here — appointments dropped the access gate entirely; money
 // (`durations` + `memberBenefit`) is the only gate. See the module header of
 // `appointments/window.ts`.
-import type { ActivityMemberBenefit, ActivityDurationBenefit } from './activity'
+import type { ActivityMemberBenefit, ActivityDurationBenefit, DurationParty } from './activity'
 import type { Benefit } from './benefit'
 import type { BookingContactField } from './team'
 
@@ -22,6 +22,11 @@ export interface ListAvailabilityDuration {
   /** NOT SOLD INDIVIDUALLY (UX-70) — bookable only through `memberBenefit`.
    *  Distinct from `priceAmount: null`, which means free for anyone. */
   benefitOnly?: boolean
+  /** A PARTY books this length and `priceAmount` is per person. Present only
+   *  for a party (`resolveDurationParty`), so a client that predates parties
+   *  reads the shape it always has, and is refused by name if it books one
+   *  without saying who is coming (`party_required`). */
+  party?: DurationParty
 }
 
 export interface ListAvailabilityDay {

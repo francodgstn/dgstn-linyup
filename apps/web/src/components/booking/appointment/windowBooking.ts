@@ -3,6 +3,7 @@ import {
   type ActivityMemberBenefit,
   type Benefit,
   type BookingContactField,
+  type DurationParty,
 } from '@linyup/shared'
 import type { AvailActivity, AvailCoach } from '@/components/booking/when/availability'
 
@@ -28,6 +29,8 @@ export interface WindowBooking {
   onlineUrl: string | null
   priceAmount: number | null
   benefitOnly: boolean
+  /** The chosen length's group bounds; `priceAmount` is then per person. */
+  party: DurationParty | null
   memberBenefit: ActivityMemberBenefit | Benefit | null
   /** Carried to the booking step so the terms are on the screen that commits. */
   cancellationPolicy: string | null
@@ -60,6 +63,7 @@ export function buildWindowBooking(
     onlineUrl: activity.onlineUrl,
     priceAmount: chosen?.priceAmount ?? null,
     benefitOnly: chosen?.benefitOnly === true,
+    party: chosen?.party ?? null,
     // THE ONE READER, resolved for the CHOSEN length. Everything downstream —
     // the quote, the "sign in for the member price" line, the checkout — reads
     // this single already-resolved value, so no surface below can pick a
