@@ -60,7 +60,7 @@ export default async function PayResultPage({
     ctaHref = publicHref(slug ?? '', 'booking', { from: 'checkout' })
     ctaLabel = t('backToBooking')
   } else if (toAppointments) {
-    ctaHref = publicHref(slug ?? '', 'appointments', { from: 'checkout' })
+    ctaHref = publicHref(slug ?? '', 'booking', { from: 'checkout' })
     ctaLabel = t('backToAppointments')
   }
 

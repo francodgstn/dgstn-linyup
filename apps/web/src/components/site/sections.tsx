@@ -256,7 +256,7 @@ function activityBookHref(
 ): string | undefined {
   const { locale, slug } = ctx
   if (a.activityType === 'appointment')
-    return shortHref(ctx, publicHrefLocalized(locale, slug, 'appointments', { activity: a.id, from: 'site' }))
+    return shortHref(ctx, publicHrefLocalized(locale, slug, 'booking', { activity: a.id, from: 'site' }))
   if (a.slug) return shortHref(ctx, publicSubHrefLocalized(locale, slug, 'booking', a.slug, { from: 'site' }))
   return fallbackToBooking
     ? shortHref(ctx, publicHrefLocalized(locale, slug, 'booking', { from: 'site' }))
@@ -2428,12 +2428,12 @@ function ScheduleBlock({ section, ctx }: { section: ScheduleSection; ctx: Render
               section.showBooking && !isPastSession(selected) && !preview
                 ? selected.variant === 'availability'
                   ? // An availability window is not a bookable moment — it's a
-                    // range. Hand over to the picker, carrying the coach and day
-                    // the window already identifies so the visitor isn't asked to
-                    // choose again what they just clicked; they only pick the
-                    // exact start and length.
+                    // range. The funnel takes it from here, carrying the coach
+                    // and day the window already identifies so the visitor isn't
+                    // asked to choose again what they just clicked; they only
+                    // pick the exact start and length.
                     bookProps(
-                      publicHrefLocalized(locale, slug, 'appointments', {
+                      publicHrefLocalized(locale, slug, 'booking', {
                         activity: selected.activityId,
                         provider: selected.providerId,
                         date: toDayKey(selected.start.toDate()),
@@ -3302,7 +3302,7 @@ function FormBlock({ section, ctx }: { section: FormSection; ctx: RenderCtx }) {
               {section.next?.kind === 'appointment' && (
                 <a
                   {...bookProps(
-                    publicHrefLocalized(locale, slug, 'appointments', {
+                    publicHrefLocalized(locale, slug, 'booking', {
                       activity: section.next.activityId,
                       from: 'site',
                     }),
