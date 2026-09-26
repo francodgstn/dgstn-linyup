@@ -100,15 +100,6 @@ picker is the likely answer, but it is a design call about what that page is,
 not a patch. Re-checked 2026-09-26 in `BookingForm.tsx` (`visibleSteps` and the
 default-step branch).
 
-## `/public/{slug}/contact-update` asks a signed-in contact for a code
-
-It proves the visitor with `sendContactVerificationCode` + `verifyContactCode`
-against the `?contactId=` in the mailed link and never looks for a contact
-session, so a contact who is already signed in is made to fetch a code to
-correct their own phone number. The server side is no longer the obstacle:
-`completeSignup` already accepts a signed-in contact session in place of a code.
-What is left is the surface (`ContactUpdateForm.tsx`).
-
 ## Smaller, unfiled
 
 - **`stripe:listen` is unusable in a worktree.** The npm script hardcodes
