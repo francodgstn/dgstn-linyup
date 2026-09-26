@@ -3486,7 +3486,12 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     if (!loading && !user) {
-      router.replace(`/login?redirect=${encodeURIComponent(pathname)}`)
+      // `next`, which is what the login page reads (it sent `redirect`, which
+      // nothing read, so every signed-out deep link landed on the dashboard),
+      // and WITH the query: a link like the help centre's
+      // /manage/offer?guide=1 means the query.
+      const search = typeof window === 'undefined' ? '' : window.location.search
+      router.replace(`/login?next=${encodeURIComponent(pathname + search)}`)
     }
   }, [user, loading, router, pathname])
 

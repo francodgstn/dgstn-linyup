@@ -484,6 +484,15 @@ export default function CataloguePage() {
   const aiDrafting = isInstalled(AI_MODULES.offerDrafting) && teamRole === 'owner'
   const [aiOpen, setAiOpen] = useState(false)
   const [guideOpen, setGuideOpen] = useState(false)
+  // `?guide=1` is the help centre's "Do this for me in the app": land with the
+  // guide open, for whoever may use it, and drop the flag so Back or a reload
+  // does not open it again.
+  const guideRequested = params.get('guide') === '1'
+  useEffect(() => {
+    if (!guideRequested || !canEdit) return
+    setGuideOpen(true)
+    router.replace('/manage/offer' as Route, { scroll: false })
+  }, [guideRequested, canEdit, router])
 
   const { data: activities = [], isLoading: loadingActivities } = useActivities(currentTeamId)
   // The studio's default drop-in, for every class that follows it — the rail
