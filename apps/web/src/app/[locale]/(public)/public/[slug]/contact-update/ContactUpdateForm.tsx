@@ -10,6 +10,7 @@ import { Link } from '@/i18n/navigation'
 import { publicHref, returnHref } from '@/lib/publicRoutes'
 import { BioLinkShell, BioLinkButton } from '../BioLinkShell'
 import { usePublicTeam } from '../PublicTeamProvider'
+import { usePublicContactAuth } from '../PublicContactAuthProvider'
 import { callFunction } from '@/lib/callFunction'
 
 // ─── steps ───────────────────────────────────────────────────────────────────
@@ -67,10 +68,22 @@ export default function ContactUpdateForm({ slug, contactId, from }: Props) {
   const showBranding = team.showBranding === true
 
   const [step, setStep] = useState<Step>('email')
+
+  // ALREADY SIGNED IN AS THIS CONTACT ⇒ NO CODE. The session proves the same
+  // thing the code would (control of this contact), and `requestContactUpdate`
+  // accepts it, so asking a signed-in member to fetch a code to correct their
+  // own phone number was friction with nothing behind it. Only when the session
+  // IS the link's contact: signed in as anyone else (a parent opening a child's
+  // link), the code flow below runs as before and the server binds the request
+  // to the link's contact.
+  const { isAuthenticated, isRestoring, contact: sessionContact } = usePublicContactAuth()
+  const viaSession = isAuthenticated && sessionContact?.id === contactId
   const [email, setEmail] = useState('')
   const [codeId, setCodeId] = useState('')
   const [countdown, setCountdown] = useState(0)
   const [error, setError] = useState<string | null>(null)
+  const shownStep: Step = viaSession && step === 'email' ? 'form' : step
+  const shownEmail = viaSession ? (sessionContact?.email ?? '') : email
 
   // Countdown timer for resend button
   useEffect(() => {
@@ -150,7 +163,7 @@ export default function ContactUpdateForm({ slug, contactId, from }: Props) {
     try {
       const fn = callFunction<
         {
-          codeId: string
+          codeId?: string
           contactId: string
           teamId: string
           contactDetails: Omit<DetailsValues, 'note'>
@@ -160,7 +173,7 @@ export default function ContactUpdateForm({ slug, contactId, from }: Props) {
       >('requestContactUpdate')
 
       await fn({
-        codeId,
+        ...(viaSession ? {} : { codeId }),
         contactId,
         teamId,
         contactDetails: {
@@ -185,7 +198,10 @@ export default function ContactUpdateForm({ slug, contactId, from }: Props) {
 
   // ── Render: loading ─────────────────────────────────────────────────────────
 
-  if (step === 'loading') {
+  // A persisted session not yet checked is "not known yet", not "signed out":
+  // hold the email step until it resolves rather than flash it at a member who
+  // is about to skip it.
+  if (step === 'loading' || (isRestoring && step === 'email')) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -206,7 +222,7 @@ export default function ContactUpdateForm({ slug, contactId, from }: Props) {
 
   // ── Render: email step ──────────────────────────────────────────────────────
 
-  if (step === 'email') {
+  if (shownStep === 'email') {
     return (
       <BioLinkShell
         teamName={teamName}
@@ -331,7 +347,7 @@ export default function ContactUpdateForm({ slug, contactId, from }: Props) {
 
   // ── Render: details form ────────────────────────────────────────────────────
 
-  if (step === 'form') {
+  if (shownStep === 'form') {
     return (
       <BioLinkShell
         teamName={teamName}
@@ -350,16 +366,18 @@ export default function ContactUpdateForm({ slug, contactId, from }: Props) {
         </div>
 
         <form onSubmit={detailsForm.handleSubmit(onSubmitDetails)} className="space-y-4">
-          {/* Email read-only */}
-          <div className="space-y-1">
-            <label className="text-sm font-medium">{t('labelEmail')}</label>
-            <input
-              type="email"
-              value={email}
-              disabled
-              className="w-full rounded-lg border bg-muted px-3 py-2 text-sm text-muted-foreground"
-            />
-          </div>
+          {/* Email read-only — absent only on a session persisted without one */}
+          {shownEmail && (
+            <div className="space-y-1">
+              <label className="text-sm font-medium">{t('labelEmail')}</label>
+              <input
+                type="email"
+                value={shownEmail}
+                disabled
+                className="w-full rounded-lg border bg-muted px-3 py-2 text-sm text-muted-foreground"
+              />
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">

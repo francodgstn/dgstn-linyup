@@ -129,12 +129,6 @@ const REASONS: Record<string, string> = {
     'The `?token=` in the appointment\'s own confirmation mail IS the identity, and ' +
     '`cancelBooking` accepts nothing else. A session would be a second, weaker answer ' +
     'to a question the token already answers exactly.',
-  'contact-update':
-    'Runs its OWN email→code round trip (sendContactVerificationCode + verifyContactCode) ' +
-    'against the `?contactId=` in the mailed link. NOT a clean reason and recorded as ' +
-    'such: a contact who is already signed in is still made to fetch a code. Closing it ' +
-    'means deciding whether `verifyContactCode` accepts a session as proof, which is a ' +
-    'change to that callable and not to this surface.',
   documents:
     'Publishes world-readable document summaries. Nothing on it is per-person, so there ' +
     'is no identity for it to be wrong about.',

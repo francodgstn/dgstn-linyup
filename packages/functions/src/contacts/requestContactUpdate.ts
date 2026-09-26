@@ -1,8 +1,10 @@
 // Ported from hmd-lineup/functions/src/requestContactUpdate/index.js
 // Creates a contact data update request. Supports two auth modes:
-//   1. contact session — the passwordless contact session (web Space portal /
-//                        mobile), identified by the custom-token claims
-//   2. codeId         — from the bio-link email-verification flow
+//   1. contact session — the passwordless contact session (web Space portal,
+//                        mobile, and /contact-update when the signed-in contact is
+//                        the link's contact), identified by the custom-token claims
+//   2. codeId         — from the /contact-update email-verification flow; when
+//                        sent, it wins over any session (see below)
 //
 // A third mode, `authToken` (an `auth_tokens` doc from the student app), was
 // removed 2026-07-17: its only minter (`generateAuthToken`) never wrote the
@@ -14,6 +16,23 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https'
 import { createTeamNotification } from '../utils/teamNotifications'
 
 const CONTACT_REQUESTS_SUBCOLLECTION = 'contact_requests'
+
+/**
+ * Which proof authorizes the request. A CODE, WHEN SENT, DECIDES — even with a
+ * session present. The code path binds the request to the contact in the mailed
+ * link; the session path writes to the session's own contact. A signed-in member
+ * who opens a link for somebody else (a child sharing a parent's address) and
+ * proves the email must update THAT contact, not themselves — which is what
+ * trusting the session first did.
+ */
+export function contactUpdateAuthMode(input: {
+  codeId?: string
+  sessionContactId?: string
+}): 'code' | 'session' | null {
+  if (input.codeId) return 'code'
+  if (input.sessionContactId) return 'session'
+  return null
+}
 
 export const requestContactUpdate = onCall(async (request) => {
   const { codeId, contactDetails, note } = request.data as {
@@ -30,7 +49,8 @@ export const requestContactUpdate = onCall(async (request) => {
   const sessionTeamId = request.auth?.token?.teamId as string | undefined
   const sessionExpires = request.auth?.token?.sessionExpires as number | undefined
 
-  if (!codeId && !sessionContactId)
+  const authMode = contactUpdateAuthMode({ codeId, sessionContactId })
+  if (!authMode)
     throw new HttpsError('invalid-argument', 'Missing required field: codeId, or a contact session')
   if (!contactDetails)
     throw new HttpsError('invalid-argument', 'Missing required field: contactDetails')
@@ -46,7 +66,7 @@ export const requestContactUpdate = onCall(async (request) => {
   const db = admin.firestore()
   let codeRef: admin.firestore.DocumentReference | null = null
 
-  if (sessionContactId) {
+  if (authMode === 'session') {
     // ── Contact-session auth (web Space portal / mobile) ────────────────────────
     // Trust the custom-token claims (minted server-side after email verification);
     // refuse a session past its 7-day window.
@@ -54,7 +74,7 @@ export const requestContactUpdate = onCall(async (request) => {
       throw new HttpsError('permission-denied', 'Contact session is missing a team')
     if (typeof sessionExpires === 'number' && sessionExpires < Date.now())
       throw new HttpsError('deadline-exceeded', 'Contact session has expired. Please sign in again.')
-    contactId = sessionContactId
+    contactId = sessionContactId!
     teamId = sessionTeamId
     console.log(`Session-based contact update request from contact ${contactId} for team ${teamId}`)
   } else {
