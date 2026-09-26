@@ -236,7 +236,7 @@ type Step =
   // other asks a signed-in person to fetch an emailed code to prove they are
   // themselves. Both were asked, and a member with a valid subscription hit the
   // OTP wall every time — the class-side twin of the appointment-picker defect
-  // fixed on 2026-08-16 (docs/open-defects.md).
+  // fixed on 2026-08-16 (docs/appointments.md → "Who the picker is booking for").
   //
   // The server never needed the code: `bookSession` and `createDropInCheckout`
   // both read the caller off the contact-session token and say so in as many
@@ -1007,9 +1007,10 @@ export default function BookingForm({
     } else if (everyActivityIsAppointment) {
       // Date-first has nothing to offer when there are no classes at all, so
       // show the cards instead of an empty day. A MIXED studio on date-first
-      // now reaches its appointments from the same cards: the day picker still
-      // only knows class sessions, but the offer list beside it knows both, and
-      // choosing an appointment no longer leaves this funnel.
+      // does NOT come through here: it lands on the class day picker, which
+      // knows class sessions only, so its appointments are unreachable from
+      // /booking (docs/open-defects.md → "A MIXED studio on the date-first flow
+      // cannot reach its appointments").
       setStep('activities')
     } else if (actList.length === 1) {
       if (actList[0].activityType === 'appointment') {

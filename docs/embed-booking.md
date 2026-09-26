@@ -156,5 +156,5 @@ widgets have always had.
 - **A session-detail modal inside a section widget** is still drawn inside that
   widget's frame, so on a tall page it can sit off-screen. Unchanged by this
   work; the fix is the same move the booking panel just made.
-- **Org-scoped widgets** (`/embed/org/…`) do not exist yet — see
-  `docs/open-defects.md`. The launcher is team-scoped for the same reason.
+- **Org-scoped widgets** (`/embed/org/…`) do not exist yet — descoped when the
+  two website builders converged. The launcher is team-scoped for the same reason.

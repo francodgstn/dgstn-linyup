@@ -14,8 +14,8 @@
  * dead end that "an appointment-only studio never reached the picker" was about,
  * arriving by a different road and surviving that fix.
  *
- * Recorded in docs/open-defects.md as "Still open (unverified): activity mirrors
- * written before `activityType` existed". Unverified because it needs real data
+ * Recorded in docs/open-defects.md as "`pnpm backfill:activity-type-mirrors` has
+ * not been run anywhere". Unverified because it needs real data
  * to see; this script is how you look, and `--apply` is how you fix it.
  *
  * ── WHY IT PATCHES THE MIRROR RATHER THAN TOUCHING THE ACTIVITY ─────────────

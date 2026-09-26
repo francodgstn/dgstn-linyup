@@ -35,7 +35,7 @@ Legend: ✅ done · ⏳ in progress · ❌ not started · ~~skipped~~ (out of sc
 - ✅ `recurrence.ts` — DST-safe Europe/Zurich recurrence logic
 - ✅ `teams.ts` — `isTeamMember()`, `hasTeamRole()`
 - ✅ `contacts.ts` — count helpers (`getActiveContacts`, `countByField`) — extracted from `analytics/index.ts`
-- ✅ `users.ts` — `findTeamWeeklyReport()`, `getOrCreateTeamWeeklyReport()` — plus named count helpers in `contacts.ts`
+- ✅ `users.ts` — `logActivity()`
 
 ---
 
@@ -158,7 +158,7 @@ Legend: ✅ done · ⏳ in progress · ❌ not started · ~~skipped~~ (out of sc
 
 ## apps/web — Foundation
 
-- ✅ Next.js 15 App Router scaffold
+- ✅ Next.js App Router scaffold (now Next.js 16)
 - ✅ shadcn/ui component library
 - ✅ Tailwind CSS
 - ✅ TanStack Query v5 provider

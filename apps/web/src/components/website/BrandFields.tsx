@@ -3,7 +3,7 @@
 // Brand controls for a public website — logo, typefaces, heading case, button
 // shape and color, the top bar, and the footer. ONE component, mounted by both
 // the studio builder and the organization builder, so the two cannot drift
-// apart the way their appearance panels once did (docs/open-defects.md).
+// apart the way their appearance panels once did.
 //
 // The link lists here (top bar, footer columns, legal row) are deliberately
 // FLAT label + destination rows, not the header's menu tree: the publish

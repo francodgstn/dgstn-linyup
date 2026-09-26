@@ -7,10 +7,9 @@
 // an `any`, so each silently produced `undefined`: no exception, no failing test,
 // just wrong data written confidently. Three shipped defects came from exactly
 // that — a subscription's first payment showing "unassigned", a null membership
-// expiry, and a billing-portal cancellation surfacing nowhere. All three are
-// described in the intro of docs/open-defects.md, which records them as shipped;
-// THIS MODULE is their owner, so point new readers here rather than at a section
-// number in a file that renumbers every time an entry ships.
+// expiry, and a billing-portal cancellation surfacing nowhere. All three have
+// shipped, and THIS MODULE is their owner, so point new readers here rather
+// than at docs/open-defects.md, which deletes an entry when it ships.
 //
 // So every one of those reads now goes through this module, which:
 //
