@@ -162,8 +162,7 @@ const REASONS: Record<string, string> = {
     '`cancelBooking` / the reschedule take nothing else.',
   'trial-booking':
     'A redirect shim: the route forwards to `/booking` with its query intact. It renders ' +
-    'no UI of its own. (`TrialBookingForm.tsx` still sits in this directory and is ' +
-    'reachable from no route — see the note in docs/open-defects.md.)',
+    'no UI of its own.',
   'course-waitlist':
     'The same answer as its class sibling below, for the same reason: the offer/entry ' +
     'token in the course queue mail is the identity, and which token matched is what ' +

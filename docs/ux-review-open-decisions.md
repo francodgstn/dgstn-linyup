@@ -312,7 +312,7 @@ heuristic**: `raw_status` stores the literal event type that wrote each row, so
 "this endpoint delivered both families" is a stored fact. `detectByoStripeDoubleRecording`
 (shared, unit-tested) counts families over a 90-day window — self-clearing, and
 it never pairs two rows — and Settings → Payments warns the owner with the fix.
-Nothing mutates a row. `docs/open-defects.md` entry 1 records this; the entry
+Nothing mutates a row. `docs/open-defects.md` → "A BYO studio can double-count its own recurring revenue" records this; the entry
 stays open because the duplication itself is unchanged.
 
 **Original note.** BYO double-recording is caused by the Stripe API no longer letting an
@@ -321,7 +321,7 @@ that rail to bridge them. Today's work makes the suspect rows *visible* and tell
 the studio which events to subscribe to; it does not stop the duplication. The
 three real closes each have a cost and none was mine to pick: swap to
 `invoice_payment.paid`, give the rail read-only credentials, or dedupe across
-keys. `docs/open-defects.md` entry 1 says explicitly that this is still not a fix.
+keys. That entry says explicitly that this is still not a fix.
 
 ## 19. Should search find archived and deleted contacts? (UX-21)
 **PARKED — scope, not mechanism.** `useActiveContacts` filters them out, so looking

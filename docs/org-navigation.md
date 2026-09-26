@@ -86,10 +86,10 @@ ctrlKey + altKey on the layouts this product is built for.
 - **A member studio still lands on `/overview`**, which is their summary; the
   dashboard route renders a signpost for one rather than four dashes.
 
-**Still open after the build:** `useAffiliationTerm` resolves the CURRENT TEAM's
-org rather than the route's — so on an `/org/{X}` route where X is not the current
-team's org, the studio sidebar's affiliation word is the wrong org's. Both are
-recorded in `docs/open-defects.md`.
+**Left open by the build, fixed since:** `useAffiliationTerm` resolved the CURRENT
+TEAM's org rather than the route's (fixed 2026-08-28 — it reads
+`orgIdFromPath`), and the sidebar quick-search did not index org destinations
+(fixed 2026-08-27).
 
 **Still missing from the dashboard, and named rather than faked:** sessions,
 bookings, attendance and money across the federation. All of those are
@@ -286,8 +286,8 @@ Three details decide whether it feels right:
   already one such link, and it is already broken: `settings/team/page.tsx` sends
   an org-managed studio to `/org/{orgId}/settings` for ranking, which has no
   ranking UI (the editor is `/org/{orgId}/ranking`). Under this design that link
-  should switch scope and land on the rail's Ranking item. See "The org-managed
-  ranking banner links to a page with no ranking UI" in `docs/open-defects.md`.
+  should switch scope and land on the rail's Ranking item. (Fixed 2026-08-27:
+  the banner now links to `/org/{orgId}/ranking`.)
 - **Nav search does not index org destinations.** The sidebar search groups
   pages and settings; org pages should join it once they are real nav items,
   otherwise the switcher becomes the only way in.

@@ -47,8 +47,8 @@ function dayEnd(date: string): Timestamp {
  * What an external event says on the page.
  *
  * `Event` carries no "externally organized" field, and adding one that only this
- * script writes would be a flag nothing reads — the shape `docs/open-defects.md`
- * already records as a mistake once (`EventTypeConfig.contact_requirements`). The
+ * script writes would be a flag nothing reads — a mistake already made and
+ * deleted once (`EventTypeConfig.contact_requirements`). The
  * fact belongs where a person will see it, so it goes in the description.
  *
  * `note` LANDS HERE TOO, AND THAT IS THE WHOLE CONTRACT — a note is member-facing
