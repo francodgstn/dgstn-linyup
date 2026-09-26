@@ -9,10 +9,15 @@ sidebar:
 import PayMatrix from '../../../components/diagrams/PayMatrix.astro'
 import Walkthrough from '../../../components/diagrams/Walkthrough.astro'
 import { QUESTIONS, WALK_START, FINAL_STEPS } from '../../../data/offeringWalkthrough'
+import { LinkButton } from '@astrojs/starlight/components'
 
 Setting up something new to sell? Answer a few questions about what you want to run, and you get the exact setup: which screen, which setting, and what to put in it. Your answers stay on screen, so you can change any of them and see how the setup changes.
 
 ## Set it up, step by step
+
+Rather have it done for you? The app asks the same questions and creates it, ready to adjust: in **Manage → Offerings**, choose **Create → Set up with a guide**.
+
+<LinkButton href="https://app.linyup.com/manage/offer?guide=1" variant="secondary" icon="external">Do this for me in the app</LinkButton>
 
 <Walkthrough label="Set up an offering, step by step" questions={QUESTIONS} start={WALK_START} finalSteps={FINAL_STEPS} />
 

@@ -212,7 +212,7 @@ export default function OrgInvitePage() {
                 <div className="pt-2 space-y-3">
                   <p className="text-sm text-center text-muted-foreground">{t('loginRequired')}</p>
                   <Link
-                    href={`/login?redirect=/org-invite/${params.orgId}/${params.invId}` as Route}
+                    href={`/login?next=${encodeURIComponent(`/org-invite/${params.orgId}/${params.invId}`)}` as Route}
                     className="block w-full text-center"
                   >
                     <Button className="w-full">Sign in to continue</Button>

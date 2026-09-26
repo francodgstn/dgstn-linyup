@@ -7,10 +7,14 @@
 // in their words and every answer turns into a step in OURS: the screen, the
 // field and the value, spelled as the app spells them.
 //
-// It doubles as the analysis for an in-app setup wizard: the questions are
-// the wizard's steps, and `steps` is what the wizard would write. Keep it true
-// to the app's forms; a step naming a field that does not exist is worse than
-// no step. Checked against apps/web/messages/en.json (Activities,
+// The in-app guide ("Set up with a guide" in Manage → Offerings) asks these
+// same questions and creates the records. The two share STRUCTURE, never
+// words: the question ids and each option's `id`, in the same order. The app
+// declares its side in apps/web/src/components/offer/offeringWizardTree.ts,
+// including the questions only this page asks and why, and
+// packages/functions/src/offer/wizardDrift.test.ts fails when the two drift.
+// Keep it true to the app's forms; a step naming a field that does not exist
+// is worse than no step. Checked against apps/web/messages/en.json (Activities,
 // OfferCatalogue, CourseBlocks, TeamSettings.subType*) on 2026-09-25.
 //
 // Shape: a question has options; an option may add setup `steps`, add a
@@ -19,6 +23,10 @@
 // the page adds FINAL_STEPS to every finished setup.
 
 export interface WalkOption {
+  /** Stable, never shown. The in-app guide uses the same ids for the same
+   *  answers (apps/web/src/components/offer/offeringWizardTree.ts), and a
+   *  test fails when the two trees disagree. Rename only on both sides. */
+  id: string
   label: string
   hint?: string
   next?: string
@@ -48,6 +56,7 @@ export const QUESTIONS: WalkQuestion[] = [
     help: 'Pick the closest. You can walk through again for the next thing.',
     options: [
       {
+        id: 'class',
         label: 'A class people join at a set time',
         hint: 'Yoga on Tuesdays, kids judo, an open gym',
         next: 'class-who',
@@ -56,6 +65,7 @@ export const QUESTIONS: WalkQuestion[] = [
         ],
       },
       {
+        id: 'appointment',
         label: 'Time with me or a coach, one person at a time',
         hint: 'Personal training, a consultation, an intro call',
         next: 'appt-price',
@@ -64,17 +74,20 @@ export const QUESTIONS: WalkQuestion[] = [
         ],
       },
       {
+        id: 'course',
         label: 'A set of dates sold together',
         hint: 'A 13-week term, a weekend workshop, a beginners course',
         next: 'course-when',
         steps: ['In **Manage → Offerings**, choose **New course** and give it a name.'],
       },
       {
+        id: 'plan',
         label: 'A membership or a pack of classes',
         hint: 'Monthly unlimited, a 10-class card, a free pass for your coaches',
         next: 'plan-kind',
       },
       {
+        id: 'online',
         label: 'Something to watch in their own time',
         hint: 'Recorded lessons, a video program',
         steps: [
@@ -84,12 +97,14 @@ export const QUESTIONS: WalkQuestion[] = [
         note: 'Videos are embedded from YouTube or Vimeo, not uploaded.',
       },
       {
+        id: 'product',
         label: 'A product',
         hint: 'A T-shirt, a drink, equipment',
         steps: ['Install the **Products** plugin, then add it in **Manage → Products** with its price and any variants, such as sizes.'],
         note: 'A product has one price for everyone: plans don\'t include or discount it.',
       },
       {
+        id: 'event',
         label: 'A camp or an event with a program',
         hint: 'A summer camp, a seminar, a grading',
         steps: ['Create it under **Events**. An event takes registrations and can carry a program over several days.'],
@@ -103,8 +118,9 @@ export const QUESTIONS: WalkQuestion[] = [
     id: 'class-who',
     ask: 'Who should be able to book it?',
     options: [
-      { label: 'Anyone, including people I\'ve never met', next: 'class-pay' },
+      { id: 'anyone', label: 'Anyone, including people I\'ve never met', next: 'class-pay' },
       {
+        id: 'signed_up',
         label: 'Only people who have signed up with me',
         hint: 'Your existing members and contacts',
         next: 'class-pay',
@@ -119,6 +135,7 @@ export const QUESTIONS: WalkQuestion[] = [
     ask: 'How do people pay for it?',
     options: [
       {
+        id: 'included',
         label: 'It\'s included in a membership or pack',
         hint: 'Nobody pays per class',
         next: 'class-newcomers',
@@ -128,6 +145,7 @@ export const QUESTIONS: WalkQuestion[] = [
         ],
       },
       {
+        id: 'per_class',
         label: 'Per class',
         hint: 'A drop-in price, no plan needed',
         next: 'class-rate',
@@ -136,6 +154,7 @@ export const QUESTIONS: WalkQuestion[] = [
         ],
       },
       {
+        id: 'both',
         label: 'Both: members come included, everyone else pays per class',
         next: 'class-rate',
         steps: [
@@ -144,6 +163,7 @@ export const QUESTIONS: WalkQuestion[] = [
         ],
       },
       {
+        id: 'free',
         label: 'It\'s free',
         next: 'class-places',
         steps: ['Set **Offer drop-in / single class** to **No drop-in for this class**, and include it in no plan.'],
@@ -157,13 +177,14 @@ export const QUESTIONS: WalkQuestion[] = [
     help: 'For plans that don\'t include this class, such as a plan for another discipline.',
     options: [
       {
+        id: 'yes',
         label: 'Yes',
         next: 'class-newcomers',
         steps: [
           'In **Manage → Offerings**, open the class and switch **Member rate** on for those plans: a percentage off or a fixed member price.',
         ],
       },
-      { label: 'No, the same price for everyone', next: 'class-newcomers' },
+      { id: 'no', label: 'No, the same price for everyone', next: 'class-newcomers' },
     ],
   },
   {
@@ -171,16 +192,19 @@ export const QUESTIONS: WalkQuestion[] = [
     ask: 'Can a newcomer try it before committing?',
     options: [
       {
+        id: 'free',
         label: 'Yes, the first class is free',
         next: 'class-places',
         steps: ['Switch on **Trial class for newcomers** and leave **Trial price** empty. Each person gets one trial, ever.'],
       },
       {
+        id: 'priced',
         label: 'Yes, at a reduced price',
         next: 'class-places',
         steps: ['Switch on **Trial class for newcomers** and set a **Trial price**, such as 15. Each person gets one trial, ever.'],
       },
       {
+        id: 'no',
         label: 'No',
         next: 'class-places',
         note: 'If the class is only included in plans and has no drop-in, someone without a plan can see it but not book it. That is fine for a members-only class, and a dead end for one you want new people in.',
@@ -192,12 +216,13 @@ export const QUESTIONS: WalkQuestion[] = [
     ask: 'Is there a limit on places?',
     options: [
       {
+        id: 'limited',
         label: 'Yes',
         next: 'class-when',
         steps: ['When you put it on the calendar, set **Max participants**.'],
         note: 'A full class can offer a **Waitlist** (experimental): the first in line is offered the seat when one frees up.',
       },
-      { label: 'No limit', next: 'class-when' },
+      { id: 'unlimited', label: 'No limit', next: 'class-when' },
     ],
   },
   {
@@ -205,12 +230,14 @@ export const QUESTIONS: WalkQuestion[] = [
     ask: 'When does it run?',
     options: [
       {
+        id: 'weekly',
         label: 'Every week at the same time',
         steps: [
           'In **Schedule**, choose **New → New class**, pick this activity, and switch on **Repeat this session** with the days it runs. Keep **Allow online booking** on.',
         ],
       },
       {
+        id: 'dates',
         label: 'Once, or on a few dates',
         steps: ['In **Schedule**, choose **New → New class** for each date and pick this activity. Keep **Allow online booking** on.'],
       },
@@ -224,23 +251,27 @@ export const QUESTIONS: WalkQuestion[] = [
     help: 'Appointments have no "who can book" setting: the price decides who can book.',
     options: [
       {
+        id: 'priced',
         label: 'Yes, a price for each length',
         next: 'appt-members',
         steps: ['Under **Access & pricing**, set each length to **Priced** and enter its price.'],
       },
       {
+        id: 'some_free',
         label: 'Some lengths are free',
         hint: 'A free 15-minute intro next to a paid hour',
         next: 'appt-members',
         steps: ['Set the free length to **Free** and the others to **Priced**, each with its price.'],
       },
       {
+        id: 'free',
         label: 'No, it\'s free',
         next: 'appt-when',
         steps: ['Set every length to **Free**.'],
         note: 'A free appointment can be booked by anyone, guests included.',
       },
       {
+        id: 'plan_only',
         label: 'Only members can book it',
         next: 'appt-members',
         steps: ['Set the lengths to **Only with a plan**. They are not sold on their own.'],
@@ -253,6 +284,7 @@ export const QUESTIONS: WalkQuestion[] = [
     ask: 'Do members get a better deal?',
     options: [
       {
+        id: 'included',
         label: 'It\'s included in their plan',
         next: 'appt-when',
         steps: [
@@ -260,11 +292,12 @@ export const QUESTIONS: WalkQuestion[] = [
         ],
       },
       {
+        id: 'less',
         label: 'They pay less',
         next: 'appt-when',
         steps: ['In **Manage → Offerings**, open the appointment, pick the plans, and choose a percentage off or a fixed member price.'],
       },
-      { label: 'No, the same price for everyone', next: 'appt-when' },
+      { id: 'no', label: 'No, the same price for everyone', next: 'appt-when' },
     ],
   },
   {
@@ -272,6 +305,7 @@ export const QUESTIONS: WalkQuestion[] = [
     ask: 'When can people book it?',
     options: [
       {
+        id: 'availability',
         label: 'When I or my coaches are available',
         steps: [
           'Open **Schedule → Availability** and add the times each coach can be booked, choosing which appointments each window offers. Nothing goes on the calendar until someone books.',
@@ -286,12 +320,14 @@ export const QUESTIONS: WalkQuestion[] = [
     ask: 'How does it run?',
     options: [
       {
+        id: 'weekly',
         label: 'Every week between two dates',
         hint: 'Wednesdays from August to November',
         next: 'course-places',
         steps: ['Under **When it runs**, choose **Every week** and set the **First lesson** and **Last lesson**.'],
       },
       {
+        id: 'dates',
         label: 'On particular dates, each with its own time',
         hint: 'A Saturday and a Sunday',
         next: 'course-places',
@@ -304,12 +340,13 @@ export const QUESTIONS: WalkQuestion[] = [
     ask: 'Is the number of places limited?',
     options: [
       {
+        id: 'yes',
         label: 'Yes',
         next: 'course-price',
         steps: ['Set **Places**. They count for the whole course: a missed lesson doesn\'t free one.'],
         note: 'When it\'s full, people can ask to be told if a place comes free.',
       },
-      { label: 'No limit', next: 'course-price' },
+      { id: 'no', label: 'No limit', next: 'course-price' },
     ],
   },
   {
@@ -317,11 +354,13 @@ export const QUESTIONS: WalkQuestion[] = [
     ask: 'What does it cost?',
     options: [
       {
+        id: 'priced',
         label: 'One price for the whole course',
         next: 'course-members',
         steps: ['Set the **Price** for the whole course. People pay once and have a place in every lesson.'],
       },
       {
+        id: 'free',
         label: 'It\'s free',
         next: 'course-who',
         steps: ['Leave **Price** empty.'],
@@ -334,24 +373,27 @@ export const QUESTIONS: WalkQuestion[] = [
     ask: 'Do members get it included or cheaper?',
     options: [
       {
+        id: 'included',
         label: 'Included in their plan',
         next: 'course-who',
         steps: ['In **Manage → Offerings → Courses**, open the course and pick the plans that include it.'],
       },
       {
+        id: 'cheaper',
         label: 'Cheaper',
         next: 'course-who',
         steps: ['In **Manage → Offerings → Courses**, open the course and give those plans a member rate.'],
       },
-      { label: 'No', next: 'course-who' },
+      { id: 'no', label: 'No', next: 'course-who' },
     ],
   },
   {
     id: 'course-who',
     ask: 'Who can enroll?',
     options: [
-      { label: 'Anyone', next: 'course-close' },
+      { id: 'anyone', label: 'Anyone', next: 'course-close' },
       {
+        id: 'signed_up',
         label: 'Only people who have signed up with me',
         next: 'course-close',
         steps: ['Switch on **Only people who signed up with you**.'],
@@ -363,10 +405,12 @@ export const QUESTIONS: WalkQuestion[] = [
     ask: 'When should bookings close?',
     options: [
       {
+        id: 'days',
         label: 'A few days before the first lesson',
         steps: ['Set **Stop taking bookings** to the number of days before the first lesson.', '**Publish** the course when it\'s ready. It appears in your shop\'s Courses tab.'],
       },
       {
+        id: 'open',
         label: 'Keep them open until it starts',
         steps: ['Leave **Stop taking bookings** empty.', '**Publish** the course when it\'s ready. It appears in your shop\'s Courses tab.'],
       },
@@ -380,12 +424,14 @@ export const QUESTIONS: WalkQuestion[] = [
     help: 'In **Manage → Offerings**, choose **New plan**, or **Start from a template** for the common shapes.',
     options: [
       {
+        id: 'membership',
         label: 'Every month or year, until they cancel',
         hint: 'A membership',
         next: 'plan-limit',
         steps: ['Choose **New plan** (or the **Membership** template) and add a recurring price, monthly or yearly. You can add both.'],
       },
       {
+        id: 'pack',
         label: 'Once, for a number of classes',
         hint: 'A 10-class card',
         next: 'plan-includes',
@@ -394,12 +440,14 @@ export const QUESTIONS: WalkQuestion[] = [
         ],
       },
       {
+        id: 'complimentary',
         label: 'Nothing, it\'s free',
         hint: 'For your coaches, family, guests',
         next: 'plan-includes',
         steps: ['Use the **Complimentary** template: no charge, and you assign it to people yourself.'],
       },
       {
+        id: 'partner',
         label: 'A partner app pays me per visit',
         hint: 'FitPass, Urban Sports Club and similar',
         next: 'plan-includes',
@@ -414,12 +462,13 @@ export const QUESTIONS: WalkQuestion[] = [
     ask: 'Should it limit how often they come?',
     options: [
       {
+        id: 'limited',
         label: 'Yes',
         hint: 'Two classes a week',
         next: 'plan-intro',
         steps: ['Set **Class limit**, per day, week or month. After the limit, members pay the drop-in price.'],
       },
-      { label: 'No, unlimited', next: 'plan-intro' },
+      { id: 'unlimited', label: 'No, unlimited', next: 'plan-intro' },
     ],
   },
   {
@@ -427,11 +476,12 @@ export const QUESTIONS: WalkQuestion[] = [
     ask: 'Do you want an introductory offer?',
     options: [
       {
+        id: 'yes',
         label: 'Yes, a lower price at the start',
         next: 'plan-includes',
         steps: ['Add an intro price to the recurring price: how much, and for how many periods. 0 makes the first periods free.'],
       },
-      { label: 'No', next: 'plan-includes' },
+      { id: 'no', label: 'No', next: 'plan-includes' },
     ],
   },
   {
@@ -439,11 +489,13 @@ export const QUESTIONS: WalkQuestion[] = [
     ask: 'What does it include?',
     options: [
       {
+        id: 'classes',
         label: 'Some or all of my classes',
         next: 'plan-sell',
         steps: ['In **Manage → Offerings**, open the plan and switch **Can book** on for each class it includes.'],
       },
       {
+        id: 'more',
         label: 'Appointments or courses too',
         next: 'plan-sell',
         steps: [
@@ -457,6 +509,7 @@ export const QUESTIONS: WalkQuestion[] = [
     ask: 'How do people get it?',
     options: [
       {
+        id: 'online',
         label: 'They buy it online',
         steps: [
           'Switch on **Show on public pricing page** so it appears in your shop and on your pricing table.',
@@ -464,6 +517,7 @@ export const QUESTIONS: WalkQuestion[] = [
         ],
       },
       {
+        id: 'assign',
         label: 'I give it to them myself',
         steps: ['Leave it off the public pricing page, and assign it on the person\'s **Plans & Payments** tab.'],
       },

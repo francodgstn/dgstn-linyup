@@ -24,11 +24,15 @@
  * so going back and changing one re-routes what follows instead of replaying a
  * stale path. Back walks the steps actually visited.
  *
+ * THE QUESTIONS ARE THE HELP PAGE'S. Every choice question renders through
+ * `Choices` from `WIZARD_TREE` (offeringWizardTree.ts), which is compared with
+ * the help centre's tree by a test, so the two surfaces cannot drift apart.
+ *
  * Every string is a literal key: the i18n check verifies literal keys and only
  * counts computed ones.
  */
 
-import { useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import type { Route } from 'next'
@@ -59,8 +63,9 @@ import { formatCurrency } from '@/lib/format'
 import { callFunction } from '@/lib/callFunction'
 import { APPOINTMENT_DURATION_PRESETS, parsePriceInput } from '@/components/activities/AppointmentDurationsEditor'
 import { formatDuration } from '@/components/sessions/SessionFormDialog'
+import { WIZARD_TREE, type WizardOption, type WizardQuestion } from './offeringWizardTree'
 
-type Kind = 'class' | 'appointment' | 'course' | 'plan' | 'online' | 'product' | 'event'
+type Kind = WizardOption<'what'>
 type Step =
   | 'what'
   | 'handoff'
@@ -89,9 +94,9 @@ type Step =
   | 'review'
   | 'done'
 
-type Pay = 'included' | 'per_class' | 'both' | 'free'
-type PlanKind = 'membership' | 'pack' | 'complimentary' | 'partner'
-type ApptPrice = 'priced' | 'some_free' | 'free' | 'plan_only'
+type Pay = WizardOption<'class-pay'>
+type PlanKind = WizardOption<'plan-kind'>
+type ApptPrice = WizardOption<'appt-price'>
 type Created = { kind: 'class' | 'plan' | 'appointment' | 'course'; id: string }
 
 /** One appointment length, as the wizard holds it. */
@@ -123,21 +128,21 @@ interface Answers {
   includedPlanIds: string[]
   dropInMode: 'studio' | 'custom'
   dropInPrice: string
-  rate: 'yes' | 'no' | null
+  rate: WizardOption<'class-rate'> | null
   ratePlanIds: string[]
   rateEffect: 'percent_off' | 'fixed_price'
   rateValue: string
-  trial: 'free' | 'priced' | 'no' | null
+  trial: WizardOption<'class-newcomers'> | null
   trialPrice: string
   // appointment
   apptPrice: ApptPrice | null
   lengths: LengthRow[]
-  apptDeal: 'included' | 'less' | 'no' | null
+  apptDeal: WizardOption<'appt-members'> | null
   dealPlanIds: string[]
   dealEffect: 'percent_off' | 'fixed_price'
   dealPercent: string
   // course
-  courseMode: 'weekly' | 'dates' | null
+  courseMode: WizardOption<'course-when'> | null
   startDate: string
   startTime: string
   courseMinutes: string
@@ -145,12 +150,12 @@ interface Answers {
   skipDates: string[]
   skipDraft: string
   days: DayRow[]
-  placesLimited: 'yes' | 'no' | null
+  placesLimited: WizardOption<'course-places'> | null
   places: string
-  coursePrice: 'priced' | 'free' | null
+  coursePrice: WizardOption<'course-price'> | null
   coursePriceAmount: string
-  courseMembers: 'included' | 'cheaper' | 'no' | null
-  close: 'days' | 'open' | null
+  courseMembers: WizardOption<'course-members'> | null
+  close: WizardOption<'course-close'> | null
   closeDays: string
   // plan
   planKind: PlanKind | null
@@ -160,14 +165,14 @@ interface Answers {
   credits: string
   validMonths: string
   payout: string
-  limit: 'unlimited' | 'limited' | null
+  limit: WizardOption<'plan-limit'> | null
   limitCount: string
   limitPer: UsageLimitPeriod
-  intro: 'yes' | 'no' | null
+  intro: WizardOption<'plan-intro'> | null
   introAmount: string
   introPeriods: string
   includedActivityIds: string[]
-  sell: 'online' | 'assign' | null
+  sell: WizardOption<'plan-sell'> | null
 }
 
 const emptyDay = (): DayRow => ({ date: '', time: '10:00', minutes: '60' })
@@ -679,13 +684,20 @@ export function OfferingWizardDialog({
       case 'what':
         return (
           <Question ask={t('whatAsk')} help={t('whatHelp')}>
-            <Option selected={a.kind === 'class'} onClick={() => chooseKind('class')} label={t('whatClass')} hint={t('whatClassHint')} />
-            <Option selected={a.kind === 'appointment'} onClick={() => chooseKind('appointment')} label={t('whatAppointment')} hint={t('whatAppointmentHint')} />
-            <Option selected={a.kind === 'course'} onClick={() => chooseKind('course')} label={t('whatCourse')} hint={t('whatCourseHint')} />
-            <Option selected={a.kind === 'plan'} onClick={() => chooseKind('plan')} label={t('whatPlan')} hint={t('whatPlanHint')} />
-            <Option selected={a.kind === 'online'} onClick={() => chooseKind('online')} label={t('whatOnline')} hint={t('whatOnlineHint')} />
-            <Option selected={a.kind === 'product'} onClick={() => chooseKind('product')} label={t('whatProduct')} hint={t('whatProductHint')} />
-            <Option selected={a.kind === 'event'} onClick={() => chooseKind('event')} label={t('whatEvent')} hint={t('whatEventHint')} />
+            <Choices
+              q="what"
+              value={a.kind}
+              onPick={chooseKind}
+              labels={{
+                class: { label: t('whatClass'), hint: t('whatClassHint') },
+                appointment: { label: t('whatAppointment'), hint: t('whatAppointmentHint') },
+                course: { label: t('whatCourse'), hint: t('whatCourseHint') },
+                plan: { label: t('whatPlan'), hint: t('whatPlanHint') },
+                online: { label: t('whatOnline'), hint: t('whatOnlineHint') },
+                product: { label: t('whatProduct'), hint: t('whatProductHint') },
+                event: { label: t('whatEvent'), hint: t('whatEventHint') },
+              }}
+            />
           </Question>
         )
 
@@ -772,12 +784,14 @@ export function OfferingWizardDialog({
       case 'course-who':
         return (
           <Question ask={step === 'class-who' ? t('classWhoAsk') : t('courseWhoAsk')}>
-            <Option selected={a.signupRequired === false} onClick={() => set('signupRequired', false)} label={t('classWhoAnyone')} />
-            <Option
-              selected={a.signupRequired === true}
-              onClick={() => set('signupRequired', true)}
-              label={t('classWhoSignedUp')}
-              hint={t('classWhoSignedUpHint')}
+            <Choices
+              q={step}
+              value={a.signupRequired === null ? null : a.signupRequired ? 'signed_up' : 'anyone'}
+              onPick={(v) => set('signupRequired', v === 'signed_up')}
+              labels={{
+                anyone: { label: t('classWhoAnyone') },
+                signed_up: { label: t('classWhoSignedUp'), hint: t('classWhoSignedUpHint') },
+              }}
             />
           </Question>
         )
@@ -787,10 +801,17 @@ export function OfferingWizardDialog({
         const needsDropIn = a.pay === 'per_class' || a.pay === 'both'
         return (
           <Question ask={t('classPayAsk')}>
-            <Option selected={a.pay === 'included'} onClick={() => set('pay', 'included')} label={t('classPayIncluded')} hint={t('classPayIncludedHint')} />
-            <Option selected={a.pay === 'per_class'} onClick={() => set('pay', 'per_class')} label={t('classPayPerClass')} hint={t('classPayPerClassHint')} />
-            <Option selected={a.pay === 'both'} onClick={() => set('pay', 'both')} label={t('classPayBoth')} />
-            <Option selected={a.pay === 'free'} onClick={() => set('pay', 'free')} label={t('classPayFree')} hint={t('classPayFreeHint')} />
+            <Choices
+              q="class-pay"
+              value={a.pay}
+              onPick={(v) => set('pay', v)}
+              labels={{
+                included: { label: t('classPayIncluded'), hint: t('classPayIncludedHint') },
+                per_class: { label: t('classPayPerClass'), hint: t('classPayPerClassHint') },
+                both: { label: t('classPayBoth') },
+                free: { label: t('classPayFree'), hint: t('classPayFreeHint') },
+              }}
+            />
             {needsPlans && (
               <Field label={t('includedPlansLabel')}>
                 <Picker
@@ -823,40 +844,58 @@ export function OfferingWizardDialog({
       case 'class-rate':
         return (
           <Question ask={t('classRateAsk')} help={t('classRateHelp')}>
-            <Option selected={a.rate === 'yes'} onClick={() => set('rate', 'yes')} label={t('yes')} />
-            <Option selected={a.rate === 'no'} onClick={() => set('rate', 'no')} label={t('classRateNo')} />
-            {a.rate === 'yes' && (
-              <RateFields
-                t={t}
-                currency={currency}
-                plans={livePlans.filter((p) => !(a.pay === 'both' ? a.includedPlanIds : []).includes(p.id))}
-                a={a}
-                set={set}
-              />
-            )}
+            <Choices
+              q="class-rate"
+              value={a.rate}
+              onPick={(v) => set('rate', v)}
+              labels={{ yes: { label: t('yes') }, no: { label: t('classRateNo') } }}
+              after={{
+                yes: a.rate === 'yes' && (
+                  <RateFields
+                    t={t}
+                    currency={currency}
+                    plans={livePlans.filter((p) => !(a.pay === 'both' ? a.includedPlanIds : []).includes(p.id))}
+                    a={a}
+                    set={set}
+                  />
+                ),
+              }}
+            />
           </Question>
         )
 
       case 'class-newcomers':
         return (
           <Question ask={t('classNewcomersAsk')} help={t('classNewcomersHelp')}>
-            <Option selected={a.trial === 'free'} onClick={() => set('trial', 'free')} label={t('trialFree')} />
-            <Option selected={a.trial === 'priced'} onClick={() => set('trial', 'priced')} label={t('trialPriced')} />
-            {a.trial === 'priced' && (
-              <MoneyInput currency={currency} value={a.trialPrice} onChange={(v) => set('trialPrice', v)} label={t('trialPriced')} />
-            )}
-            <Option selected={a.trial === 'no'} onClick={() => set('trial', 'no')} label={t('trialNo')} />
-            {a.trial === 'no' && a.pay === 'included' && <p className="text-xs text-muted-foreground">{t('trialNoNote')}</p>}
+            <Choices
+              q="class-newcomers"
+              value={a.trial}
+              onPick={(v) => set('trial', v)}
+              labels={{ free: { label: t('trialFree') }, priced: { label: t('trialPriced') }, no: { label: t('trialNo') } }}
+              after={{
+                priced: a.trial === 'priced' && (
+                  <MoneyInput currency={currency} value={a.trialPrice} onChange={(v) => set('trialPrice', v)} label={t('trialPriced')} />
+                ),
+                no: a.trial === 'no' && a.pay === 'included' && <p className="text-xs text-muted-foreground">{t('trialNoNote')}</p>,
+              }}
+            />
           </Question>
         )
 
       case 'appt-price':
         return (
           <Question ask={t('apptPriceAsk')} help={t('apptPriceHelp')}>
-            <Option selected={a.apptPrice === 'priced'} onClick={() => set('apptPrice', 'priced')} label={t('apptPriced')} />
-            <Option selected={a.apptPrice === 'some_free'} onClick={() => set('apptPrice', 'some_free')} label={t('apptSomeFree')} hint={t('apptSomeFreeHint')} />
-            <Option selected={a.apptPrice === 'free'} onClick={() => set('apptPrice', 'free')} label={t('apptFree')} hint={t('apptFreeHint')} />
-            <Option selected={a.apptPrice === 'plan_only'} onClick={() => set('apptPrice', 'plan_only')} label={t('apptPlanOnly')} hint={t('apptPlanOnlyHint')} />
+            <Choices
+              q="appt-price"
+              value={a.apptPrice}
+              onPick={(v) => set('apptPrice', v)}
+              labels={{
+                priced: { label: t('apptPriced') },
+                some_free: { label: t('apptSomeFree'), hint: t('apptSomeFreeHint') },
+                free: { label: t('apptFree'), hint: t('apptFreeHint') },
+                plan_only: { label: t('apptPlanOnly'), hint: t('apptPlanOnlyHint') },
+              }}
+            />
           </Question>
         )
 
@@ -903,18 +942,18 @@ export function OfferingWizardDialog({
         const fixed = a.apptDeal === 'less' && a.dealEffect === 'fixed_price'
         return (
           <Question ask={t('apptMembersAsk')} help={planOnly ? t('apptPlanOnlyNote') : undefined}>
-            <Option
-              selected={a.apptDeal === 'included'}
-              onClick={() => set('apptDeal', 'included')}
-              label={t('apptDealIncluded')}
-              hint={t('apptDealIncludedHint')}
+            <Choices
+              q="appt-members"
+              value={a.apptDeal}
+              onPick={(v) => set('apptDeal', v)}
+              // A plan-only length is opened by an included plan and nothing else.
+              only={planOnly ? ['included'] : undefined}
+              labels={{
+                included: { label: t('apptDealIncluded'), hint: t('apptDealIncludedHint') },
+                less: { label: t('apptDealLess') },
+                no: { label: t('apptDealNo') },
+              }}
             />
-            {!planOnly && (
-              <>
-                <Option selected={a.apptDeal === 'less'} onClick={() => set('apptDeal', 'less')} label={t('apptDealLess')} />
-                <Option selected={a.apptDeal === 'no'} onClick={() => set('apptDeal', 'no')} label={t('apptDealNo')} />
-              </>
-            )}
             {(a.apptDeal === 'included' || a.apptDeal === 'less') && (
               <Field label={t('ratePlansLabel')}>
                 <Picker items={livePlans} picked={a.dealPlanIds} onChange={(ids) => set('dealPlanIds', ids)} empty={t('noPlansYet')} />
@@ -957,8 +996,15 @@ export function OfferingWizardDialog({
       case 'course-when':
         return (
           <Question ask={t('courseWhenAsk')}>
-            <Option selected={a.courseMode === 'weekly'} onClick={() => set('courseMode', 'weekly')} label={t('courseWeekly')} hint={t('courseWeeklyHint')} />
-            <Option selected={a.courseMode === 'dates'} onClick={() => set('courseMode', 'dates')} label={t('courseDates')} hint={t('courseDatesHint')} />
+            <Choices
+              q="course-when"
+              value={a.courseMode}
+              onPick={(v) => set('courseMode', v)}
+              labels={{
+                weekly: { label: t('courseWeekly'), hint: t('courseWeeklyHint') },
+                dates: { label: t('courseDates'), hint: t('courseDatesHint') },
+              }}
+            />
             {a.courseMode === 'weekly' && (
               <div className="space-y-3">
                 <div className="flex flex-wrap gap-3">
@@ -1040,99 +1086,141 @@ export function OfferingWizardDialog({
       case 'course-places':
         return (
           <Question ask={t('coursePlacesAsk')}>
-            <Option selected={a.placesLimited === 'yes'} onClick={() => set('placesLimited', 'yes')} label={t('yes')} hint={t('coursePlacesHint')} />
-            {a.placesLimited === 'yes' && (
-              <Field label={t('placesLabel')}>
-                <Input inputMode="numeric" value={a.places} onChange={(e) => set('places', e.target.value)} className="h-9 w-20" />
-              </Field>
-            )}
-            <Option selected={a.placesLimited === 'no'} onClick={() => set('placesLimited', 'no')} label={t('coursePlacesNo')} />
+            <Choices
+              q="course-places"
+              value={a.placesLimited}
+              onPick={(v) => set('placesLimited', v)}
+              labels={{ yes: { label: t('yes'), hint: t('coursePlacesHint') }, no: { label: t('coursePlacesNo') } }}
+              after={{
+                yes: a.placesLimited === 'yes' && (
+                  <Field label={t('placesLabel')}>
+                    <Input inputMode="numeric" value={a.places} onChange={(e) => set('places', e.target.value)} className="h-9 w-20" />
+                  </Field>
+                ),
+              }}
+            />
           </Question>
         )
 
       case 'course-price':
         return (
           <Question ask={t('coursePriceAsk')}>
-            <Option selected={a.coursePrice === 'priced'} onClick={() => set('coursePrice', 'priced')} label={t('coursePriced')} hint={t('coursePricedHint')} />
-            {a.coursePrice === 'priced' && (
-              <MoneyInput currency={currency} value={a.coursePriceAmount} onChange={(v) => set('coursePriceAmount', v)} label={t('coursePriced')} />
-            )}
-            <Option selected={a.coursePrice === 'free'} onClick={() => set('coursePrice', 'free')} label={t('courseFree')} />
+            <Choices
+              q="course-price"
+              value={a.coursePrice}
+              onPick={(v) => set('coursePrice', v)}
+              labels={{ priced: { label: t('coursePriced'), hint: t('coursePricedHint') }, free: { label: t('courseFree') } }}
+              after={{
+                priced: a.coursePrice === 'priced' && (
+                  <MoneyInput currency={currency} value={a.coursePriceAmount} onChange={(v) => set('coursePriceAmount', v)} label={t('coursePriced')} />
+                ),
+              }}
+            />
           </Question>
         )
 
       case 'course-members':
         return (
           <Question ask={t('courseMembersAsk')}>
-            <Option selected={a.courseMembers === 'included'} onClick={() => set('courseMembers', 'included')} label={t('courseIncluded')} />
-            {a.courseMembers === 'included' && (
-              <Field label={t('includedPlansLabel')}>
-                <Picker items={livePlans} picked={a.includedPlanIds} onChange={(ids) => set('includedPlanIds', ids)} empty={t('noPlansYet')} />
-              </Field>
-            )}
-            <Option selected={a.courseMembers === 'cheaper'} onClick={() => set('courseMembers', 'cheaper')} label={t('courseCheaper')} />
-            {a.courseMembers === 'cheaper' && <RateFields t={t} currency={currency} plans={livePlans} a={a} set={set} />}
-            <Option selected={a.courseMembers === 'no'} onClick={() => set('courseMembers', 'no')} label={t('no')} />
+            <Choices
+              q="course-members"
+              value={a.courseMembers}
+              onPick={(v) => set('courseMembers', v)}
+              labels={{ included: { label: t('courseIncluded') }, cheaper: { label: t('courseCheaper') }, no: { label: t('no') } }}
+              after={{
+                included: a.courseMembers === 'included' && (
+                  <Field label={t('includedPlansLabel')}>
+                    <Picker items={livePlans} picked={a.includedPlanIds} onChange={(ids) => set('includedPlanIds', ids)} empty={t('noPlansYet')} />
+                  </Field>
+                ),
+                cheaper: a.courseMembers === 'cheaper' && <RateFields t={t} currency={currency} plans={livePlans} a={a} set={set} />,
+              }}
+            />
           </Question>
         )
 
       case 'course-close':
         return (
           <Question ask={t('courseCloseAsk')}>
-            <Option selected={a.close === 'days'} onClick={() => set('close', 'days')} label={t('courseCloseDays')} />
-            {a.close === 'days' && (
-              <Field label={t('closeDaysLabel')}>
-                <Input inputMode="numeric" value={a.closeDays} onChange={(e) => set('closeDays', e.target.value)} className="h-9 w-20" />
-              </Field>
-            )}
-            <Option selected={a.close === 'open'} onClick={() => set('close', 'open')} label={t('courseCloseOpen')} />
+            <Choices
+              q="course-close"
+              value={a.close}
+              onPick={(v) => set('close', v)}
+              labels={{ days: { label: t('courseCloseDays') }, open: { label: t('courseCloseOpen') } }}
+              after={{
+                days: a.close === 'days' && (
+                  <Field label={t('closeDaysLabel')}>
+                    <Input inputMode="numeric" value={a.closeDays} onChange={(e) => set('closeDays', e.target.value)} className="h-9 w-20" />
+                  </Field>
+                ),
+              }}
+            />
           </Question>
         )
 
       case 'plan-kind':
         return (
           <Question ask={t('planKindAsk')}>
-            <Option selected={a.planKind === 'membership'} onClick={() => set('planKind', 'membership')} label={t('planMembership')} hint={t('planMembershipHint')} />
-            <Option selected={a.planKind === 'pack'} onClick={() => set('planKind', 'pack')} label={t('planPack')} hint={t('planPackHint')} />
-            <Option selected={a.planKind === 'complimentary'} onClick={() => set('planKind', 'complimentary')} label={t('planComplimentary')} hint={t('planComplimentaryHint')} />
-            <Option selected={a.planKind === 'partner'} onClick={() => set('planKind', 'partner')} label={t('planPartner')} hint={t('planPartnerHint')} />
+            <Choices
+              q="plan-kind"
+              value={a.planKind}
+              onPick={(v) => set('planKind', v)}
+              labels={{
+                membership: { label: t('planMembership'), hint: t('planMembershipHint') },
+                pack: { label: t('planPack'), hint: t('planPackHint') },
+                complimentary: { label: t('planComplimentary'), hint: t('planComplimentaryHint') },
+                partner: { label: t('planPartner'), hint: t('planPartnerHint') },
+              }}
+            />
           </Question>
         )
 
       case 'plan-limit':
         return (
           <Question ask={t('planLimitAsk')}>
-            <Option selected={a.limit === 'unlimited'} onClick={() => set('limit', 'unlimited')} label={t('planUnlimited')} />
-            <Option selected={a.limit === 'limited'} onClick={() => set('limit', 'limited')} label={t('planLimited')} hint={t('planLimitedHint')} />
-            {a.limit === 'limited' && (
-              <div className="flex flex-wrap items-center gap-2">
-                <Input inputMode="numeric" value={a.limitCount} onChange={(e) => set('limitCount', e.target.value)} className="h-9 w-20" aria-label={t('planLimited')} />
-                <span className="text-sm text-muted-foreground">{t('limitClassesPer')}</span>
-                {(['day', 'week', 'month'] as const).map((per) => (
-                  <Button key={per} size="sm" variant={a.limitPer === per ? 'default' : 'outline'} onClick={() => set('limitPer', per)}>
-                    {per === 'day' ? t('perDay') : per === 'week' ? t('perWeek') : t('perMonth')}
-                  </Button>
-                ))}
-              </div>
-            )}
+            <Choices
+              q="plan-limit"
+              value={a.limit}
+              onPick={(v) => set('limit', v)}
+              labels={{ limited: { label: t('planLimited'), hint: t('planLimitedHint') }, unlimited: { label: t('planUnlimited') } }}
+              after={{
+                limited: a.limit === 'limited' && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Input inputMode="numeric" value={a.limitCount} onChange={(e) => set('limitCount', e.target.value)} className="h-9 w-20" aria-label={t('planLimited')} />
+                    <span className="text-sm text-muted-foreground">{t('limitClassesPer')}</span>
+                    {(['day', 'week', 'month'] as const).map((per) => (
+                      <Button key={per} size="sm" variant={a.limitPer === per ? 'default' : 'outline'} onClick={() => set('limitPer', per)}>
+                        {per === 'day' ? t('perDay') : per === 'week' ? t('perWeek') : t('perMonth')}
+                      </Button>
+                    ))}
+                  </div>
+                ),
+              }}
+            />
           </Question>
         )
 
       case 'plan-intro':
         return (
           <Question ask={t('planIntroAsk')}>
-            <Option selected={a.intro === 'yes'} onClick={() => set('intro', 'yes')} label={t('planIntroYes')} />
-            {a.intro === 'yes' && (
-              <div className="flex flex-wrap gap-4">
-                <Field label={t('introAmountLabel')} hint={t('introAmountHint')}>
-                  <MoneyInput currency={currency} value={a.introAmount} onChange={(v) => set('introAmount', v)} label={t('introAmountLabel')} />
-                </Field>
-                <Field label={t('introPeriodsLabel')}>
-                  <Input inputMode="numeric" value={a.introPeriods} onChange={(e) => set('introPeriods', e.target.value)} className="h-9 w-20" />
-                </Field>
-              </div>
-            )}
-            <Option selected={a.intro === 'no'} onClick={() => set('intro', 'no')} label={t('no')} />
+            <Choices
+              q="plan-intro"
+              value={a.intro}
+              onPick={(v) => set('intro', v)}
+              labels={{ yes: { label: t('planIntroYes') }, no: { label: t('no') } }}
+              after={{
+                yes: a.intro === 'yes' && (
+                  <div className="flex flex-wrap gap-4">
+                    <Field label={t('introAmountLabel')} hint={t('introAmountHint')}>
+                      <MoneyInput currency={currency} value={a.introAmount} onChange={(v) => set('introAmount', v)} label={t('introAmountLabel')} />
+                    </Field>
+                    <Field label={t('introPeriodsLabel')}>
+                      <Input inputMode="numeric" value={a.introPeriods} onChange={(e) => set('introPeriods', e.target.value)} className="h-9 w-20" />
+                    </Field>
+                  </div>
+                ),
+              }}
+            />
           </Question>
         )
 
@@ -1151,8 +1239,15 @@ export function OfferingWizardDialog({
       case 'plan-sell':
         return (
           <Question ask={t('planSellAsk')}>
-            <Option selected={a.sell === 'online'} onClick={() => set('sell', 'online')} label={t('planSellOnline')} hint={t('planSellOnlineHint')} />
-            <Option selected={a.sell === 'assign'} onClick={() => set('sell', 'assign')} label={t('planSellAssign')} hint={t('planSellAssignHint')} />
+            <Choices
+              q="plan-sell"
+              value={a.sell}
+              onPick={(v) => set('sell', v)}
+              labels={{
+                online: { label: t('planSellOnline'), hint: t('planSellOnlineHint') },
+                assign: { label: t('planSellAssign'), hint: t('planSellAssignHint') },
+              }}
+            />
           </Question>
         )
 
@@ -1261,6 +1356,41 @@ function Question({ ask, help, children }: { ask: string; help?: string; childre
 // on each keystroke.
 
 type WizardT = (key: string, values?: Record<string, string | number>) => string
+
+/**
+ * One choice question, rendered from `WIZARD_TREE` in the tree's order.
+ * `labels` must name EVERY option the tree lists (the type says so), which is
+ * what ties the dialog to the tree: an option added there fails the build
+ * here until it has words. `after` puts a question's value fields under the
+ * answer that needs them; `only` narrows what may be picked, never adds.
+ */
+function Choices<Q extends WizardQuestion>({
+  q,
+  value,
+  onPick,
+  labels,
+  after,
+  only,
+}: {
+  q: Q
+  value: WizardOption<Q> | null
+  onPick: (v: WizardOption<Q>) => void
+  labels: Record<WizardOption<Q>, { label: string; hint?: string }>
+  after?: Partial<Record<WizardOption<Q>, React.ReactNode>>
+  only?: WizardOption<Q>[]
+}) {
+  const ids = (WIZARD_TREE[q] as readonly WizardOption<Q>[]).filter((id) => !only || only.includes(id))
+  return (
+    <>
+      {ids.map((id) => (
+        <Fragment key={id}>
+          <Option selected={value === id} onClick={() => onPick(id)} label={labels[id].label} hint={labels[id].hint} />
+          {after?.[id]}
+        </Fragment>
+      ))}
+    </>
+  )
+}
 
 /** "Members pay less": which plans, and a percentage or a member price. Asked
  *  the same way of a class and of a course. */
