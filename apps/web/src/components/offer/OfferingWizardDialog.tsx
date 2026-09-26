@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * SET UP WITH A GUIDE: the help centre's offering walkthrough, asked in the app
+ * SET UP WITH A GUIDE: the help center's offering walkthrough, asked in the app
  * and turned into records.
  *
  * The walkthrough (apps/help/src/data/offeringWalkthrough.ts) asks a studio

@@ -250,7 +250,7 @@ function CreateAction({
   onOpen: (kind: 'activity' | 'plan') => void
   /** Absent unless the `ai-offer-drafting` module is installed and the reader is the owner. */
   onDraftWithAi?: () => void
-  /** The setup wizard: the help centre's walkthrough, creating what it describes. */
+  /** The setup wizard: the help center's walkthrough, creating what it describes. */
   onGuide: () => void
 }) {
   const t = useTranslations('OfferCatalogue')

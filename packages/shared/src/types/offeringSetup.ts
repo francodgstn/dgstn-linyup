@@ -1,7 +1,7 @@
 // ─── The offering setup wizard's answer ──────────────────────────────────────
 //
 // What the in-app wizard sends once a studio has answered its questions (the
-// help centre's walkthrough, apps/help/src/data/offeringWalkthrough.ts, asked
+// help center's walkthrough, apps/help/src/data/offeringWalkthrough.ts, asked
 // in the app and turned into records). `applyOfferingSetup` re-parses it here
 // and writes it through the SAME document builders the AI draft uses
 // (functions/src/offer/offeringWriter.ts), so a class made either way is one

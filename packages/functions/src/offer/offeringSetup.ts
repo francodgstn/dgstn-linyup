@@ -1,6 +1,6 @@
 // ─── applyOfferingSetup: the setup wizard's one write ────────────────────────
 //
-// The in-app wizard asks the help centre's offering questions and sends what
+// The in-app wizard asks the help center's offering questions and sends what
 // the studio answered (`OfferingSetup`, packages/shared/src/types/offeringSetup.ts).
 // This creates the class, plan or appointment through the shared writer
 // (offeringWriter.ts), the same builders the AI draft uses, and a course
