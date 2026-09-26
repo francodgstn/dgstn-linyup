@@ -16,10 +16,14 @@ or extending any feature, always read the source there first.
 ## Monorepo layout
 
 ```
-apps/web/           Next.js 15 App Router — admin dashboard (replaces CRA/Redux)
-apps/mobile/        Expo 54 + React Native — student app (ported from hmd-lineup/student-app/)
-packages/functions/ Firebase Cloud Functions v2 — TypeScript (replaces Babel JS)
-packages/shared/    TypeScript types + Firestore path constants
+apps/web/           Next.js 16 — studio dashboard + public tenant routes
+apps/admin/         Next.js 16 — SaaS operator console
+apps/mobile/        Expo 54 — member app (in the App Store and Play Store)
+apps/landing/       Astro — marketing site (linyup.com)
+apps/help/          Astro Starlight — public help center (help.linyup.com)
+apps/docs/          Astro — internal engineering docs (local only)
+packages/functions/ Firebase Cloud Functions v2 (TypeScript, routed callables)
+packages/shared/    Types, Firestore paths, shared resolvers
 ```
 
 Root tooling: **pnpm workspaces** + **Turborepo**. Node 22 required.
@@ -40,49 +44,30 @@ Root tooling: **pnpm workspaces** + **Turborepo**. Node 22 required.
 | Secrets | `functions/src/utils/secrets.js` | Ported to `packages/functions/src/utils/secrets.ts` |
 | Teams utils | `functions/src/utils/teams.js` | Ported to `packages/functions/src/utils/teams.ts` |
 | Recurrence | `functions/src/utils/recurrence.js` | Ported — DST-safe Europe/Zurich logic, keep as-is |
-| Users utils | `functions/src/utils/users.js` | Ported to `packages/functions/src/utils/users.ts` (stub) |
+| Users utils | `functions/src/utils/users.js` | Ported to `packages/functions/src/utils/users.ts` |
 
 ---
 
-## What's done (Phase 1 + Phase 2 start)
+## What's built
 
-- Root workspace: `package.json`, `pnpm-workspace.yaml`, `turbo.json`, `tsconfig.base.json`
-- `packages/shared`: all types + Firestore path constants
-- `packages/functions`: utils ported, ~12 functions fully implemented, rest stubbed
-- Firebase config: `firestore.rules`, `firestore.index.json`, `storage.rules`, `database.rules.json`, `firebase.json`, `.firebaserc`
-- `apps/web`: Next.js 15 scaffold with `(auth)` route group, `(public)` route group, login page, AuthContext, TanStack Query
-- `apps/mobile`: full port of `hmd-lineup/student-app/` with Linyup branding
-- CI/CD: `.github/workflows/verify.yml` + `deploy.yml`
-- shadcn/ui component library installed in `apps/web/src/components/ui/`
-- Build + typecheck clean across all packages; dev server runs at port 3000
-- `firebase-auth.ts` split from `firebase.ts` to prevent SSG crash (auth/invalid-api-key)
-- Bio-link routes tagged `force-dynamic`; `apps/web/.env.local` created with placeholders
-- Self-service signup wizard (`app/signup/page.tsx`) — 2-step: account → team → dashboard
-- Firebase emulator wired up for local dev (`demo-linyup` project, no real Firebase project needed)
-- Public **Space** area (`/public/{slug}/space`) — the contacts' personal member portal
-  (membership, bookings, profile, and the courses they can open), interim web surface until the
-  mobile app ships. Sign-in via the passwordless contact-session login; course discovery + buying
-  lives in the Shop, not here. See "Public Space" under Key patterns.
+HMD port status lives in `docs/migration-checklist.md`; feature docs are indexed in `docs/README.md`.
 
----
+- Studio dashboard: nav with collapse + mobile drawer, contact detail tabs, schedule calendar, mobile-first lists
+- Public surfaces: bio-link, site, shop, booking, Space member portal, embeds (`docs/embed-booking.md`)
+- Member app in both stores (`docs/mobile-store-setup.md`, `docs/mobile-roadmap-2026-09.md`)
+- SaaS billing via Stripe (`docs/payment-studio-linyup.md`) + operator console (`apps/admin`)
+- Organization tier (`docs/org-navigation.md`)
+- Member payments via Stripe Connect (`docs/payment-contact-studio.md`), promo codes, waivers, Tarif 595
+- Appointments (`docs/appointments.md`), courses (`docs/courses.md`), waitlist (`docs/waitlist.md`), event programs (`docs/event-program.md`)
+- Automation engine + outreach (`docs/automations-money-triggers.md`), gamification, AI insights (`docs/ai-insights.md`)
 
-## What's NOT done yet (Phase 2+)
+## Not built yet
 
-### UI / UX gaps (priority)
-- **Auth layout + nav** — no icons, no mobile drawer, no collapse mode (see UI/UX porting principles above)
-- **Contact detail page** — `/contacts/[id]` route with tabbed view (profile, notes, activity, subscriptions)
-- **Session calendar view** — calendar tab alongside list (react-big-calendar)
-- **Mobile-first list layouts** — current list pages use desktop tables; need card/list patterns that work on mobile
-- **Gamification** — stubbed page, no implementation
-
-### Features not yet started
-- **Stripe billing** — `SaasSubscription` type is stubbed, `saas_subscriptions` rules deny all
-- **Organization tier** — multi-team hierarchy, `organizations/` collection stub only
-- **SaaS operator console** — no admin panel for managing tenants
-- **Full function port** — only ~15 of ~81 functions are implemented; the rest are stubbed with a `TODO: port from hmd-lineup/functions/src/{name}/index.js` comment
-- **Outreach/automation engine** — not started
-- **Accrual finance** — planned, not started: `docs/finance-accrual.md` is the recorded design (recognition policies, basis setting, assets-in-finance, the inventory-extension re-scope). Shipped from it so far: `MemberSubscription.current_period_start` persistence, the opening-balances wizard (`/plugins/finance/opening`), and the **asset register / statement of assets** register-only slice (`/plugins/finance/assets` — indicative values, no postings until accrual mode).
-- **Appointments (1:1)** — DONE: activity-bound, availability-only booking (`listAvailability` + `bookAppointment`, overlap-safe lazy session creation, priced durations + one `memberBenefit` rule (no access gate — the price is the gate), .ics emails, public picker at `/public/{slug}/appointments` — see `docs/appointments.md`). Still open: mobile paid appointments (browse/book on `listAvailability` exists; a priced duration is refused with `payment_required` — no mobile checkout surface, see `docs/mobile-roadmap-2026-09.md`), push reminders, session notes, waiting list (`docs/product-strategy.md`).
+- Accrual finance beyond the asset register — `docs/finance-accrual.md`
+- Paid appointments in the member app (a priced length is refused with `payment_required`) — `docs/appointments.md`
+- Push notifications: the rail exists, but nothing sends yet (e.g. appointment reminders)
+- Coach↔client session notes on appointments — `docs/product-strategy.md`
+- `generateDashboardInsight` (last HMD port item) — `docs/migration-checklist.md`
 
 ---
 
@@ -1002,10 +987,10 @@ yes. Everything about wording, statuses and commands lives in
 | Alias | Project ID |
 |---|---|
 | default (local) | `demo-linyup` (emulator only — `demo-` prefix bypasses project validation) |
+| sandbox | `linyup-sandbox` (live prospect demos — see "Sandbox safety model") |
 | staging | `linyup-staging` |
 | production | `linyup-prod` |
 
-Staging and production need to be created in Firebase Console (not done yet).
 For local development use the Firebase emulators — no real project needed.
 
 ---
